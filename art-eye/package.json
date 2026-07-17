@@ -40,7 +40,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "placeholders": "node scripts/gen-placeholders.js"
+    "placeholders": "node scripts/gen-placeholders.js",
+    "build:pages": "EXPO_BASE_URL=/D-I-S-APP- expo export -p web --output-dir ../docs && node scripts/finish-pages.js"
   },
   "private": true
 }
