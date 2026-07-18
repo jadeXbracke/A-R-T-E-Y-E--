@@ -44,6 +44,7 @@ export interface Venue {
   address: string | null;
   city: string;
   owner_user_id: string | null;
+  image_url?: string | null; // photo of the gallery/museum space
 }
 
 export interface Exhibition {

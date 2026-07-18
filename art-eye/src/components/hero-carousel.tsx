@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
@@ -14,7 +13,7 @@ import {
 import { fmtRange } from '../lib/dates';
 import { Exhibition } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
-import { exhibitionSource } from './exhibition';
+import { ArtImage } from './exhibition';
 import { Kicker } from './ui';
 
 /** Ocula-style Curator's picks carousel: full-bleed image, caps artist over
@@ -57,8 +56,9 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
             onPress={() => router.push(`/exhibition/${e.id}`)}
           >
             <View>
-              <Image
-                source={exhibitionSource(e)}
+              <ArtImage
+                uri={e.image_url}
+                fallbackId={e.id}
                 style={{ width, aspectRatio: 4 / 5, backgroundColor: colors.hairline }}
                 contentFit="cover"
               />

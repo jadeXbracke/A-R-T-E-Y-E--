@@ -1,10 +1,9 @@
-import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { exhibitionSource } from '../../src/components/exhibition';
-import { ActionBar, Hairline, Loading, RedDot } from '../../src/components/ui';
+import { ArtImage } from '../../src/components/exhibition';
+import { ActionBar, Hairline, Kicker, Loading, RedDot } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { fmtOpening, fmtRange } from '../../src/lib/dates';
@@ -94,8 +93,9 @@ export default function ExhibitionDetail() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xl }}>
         <View>
-          <Image
-            source={exhibitionSource(e)}
+          <ArtImage
+            uri={e.image_url}
+            fallbackId={e.id}
             style={{ width, aspectRatio: 4 / 5, backgroundColor: colors.hairline }}
             contentFit="cover"
           />
@@ -128,6 +128,22 @@ export default function ExhibitionDetail() {
           {e.venue?.address && <SpecRow label="ADDRESS" value={e.venue.address.toUpperCase()} />}
 
           <Text style={styles.description}>{e.description}</Text>
+
+          {e.venue?.image_url && (
+            <View style={styles.venueBlock}>
+              <Kicker style={{ marginBottom: space.m }}>THE SPACE</Kicker>
+              <ArtImage
+                uri={e.venue.image_url}
+                fallbackId={e.venue.id}
+                style={styles.venueImage}
+                contentFit="cover"
+              />
+              <Text style={styles.venueName}>{e.venue.name.toUpperCase()}</Text>
+              {e.venue.address && (
+                <Text style={styles.venueAddress}>{e.venue.address}</Text>
+              )}
+            </View>
+          )}
 
           {visit ? (
             <View style={styles.seenBlock}>
@@ -213,6 +229,22 @@ const styles = StyleSheet.create({
     ...type.serifBody,
     marginTop: space.l,
     marginBottom: space.xl,
+  },
+  venueBlock: { marginBottom: space.xl },
+  venueImage: { width: '100%', aspectRatio: 3 / 2, backgroundColor: colors.hairline },
+  venueName: {
+    fontFamily: fonts.sansMedium,
+    fontSize: 11,
+    letterSpacing: 2,
+    color: colors.ink,
+    marginTop: space.m,
+    marginBottom: 4,
+  },
+  venueAddress: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    color: colors.grey,
   },
   seenBlock: {
     borderWidth: 1,

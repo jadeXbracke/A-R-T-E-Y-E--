@@ -1,6 +1,6 @@
-import { Image } from 'expo-image';
+import { Image, ImageProps } from 'expo-image';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { fmtRange } from '../lib/dates';
 import { FALLBACK_PLACEHOLDER, PLACEHOLDERS } from '../lib/seed';
@@ -8,15 +8,39 @@ import { Exhibition } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
 import { RedDot } from './ui';
 
-export function exhibitionSource(e: Exhibition) {
-  if (e.image_url?.startsWith('asset:')) {
-    return PLACEHOLDERS[e.image_url.slice(6)] ?? FALLBACK_PLACEHOLDER;
+function fallbackFor(id: string, imageUrl?: string | null): number {
+  if (imageUrl?.startsWith('asset:')) {
+    return PLACEHOLDERS[imageUrl.slice(6)] ?? FALLBACK_PLACEHOLDER;
   }
-  if (e.image_url) return { uri: e.image_url };
   const keys = Object.keys(PLACEHOLDERS);
   let h = 0;
-  for (const c of e.id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return PLACEHOLDERS[keys[h % keys.length]];
+}
+
+export function exhibitionSource(e: Exhibition) {
+  if (e.image_url && !e.image_url.startsWith('asset:')) return { uri: e.image_url };
+  return fallbackFor(e.id, e.image_url);
+}
+
+/** Remote image with the tonal placeholder as loading state and error fallback. */
+export function ArtImage({
+  uri,
+  fallbackId,
+  ...props
+}: Omit<ImageProps, 'source'> & { uri?: string | null; fallbackId: string }) {
+  const [failed, setFailed] = useState(false);
+  const fallback = fallbackFor(fallbackId, uri);
+  const remote = uri && !uri.startsWith('asset:') && !failed;
+  return (
+    <Image
+      source={remote ? { uri } : fallback}
+      placeholder={remote ? fallback : undefined}
+      onError={() => setFailed(true)}
+      transition={200}
+      {...props}
+    />
+  );
 }
 
 /** Agenda list row: thumbnail (+ red seen dot), mono date, italic title, caps artist, mono venue. */
@@ -27,7 +51,7 @@ export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; se
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
       <View>
-        <Image source={exhibitionSource(exhibition)} style={styles.thumb} contentFit="cover" />
+        <ArtImage uri={exhibition.image_url} fallbackId={exhibition.id} style={styles.thumb} contentFit="cover" />
         {seen && <RedDot size={9} style={styles.seenDot} />}
       </View>
       <View style={{ flex: 1 }}>
@@ -54,7 +78,7 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
       <View>
-        <Image source={exhibitionSource(exhibition)} style={styles.gridImage} contentFit="cover" />
+        <ArtImage uri={exhibition.image_url} fallbackId={exhibition.id} style={styles.gridImage} contentFit="cover" />
         {seen && <RedDot size={9} style={styles.seenDot} />}
       </View>
       <Text style={styles.gridDate}>{fmtRange(exhibition.start_date, exhibition.end_date)}</Text>

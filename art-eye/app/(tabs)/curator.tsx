@@ -1,9 +1,8 @@
-import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { exhibitionSource } from '../../src/components/exhibition';
+import { ArtImage } from '../../src/components/exhibition';
 import { EmptyState, Hairline, Kicker, Loading, MonoLink, RatingDots } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
@@ -140,8 +139,9 @@ export default function CuratorScreen() {
               {i > 0 && <Hairline style={{ marginHorizontal: space.page }} />}
               <View style={styles.entry}>
                 {e && (
-                  <Image
-                    source={exhibitionSource(e)}
+                  <ArtImage
+                    uri={e.image_url}
+                    fallbackId={e.id}
                     style={styles.entryThumb}
                     contentFit="cover"
                   />

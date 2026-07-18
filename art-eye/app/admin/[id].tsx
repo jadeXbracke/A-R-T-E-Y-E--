@@ -1,9 +1,8 @@
-import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { exhibitionSource } from '../../src/components/exhibition';
+import { ArtImage } from '../../src/components/exhibition';
 import { Field, Hairline, InkBar, Kicker, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { Exhibition, REJECTION_REASONS, RejectionReason } from '../../src/lib/types';
@@ -107,8 +106,9 @@ export default function AdminReview() {
         </Pressable>
       </View>
 
-      <Image
-        source={exhibitionSource({ ...exhibition, image_url: imageUrl || exhibition.image_url })}
+      <ArtImage
+        uri={imageUrl || exhibition.image_url}
+        fallbackId={exhibition.id}
         style={styles.cover}
         contentFit="cover"
       />

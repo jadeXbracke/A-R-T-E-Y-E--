@@ -28,7 +28,8 @@ interface DemoState {
   sessionUserId: string | null;
 }
 
-const KEY = 'arteye.demo.v1';
+// Bump the suffix when the seed changes — installed devices then reload it.
+const KEY = 'arteye.demo.v2';
 
 function seedState(): DemoState {
   const venues = SEED_VENUES.map((v) => ({ ...v }));
