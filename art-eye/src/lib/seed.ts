@@ -21,14 +21,14 @@ export const PLACEHOLDERS: Record<string, number> = {
 export const FALLBACK_PLACEHOLDER = PLACEHOLDERS.archibald;
 
 export const SEED_VENUES: Venue[] = [
-  { id: 'v-agnsw', name: 'Art Gallery of New South Wales', type: 'museum', address: 'Art Gallery Road, The Domain', city: 'Sydney', owner_user_id: null },
-  { id: 'v-mca', name: 'MCA Australia', type: 'museum', address: '140 George Street, The Rocks', city: 'Sydney', owner_user_id: null },
-  { id: 'v-roslynoxley9', name: 'Roslyn Oxley9 Gallery', type: 'gallery', address: '8 Soudan Lane, Paddington', city: 'Sydney', owner_user_id: null },
-  { id: 'v-cassandrabird', name: 'Cassandra Bird', type: 'gallery', address: 'Paddington', city: 'Sydney', owner_user_id: null },
-  { id: 'v-1301sw', name: '1301SW', type: 'gallery', address: 'Sydney', city: 'Sydney', owner_user_id: null },
-  { id: 'v-amesyavuz', name: 'Ames Yavuz', type: 'gallery', address: 'Paddington', city: 'Sydney', owner_user_id: null },
-  { id: 'v-olsen', name: 'OLSEN Annexe', type: 'gallery', address: 'Woollahra', city: 'Sydney', owner_user_id: null },
-  { id: 'v-gcs', name: 'Grace Cossington Smith Gallery', type: 'gallery', address: 'Gate 7, 1666 Pacific Highway, Wahroonga', city: 'Sydney', owner_user_id: null },
+  { id: 'v-agnsw', name: 'Art Gallery of New South Wales', type: 'museum', address: 'Art Gallery Road, The Domain, Sydney NSW 2000', city: 'Sydney', owner_user_id: null , image_url: 'https://upload.wikimedia.org/wikipedia/commons/4/42/Art_Gallery_of_New_South_Wales.JPG'},
+  { id: 'v-mca', name: 'MCA Australia', type: 'museum', address: '140 George Street, The Rocks, Sydney NSW 2000', city: 'Sydney', owner_user_id: null , image_url: 'https://upload.wikimedia.org/wikipedia/commons/f/f5/The_Museum_of_Contemporary_Art%2C_Sydney_%28former_MSB_Building%29.jpg'},
+  { id: 'v-roslynoxley9', name: 'Roslyn Oxley9 Gallery', type: 'gallery', address: '8 Soudan Lane, Paddington NSW 2021', city: 'Sydney', owner_user_id: null , image_url: null},
+  { id: 'v-cassandrabird', name: 'Cassandra Bird', type: 'gallery', address: '54 Kellett Street, Potts Point NSW 2011', city: 'Sydney', owner_user_id: null , image_url: null},
+  { id: 'v-1301sw', name: '1301SW', type: 'gallery', address: '3 Hiles Street, Alexandria NSW 2015', city: 'Sydney', owner_user_id: null , image_url: null},
+  { id: 'v-amesyavuz', name: 'Ames Yavuz', type: 'gallery', address: '114 Commonwealth Street, Surry Hills NSW 2010', city: 'Sydney', owner_user_id: null , image_url: null},
+  { id: 'v-olsen', name: 'OLSEN Annexe', type: 'gallery', address: '74 Queen Street, Woollahra NSW 2025', city: 'Sydney', owner_user_id: null , image_url: null},
+  { id: 'v-gcs', name: 'Grace Cossington Smith Gallery', type: 'gallery', address: 'Gate 7, 1666 Pacific Highway, Wahroonga NSW 2076', city: 'Sydney', owner_user_id: null , image_url: null},
 ];
 
 export const SEED_EXHIBITIONS: Exhibition[] = [
@@ -58,7 +58,7 @@ export const SEED_EXHIBITIONS: Exhibition[] = [
     opening_datetime: null,
     description:
       'The superflat universe at full scale — smiling flowers, silver screens and centuries of Japanese painting compressed into one relentless surface. Murakami’s first major Sydney survey.',
-    image_url: 'asset:murakami',
+    image_url: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Takashi_Murakami_at_Versailles_Sept._2010_%281%29.jpg',
     status: 'approved',
     rejection_reason: null,
     is_featured: true,

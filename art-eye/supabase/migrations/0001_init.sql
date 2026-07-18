@@ -26,6 +26,7 @@ create table venues (
   address text,
   city text not null default 'Sydney',
   owner_user_id uuid references profiles (id) on delete set null,
+  image_url text,
   created_at timestamptz not null default now()
 );
 

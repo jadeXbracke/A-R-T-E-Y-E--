@@ -3,15 +3,15 @@
 -- placeholder; replace with venue press image URLs (or Storage URLs) as
 -- they are cleared for use.
 
-insert into venues (id, name, type, address, city) values
-  ('00000000-0000-0000-0000-00000000000a', 'Art Gallery of New South Wales', 'museum', 'Art Gallery Road, The Domain', 'Sydney'),
-  ('00000000-0000-0000-0000-00000000000b', 'MCA Australia', 'museum', '140 George Street, The Rocks', 'Sydney'),
-  ('00000000-0000-0000-0000-00000000000c', 'Roslyn Oxley9 Gallery', 'gallery', '8 Soudan Lane, Paddington', 'Sydney'),
-  ('00000000-0000-0000-0000-00000000000d', 'Cassandra Bird', 'gallery', 'Paddington', 'Sydney'),
-  ('00000000-0000-0000-0000-00000000000e', '1301SW', 'gallery', 'Sydney', 'Sydney'),
-  ('00000000-0000-0000-0000-00000000000f', 'Ames Yavuz', 'gallery', 'Paddington', 'Sydney'),
-  ('00000000-0000-0000-0000-000000000010', 'OLSEN Annexe', 'gallery', 'Woollahra', 'Sydney'),
-  ('00000000-0000-0000-0000-000000000011', 'Grace Cossington Smith Gallery', 'gallery', 'Gate 7, 1666 Pacific Highway, Wahroonga', 'Sydney');
+insert into venues (id, name, type, address, city, image_url) values
+  ('00000000-0000-0000-0000-00000000000a', 'Art Gallery of New South Wales', 'museum', 'Art Gallery Road, The Domain, Sydney NSW 2000', 'Sydney', 'https://upload.wikimedia.org/wikipedia/commons/4/42/Art_Gallery_of_New_South_Wales.JPG'),
+  ('00000000-0000-0000-0000-00000000000b', 'MCA Australia', 'museum', '140 George Street, The Rocks, Sydney NSW 2000', 'Sydney', 'https://upload.wikimedia.org/wikipedia/commons/f/f5/The_Museum_of_Contemporary_Art%2C_Sydney_%28former_MSB_Building%29.jpg'),
+  ('00000000-0000-0000-0000-00000000000c', 'Roslyn Oxley9 Gallery', 'gallery', '8 Soudan Lane, Paddington NSW 2021', 'Sydney', null),
+  ('00000000-0000-0000-0000-00000000000d', 'Cassandra Bird', 'gallery', '54 Kellett Street, Potts Point NSW 2011', 'Sydney', null),
+  ('00000000-0000-0000-0000-00000000000e', '1301SW', 'gallery', '3 Hiles Street, Alexandria NSW 2015', 'Sydney', null),
+  ('00000000-0000-0000-0000-00000000000f', 'Ames Yavuz', 'gallery', '114 Commonwealth Street, Surry Hills NSW 2010', 'Sydney', null),
+  ('00000000-0000-0000-0000-000000000010', 'OLSEN Annexe', 'gallery', '74 Queen Street, Woollahra NSW 2025', 'Sydney', null),
+  ('00000000-0000-0000-0000-000000000011', 'Grace Cossington Smith Gallery', 'gallery', 'Gate 7, 1666 Pacific Highway, Wahroonga NSW 2076', 'Sydney', null);
 
 insert into exhibitions
   (venue_id, title, artists, start_date, end_date, opening_datetime, description, image_url, status, is_featured, city)
@@ -24,7 +24,7 @@ values
   ('00000000-0000-0000-0000-00000000000a', 'Takashi Murakami', 'Takashi Murakami',
    '2026-05-30', '2026-09-27', null,
    'The superflat universe at full scale — smiling flowers, silver screens and centuries of Japanese painting compressed into one relentless surface. Murakami’s first major Sydney survey.',
-   'asset:murakami', 'approved', true, 'Sydney'),
+   'https://upload.wikimedia.org/wikipedia/commons/8/80/Takashi_Murakami_at_Versailles_Sept._2010_%281%29.jpg', 'approved', true, 'Sydney'),
 
   ('00000000-0000-0000-0000-00000000000b', 'Primavera 2026: Young Australian Artists', 'Young Australian Artists',
    '2026-07-03', '2026-09-20', null,
