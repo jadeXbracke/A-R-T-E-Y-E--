@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "ART EYE",
+    "slug": "art-eye",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "arteye",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.arteye.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "ART EYE uses your photo library so venues can attach an exhibition image to a submission."
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ART EYE uses your photo library so venues can attach an exhibition image to a submission."
+        }
+      ]
+    ],
+    "splash": {
+      "backgroundColor": "#FFFFFF",
+      "resizeMode": "contain"
+    }
+  }
+}
