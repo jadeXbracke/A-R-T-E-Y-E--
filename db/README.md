@@ -75,11 +75,13 @@ laatste komma op). Draai het bestand daarna opnieuw — het upsert op `slug`,
 dus bestaande venues worden bijgewerkt, nooit gedupliceerd. `is_claimed` en
 `is_fixture` worden door de seed bewust **nooit** overschreven.
 
-⚠️ De voorgevulde lijst (musea, publieke galeries, commerciële galeries en
-ARI's) is een startpunt, samengesteld juli 2026. Controleer adressen,
-websites en handles vóór launch — vooral commerciële galeries en ARI's
-verhuizen of sluiten regelmatig. `NULL`-velden en ontbrekende lat/lng moeten
-nog ingevuld worden; ingevulde coördinaten zijn approximaties.
+✅ De voorgevulde lijst (54 venues: musea, publieke galeries, commerciële
+galeries en ARI's) is in juli 2026 geverifieerd tegen officiële bronnen
+(websites en Instagram-accounts van de venues zelf): status, adres, website
+en IG-handle zijn actueel. Gesloten of nomadische organisaties (o.a.
+Australian Design Centre, Gallery 9, 107 Projects) staan gecomment onderaan
+het seed-bestand als naslag. Coördinaten zijn straatniveau-nauwkeurig
+(~100 m); geocodeer opnieuw als je pixel-perfecte kaartpins wilt.
 
 ## Fixture-/testdata
 
