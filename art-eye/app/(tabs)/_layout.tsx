@@ -6,6 +6,7 @@ import { colors, fonts } from '../../src/theme';
 
 const LABELS: Record<string, string> = {
   index: 'AGENDA',
+  venues: 'VENUES',
   saved: 'SAVED',
   submit: 'SUBMIT',
   curator: 'CURATOR',
@@ -63,6 +64,7 @@ export default function TabsLayout() {
       tabBar={(props) => <MonoTabBar {...props} />}
     >
       <Tabs.Screen name="index" />
+      <Tabs.Screen name="venues" />
       <Tabs.Screen name="saved" />
       <Tabs.Screen name="submit" />
       <Tabs.Screen name="curator" />

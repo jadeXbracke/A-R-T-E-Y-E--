@@ -80,6 +80,13 @@ with the host account and nowhere else.
 - **The exhibition information page** shows the venue’s photo and tappable **Website** / **Instagram**
   links when set — filled in by the venue account or the host.
 
+### Public venue directory
+
+The **VENUES** tab lists every venue in the register (filter by museums / galleries / ARIs;
+venues with something on view sort first, with an "N ON NOW" marker). Each venue has a public
+page with its photo, address, website / Instagram / map links, and its current and upcoming
+exhibitions from the agenda. Exhibition pages link back to the venue page via **VENUE PAGE →**.
+
 ## Design system
 
 Tokens live in `src/theme.ts`, extracted from the prototype spec: white `#FFFFFF` ground,
