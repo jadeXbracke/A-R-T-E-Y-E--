@@ -1,4 +1,4 @@
-import { Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, VenueDraft, VenueType, Visit } from './types';
+import { Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -49,6 +49,12 @@ export interface Api {
   listAllExhibitions(): Promise<Exhibition[]>;
   adminCreateExhibition(draft: ExhibitionDraft): Promise<void>; // published immediately
   deleteExhibition(id: string): Promise<void>;
+
+  // owner inbox — pipeline proposals. Approve is the ONLY path from a
+  // proposal into venues; reject snoozes the identical proposal for 90 days.
+  listProposals(): Promise<VenueProposal[]>;
+  approveProposal(proposal: VenueProposal, payload: Record<string, unknown>): Promise<void>;
+  rejectProposal(id: string, note: string): Promise<void>;
 
   // media
   uploadImage(localUri: string): Promise<string>;

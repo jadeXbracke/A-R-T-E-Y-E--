@@ -80,6 +80,28 @@ with the host account and nowhere else.
 - **The exhibition information page** shows the venue’s photo and tappable **Website** / **Instagram**
   links when set — filled in by the venue account or the host.
 
+### Venue freshness pipeline (live mode only)
+
+A self-validating pipeline keeps the register accurate over time — and **never changes data on
+its own**. Jobs research and propose; every proposed change lands in the in-app **Owner Inbox**
+(Host Control → Owner Inbox) where the owner approves, edits-and-approves, or rejects it
+(rejection snoozes the identical proposal for 90 days). The only direct write a job may make is
+`verified_date` on a high-confidence confirmation.
+
+- `supabase/functions/validate-venues` — weekly; checks the 20 stalest active venues (website
+  probe + Claude with web search, JSON verdicts with evidence), files archive/update proposals.
+- `supabase/functions/discover-venues` — monthly; searches for newly opened Sydney spaces
+  (Art Guide, Ocula, Time Out, NAVA), dedupes against register + queue, files add proposals.
+- `supabase/functions/queue-digest` — weekly; one email digest when proposals are waiting
+  (Resend; never per-item notifications).
+- Migrations `0005` (queue/runs tables + RLS, owner-only) and `0006` (pg_cron schedules — read
+  its header for the required Vault secrets and deploy steps). Guardrails: evidence required by
+  DB CHECK, one pending proposal per venue+action, 30-Claude-calls cost cap per run, per-venue
+  try/catch with errors logged to `validation_runs`, dry-run mode via `?dry_run=1`.
+- Secrets (`ANTHROPIC_API_KEY`, `RESEND_API_KEY`, `DIGEST_TO`) live in Supabase function
+  secrets — never in client code. Demo mode seeds two sample proposals so the inbox is testable
+  without a backend.
+
 ### Public venue directory
 
 The **VENUES** tab lists every venue in the register (filter by museums / galleries / ARIs;

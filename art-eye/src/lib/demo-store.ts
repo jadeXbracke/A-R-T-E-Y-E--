@@ -11,6 +11,7 @@ import {
   RejectionReason,
   Venue,
   VenueDraft,
+  VenueProposal,
   Visit,
   WatchlistEntry,
 } from './types';
@@ -26,11 +27,50 @@ interface DemoState {
   exhibitions: Exhibition[];
   watchlist: WatchlistEntry[];
   visits: Visit[];
+  proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v6';
+const KEY = 'arteye.demo.v7';
+
+// Demo stand-ins for what the live pipeline files in venue_review_queue.
+const SEED_PROPOSALS: VenueProposal[] = [
+  {
+    id: 'p-demo-add',
+    venue_id: null,
+    action_type: 'add',
+    proposed_payload: {
+      slug: 'wentworth-galleries',
+      name: 'Wentworth Galleries',
+      type: 'gallery',
+      address: '61 Phillip Street, Sydney NSW',
+      suburb: 'Sydney',
+      website: 'https://www.wentworthgalleries.com.au',
+      city: 'Sydney',
+    },
+    evidence: [
+      { url: 'https://www.wentworthgalleries.com.au', snippet: 'CBD gallery with regular exhibitions — not yet in the ART EYE register. (demo sample)' },
+    ],
+    confidence: 0.72,
+    reason: 'Demo sample — the discovery job would suggest venues like this for your approval.',
+    status: 'pending',
+    created_at: '2026-07-19T09:00:00Z',
+  },
+  {
+    id: 'p-demo-update',
+    venue_id: 'v-cassandrabird',
+    action_type: 'update',
+    proposed_payload: { website: 'https://cassandrabird.com' },
+    evidence: [
+      { url: 'https://cassandrabird.com', snippet: 'Gallery website found for Cassandra Bird, Potts Point. (demo sample)' },
+    ],
+    confidence: 0.86,
+    reason: 'Demo sample — the validate job proposes filling in the missing website.',
+    status: 'pending',
+    created_at: '2026-07-19T09:05:00Z',
+  },
+];
 
 function seedState(): DemoState {
   const venues = SEED_VENUES.map((v) => ({ ...v }));
@@ -87,6 +127,7 @@ function seedState(): DemoState {
         visit_date: '2026-07-10',
       },
     ],
+    proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
 }
@@ -404,6 +445,57 @@ export const demoApi: Api = {
     s.exhibitions = s.exhibitions.filter((e) => e.id !== id);
     s.watchlist = s.watchlist.filter((w) => w.exhibition_id !== id);
     s.visits = s.visits.filter((v) => v.exhibition_id !== id);
+    await persist();
+  },
+
+  // ---- owner inbox ---------------------------------------------------------
+  async listProposals() {
+    const s = await load();
+    return (s.proposals ?? [])
+      .filter((p) => p.status === 'pending')
+      .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
+  },
+
+  async approveProposal(proposal, payload) {
+    const s = await load();
+    const p = s.proposals.find((x) => x.id === proposal.id);
+    if (!p) throw new Error('Proposal not found.');
+    if (p.action_type === 'add') {
+      const slug = String(payload.slug ?? uid('venue'));
+      s.venues.push({
+        id: `v-${slug}`,
+        name: String(payload.name ?? 'Untitled venue'),
+        slug,
+        type: (payload.type as Venue['type']) ?? 'gallery',
+        address: (payload.address as string) ?? null,
+        suburb: (payload.suburb as string) ?? null,
+        website: (payload.website as string) ?? null,
+        instagram: (payload.instagram as string) ?? null,
+        latitude: (payload.latitude as number) ?? null,
+        longitude: (payload.longitude as number) ?? null,
+        city: 'Sydney',
+        owner_user_id: null,
+        is_claimed: false,
+        is_fixture: false,
+        image_url: null,
+      });
+    } else if (p.action_type === 'archive') {
+      const venue = s.venues.find((v) => v.id === p.venue_id);
+      if (venue) venue.is_fixture = true; // demo analog of status='archived'
+    } else {
+      const venue = s.venues.find((v) => v.id === p.venue_id);
+      if (venue) Object.assign(venue, payload);
+    }
+    p.status = 'approved';
+    await persist();
+  },
+
+  async rejectProposal(id, note) {
+    const s = await load();
+    const p = s.proposals.find((x) => x.id === id);
+    if (!p) throw new Error('Proposal not found.');
+    p.status = 'rejected';
+    p.review_note = note.trim() || null;
     await persist();
   },
 
