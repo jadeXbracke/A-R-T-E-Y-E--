@@ -2,23 +2,45 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmptyState, Hairline, Kicker, Loading } from '../../src/components/ui';
+import { Hairline, Kicker } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
-import { fmtRange } from '../../src/lib/dates';
-import { Exhibition } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
-export default function AdminQueue() {
+function DeskRow({
+  label,
+  meta,
+  onPress,
+}: {
+  label: string;
+  meta: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable style={styles.row} onPress={onPress}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowMeta}>{meta}</Text>
+      </View>
+      <Text style={styles.arrow}>→</Text>
+    </Pressable>
+  );
+}
+
+export default function HostDesk() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const [pending, setPending] = useState<Exhibition[] | null>(null);
+  const [counts, setCounts] = useState<{ pending: number; venues: number; shows: number } | null>(
+    null
+  );
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       if (profile?.role === 'admin') {
-        api.listPending().then((p) => alive && setPending(p));
+        Promise.all([api.listPending(), api.listVenues(), api.listAllExhibitions()]).then(
+          ([p, v, e]) => alive && setCounts({ pending: p.length, venues: v.length, shows: e.length })
+        );
       }
       return () => {
         alive = false;
@@ -36,7 +58,11 @@ export default function AdminQueue() {
           paddingHorizontal: space.page,
         }}
       >
-        <Text style={type.serifHeading}>Editors only</Text>
+        <Text style={type.serifHeading}>Host only</Text>
+        <Text style={styles.note}>
+          This desk belongs to the host account. Only the host can add, edit or remove what appears
+          in the app.
+        </Text>
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Text style={styles.back}>← BACK</Text>
         </Pressable>
@@ -51,39 +77,34 @@ export default function AdminQueue() {
     >
       <View style={styles.head}>
         <View>
-          <Kicker style={{ marginBottom: 10 }}>EDITORS’ DESK</Kicker>
-          <Text style={type.serifHeading}>In review</Text>
+          <Kicker style={{ marginBottom: 10 }}>HOST CONTROL</Kicker>
+          <Text style={type.serifHeading}>The desk</Text>
         </View>
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Text style={styles.back}>← BACK</Text>
         </Pressable>
       </View>
+      <Text style={styles.intro}>
+        Everything the app shows is yours to run. Publish and pull exhibitions, keep the venue
+        register, and hide anything you don’t want public.
+      </Text>
       <Hairline />
 
-      {pending === null ? (
-        <Loading />
-      ) : pending.length === 0 ? (
-        <EmptyState>The desk is clear. New submissions will wait for you here.</EmptyState>
-      ) : (
-        pending.map((e) => (
-          <Pressable
-            key={e.id}
-            style={styles.row}
-            onPress={() => router.push(`/admin/${e.id}`)}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowDates}>{fmtRange(e.start_date, e.end_date)}</Text>
-              <Text style={styles.rowTitle} numberOfLines={1}>
-                {e.title}
-              </Text>
-              <Text style={styles.rowVenue} numberOfLines={1}>
-                {e.artists.toUpperCase()} · {e.venue?.name.toUpperCase() ?? 'NEW VENUE'}
-              </Text>
-            </View>
-            <Text style={styles.review}>REVIEW</Text>
-          </Pressable>
-        ))
-      )}
+      <DeskRow
+        label="SUBMISSIONS IN REVIEW"
+        meta={counts ? `${counts.pending} WAITING` : '…'}
+        onPress={() => router.push('/admin/review')}
+      />
+      <DeskRow
+        label="VENUE REGISTER"
+        meta={counts ? `${counts.venues} VENUES` : '…'}
+        onPress={() => router.push('/admin/venues')}
+      />
+      <DeskRow
+        label="EXHIBITIONS"
+        meta={counts ? `${counts.shows} TOTAL` : '…'}
+        onPress={() => router.push('/admin/exhibitions')}
+      />
     </ScrollView>
   );
 }
@@ -96,10 +117,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.page,
     paddingBottom: space.m,
   },
+  intro: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 18,
+    lineHeight: 27,
+    color: colors.grey,
+    paddingHorizontal: space.page,
+    marginBottom: space.l,
+  },
   back: {
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.4,
+    color: colors.grey,
+    marginTop: space.m,
+  },
+  note: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 18,
+    lineHeight: 27,
     color: colors.grey,
     marginTop: space.m,
   },
@@ -108,24 +144,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: space.m,
     paddingHorizontal: space.page,
-    paddingVertical: space.m,
+    paddingVertical: space.l,
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
   },
-  rowDates: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.grey, marginBottom: 3 },
-  rowTitle: { ...type.serifTitle, fontSize: 20 },
-  rowVenue: {
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    letterSpacing: 0.8,
-    color: colors.grey,
-    marginTop: 4,
-  },
-  review: {
+  rowLabel: {
     fontFamily: fonts.monoMedium,
-    fontSize: 10,
-    letterSpacing: 1.4,
-    color: colors.red,
-    textDecorationLine: 'underline',
+    fontSize: 12,
+    letterSpacing: 1.6,
+    color: colors.ink,
+    marginBottom: 6,
   },
+  rowMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.grey },
+  arrow: { fontFamily: fonts.mono, fontSize: 18, color: colors.red },
 });

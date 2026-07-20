@@ -54,6 +54,23 @@ submissions and admin approval all work. Demo accounts (password `arteye`):
   `is_fixture = true` and disappear from the public agenda/directory (enforced in RLS), without
   being deleted. Real venues such as *Cassandra Bird* are untouched.
 
+### Host control (in the app)
+
+The host is the account with `role = 'admin'` (that role can only be set in the database — signup
+can never grant it). Signed in as the host, the **HOST CONTROL** link on the curator tab opens a
+desk where you fully own what the app shows, with no SQL needed:
+
+- **Venue register** — add, edit and delete venues (name, type gallery/museum/ari, address, suburb,
+  website, instagram, lat/long) and hide any venue from the public feed. Deleting a venue also
+  removes its exhibitions.
+- **Exhibitions** — add a show that publishes straight to the agenda, edit any show, mark it a
+  curator’s pick, hide/show it, or delete it.
+- **Submissions in review** — approve or decline what venue accounts submit.
+
+Every one of these actions is gated twice: the screens only appear for the host, and Postgres RLS
+(`supabase/migrations/0004_host_controls.sql`) only lets an admin execute them — so control stays
+with the host account and nowhere else.
+
 ## Design system
 
 Tokens live in `src/theme.ts`, extracted from the prototype spec: white `#FFFFFF` ground,

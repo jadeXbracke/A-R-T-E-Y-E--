@@ -10,6 +10,7 @@ import {
   Profile,
   RejectionReason,
   Venue,
+  VenueDraft,
   Visit,
   WatchlistEntry,
 } from './types';
@@ -310,6 +311,100 @@ export const demoApi: Api = {
 
   async rejectExhibition(id, reason: RejectionReason) {
     await demoApi.adminUpdateExhibition(id, { status: 'rejected', rejection_reason: reason });
+  },
+
+  // ---- host control (admin only) -------------------------------------------
+  async listVenues() {
+    const s = await load();
+    return [...s.venues].sort((a, b) => a.name.localeCompare(b.name));
+  },
+
+  async createVenue(input: VenueDraft) {
+    const s = await load();
+    const venue: Venue = {
+      id: uid('v'),
+      name: input.name.trim(),
+      type: input.type,
+      address: input.address?.trim() || null,
+      suburb: input.suburb?.trim() || null,
+      website: input.website?.trim() || null,
+      instagram: input.instagram?.trim() || null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+      city: 'Sydney',
+      owner_user_id: null,
+      is_claimed: false,
+      is_fixture: input.is_fixture ?? false,
+      image_url: null,
+    };
+    s.venues.push(venue);
+    await persist();
+    return venue;
+  },
+
+  async updateVenue(id, patch) {
+    const s = await load();
+    const venue = s.venues.find((v) => v.id === id);
+    if (!venue) throw new Error('Venue not found.');
+    Object.assign(venue, patch);
+    await persist();
+  },
+
+  async deleteVenue(id) {
+    const s = await load();
+    s.venues = s.venues.filter((v) => v.id !== id);
+    // mirror the DB cascade: a venue's exhibitions go with it
+    s.exhibitions = s.exhibitions.filter((e) => e.venue_id !== id);
+    await persist();
+  },
+
+  async listAllExhibitions() {
+    const s = await load();
+    return s.exhibitions
+      .map((e) => withVenue(e, s.venues))
+      .sort((a, b) => (a.start_date < b.start_date ? -1 : 1));
+  },
+
+  async adminCreateExhibition(draft: ExhibitionDraft) {
+    const s = await load();
+    let venue = s.venues.find(
+      (v) => v.name.trim().toLowerCase() === draft.venue_name.trim().toLowerCase()
+    );
+    if (!venue) {
+      venue = {
+        id: uid('v'),
+        name: draft.venue_name.trim(),
+        type: draft.venue_type,
+        address: draft.venue_address.trim() || null,
+        city: 'Sydney',
+        owner_user_id: null,
+      };
+      s.venues.push(venue);
+    }
+    s.exhibitions.push({
+      id: uid('e'),
+      venue_id: venue.id,
+      title: draft.title.trim(),
+      artists: draft.artists.trim(),
+      start_date: draft.start_date,
+      end_date: draft.end_date,
+      opening_datetime: draft.opening_datetime,
+      description: draft.description.trim(),
+      image_url: draft.image_url,
+      status: 'approved', // the host publishes directly
+      rejection_reason: null,
+      is_featured: false,
+      city: 'Sydney',
+    });
+    await persist();
+  },
+
+  async deleteExhibition(id) {
+    const s = await load();
+    s.exhibitions = s.exhibitions.filter((e) => e.id !== id);
+    s.watchlist = s.watchlist.filter((w) => w.exhibition_id !== id);
+    s.visits = s.visits.filter((v) => v.exhibition_id !== id);
+    await persist();
   },
 
   async uploadImage(localUri) {

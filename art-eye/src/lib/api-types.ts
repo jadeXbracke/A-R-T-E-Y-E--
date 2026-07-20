@@ -1,4 +1,4 @@
-import { Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, VenueType, Visit } from './types';
+import { Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, VenueDraft, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -38,6 +38,17 @@ export interface Api {
   adminUpdateExhibition(id: string, patch: Partial<Exhibition>): Promise<void>;
   approveExhibition(id: string): Promise<void>;
   rejectExhibition(id: string, reason: RejectionReason): Promise<void>;
+
+  // host control — full ownership of what's in the app.
+  // Guarded twice: the UI only calls these for role === 'admin', and the
+  // database RLS only lets an admin execute them. Both must agree.
+  listVenues(): Promise<Venue[]>;
+  createVenue(input: VenueDraft): Promise<Venue>;
+  updateVenue(id: string, patch: Partial<Venue>): Promise<void>;
+  deleteVenue(id: string): Promise<void>; // cascades to the venue's exhibitions
+  listAllExhibitions(): Promise<Exhibition[]>;
+  adminCreateExhibition(draft: ExhibitionDraft): Promise<void>; // published immediately
+  deleteExhibition(id: string): Promise<void>;
 
   // media
   uploadImage(localUri: string): Promise<string>;

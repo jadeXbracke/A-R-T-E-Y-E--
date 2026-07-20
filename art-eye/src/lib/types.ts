@@ -106,6 +106,19 @@ export interface ExhibitionDraft {
   venue_address: string;
 }
 
+// Host-only: the fields the admin edits when adding or changing a venue.
+export interface VenueDraft {
+  name: string;
+  type: VenueType;
+  address: string | null;
+  suburb?: string | null;
+  website?: string | null;
+  instagram?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_fixture?: boolean;
+}
+
 export type AgendaFilter =
   | 'all'
   | 'opening_soon'

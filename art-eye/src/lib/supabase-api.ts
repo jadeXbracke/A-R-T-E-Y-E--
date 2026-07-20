@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Exhibition, ExhibitionDraft, Profile, RejectionReason } from './types';
+import { Exhibition, ExhibitionDraft, Profile, RejectionReason, Venue, VenueDraft } from './types';
 
 let client: SupabaseClient | null = null;
 
@@ -237,6 +237,98 @@ export const supabaseApi: Api = {
 
   async rejectExhibition(id, reason: RejectionReason) {
     await supabaseApi.adminUpdateExhibition(id, { status: 'rejected', rejection_reason: reason });
+  },
+
+  // ---- host control (admin only; RLS enforces the same) --------------------
+  async listVenues() {
+    const { data, error } = await supabase().from('venues').select('*').order('name');
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Venue[];
+  },
+
+  async createVenue(input: VenueDraft) {
+    const { data, error } = await supabase()
+      .from('venues')
+      .insert({
+        name: input.name.trim(),
+        type: input.type,
+        address: input.address?.trim() || null,
+        suburb: input.suburb?.trim() || null,
+        website: input.website?.trim() || null,
+        instagram: input.instagram?.trim() || null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        is_fixture: input.is_fixture ?? false,
+        city: 'Sydney',
+      })
+      .select('*')
+      .single();
+    if (error) throw new Error(error.message);
+    return data as Venue;
+  },
+
+  async updateVenue(id, patch) {
+    const { venue: _v, ...rest } = patch as Venue & { venue?: unknown };
+    const { error } = await supabase().from('venues').update(rest).eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  async deleteVenue(id) {
+    // exhibitions.venue_id is ON DELETE CASCADE, so this clears its shows too
+    const { error } = await supabase().from('venues').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  async listAllExhibitions() {
+    const { data, error } = await supabase()
+      .from('exhibitions')
+      .select(EXHIBITION_SELECT)
+      .order('start_date');
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Exhibition[];
+  },
+
+  async adminCreateExhibition(draft: ExhibitionDraft) {
+    const sb = supabase();
+    const { data: existing } = await sb
+      .from('venues')
+      .select('id')
+      .ilike('name', draft.venue_name.trim())
+      .maybeSingle();
+    let venueId = existing?.id as string | undefined;
+    if (!venueId) {
+      const { data: created, error } = await sb
+        .from('venues')
+        .insert({
+          name: draft.venue_name.trim(),
+          type: draft.venue_type,
+          address: draft.venue_address.trim() || null,
+          city: 'Sydney',
+        })
+        .select('id')
+        .single();
+      if (error) throw new Error(error.message);
+      venueId = created.id;
+    }
+    // published straight into the agenda — the host is the editor
+    const { error } = await sb.from('exhibitions').insert({
+      venue_id: venueId,
+      title: draft.title.trim(),
+      artists: draft.artists.trim(),
+      start_date: draft.start_date,
+      end_date: draft.end_date,
+      opening_datetime: draft.opening_datetime,
+      description: draft.description.trim(),
+      image_url: draft.image_url,
+      status: 'approved',
+      city: 'Sydney',
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async deleteExhibition(id) {
+    const { error } = await supabase().from('exhibitions').delete().eq('id', id);
+    if (error) throw new Error(error.message);
   },
 
   async uploadImage(localUri) {

@@ -167,7 +167,7 @@ export default function CuratorScreen() {
       <View style={styles.footerLinks}>
         {profile.role === 'admin' && (
           <MonoLink
-            label="ADMIN — REVIEW SUBMISSIONS"
+            label="HOST CONTROL — MANAGE THE APP"
             active
             onPress={() => router.push('/admin')}
             style={{ alignSelf: 'flex-start' }}
