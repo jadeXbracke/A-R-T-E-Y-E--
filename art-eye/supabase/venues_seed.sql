@@ -65,7 +65,20 @@ insert into venues (slug, name, type, address, suburb, website, instagram, latit
   ('museum-of-sydney', 'Museum of Sydney', 'museum', 'Cnr Phillip & Bridge Streets, Sydney NSW', 'Sydney', 'https://mhnsw.au/visit-us/museum-of-sydney/', '@museumsofhistorynsw', -33.8636, 151.2114, 'Sydney'),
   ('powerhouse-parramatta', 'Powerhouse Parramatta', 'museum', '34 Phillip Street, Parramatta NSW', 'Parramatta', 'https://powerhouse.com.au/visit/parramatta', '@powerhousemuseum', -33.81, 151.0044, 'Sydney'),
   ('sydney-jewish-museum', 'Sydney Jewish Museum', 'museum', '148 Darlinghurst Road, Darlinghurst NSW', 'Darlinghurst', 'https://sydneyjewishmuseum.com.au', '@sydneyjewishmuseum', -33.879, 151.2203, 'Sydney'),
-  ('white-rabbit-gallery', 'White Rabbit Gallery', 'museum', '30 Balfour Street, Chippendale NSW', 'Chippendale', 'https://whiterabbitcollection.org', '@whiterabbitgallery', -33.8865, 151.2003, 'Sydney')
+  ('white-rabbit-gallery', 'White Rabbit Gallery', 'museum', '30 Balfour Street, Chippendale NSW', 'Chippendale', 'https://whiterabbitcollection.org', '@whiterabbitgallery', -33.8865, 151.2003, 'Sydney'),
+  ('cement-fondu', 'Cement Fondu', 'gallery', '36 Gosbell Street, Paddington NSW', 'Paddington', 'https://cementfondu.org', '@cementfondu', -33.8776, 151.2222, 'Sydney'),
+  ('vermilion-art', 'Vermilion Art', 'gallery', '16 Hickson Road, Dawes Point NSW', 'Dawes Point', 'https://www.vermilionart.com.au', null, -33.8563, 151.2044, 'Sydney'),
+  ('107-projects', '107 Projects', 'ari', '107 Redfern Street, Redfern NSW', 'Redfern', 'https://107.org.au', '@107projects', -33.8925, 151.2044, 'Sydney'),
+  ('australian-design-centre', 'Australian Design Centre', 'gallery', '101–115 William Street, Darlinghurst NSW', 'Darlinghurst', 'https://australiandesigncentre.com', '@austdesigncentre', -33.8755, 151.2166, 'Sydney'),
+  ('galerie-pompom', 'Galerie pompom', 'gallery', '2/39 Abercrombie Street, Chippendale NSW', 'Chippendale', 'https://galeriepompom.com', '@galeriepompom', -33.8877, 151.1984, 'Sydney'),
+  ('artereal-gallery', 'Artereal Gallery', 'gallery', '747 Darling Street, Rozelle NSW', 'Rozelle', 'https://artereal.com.au', '@arterealgallery', -33.8614, 151.171, 'Sydney'),
+  ('may-space', 'MAY SPACE', 'gallery', '409B George Street, Waterloo NSW', 'Waterloo', 'https://www.mayspace.com.au', null, -33.903, 151.2065, 'Sydney'),
+  ('defiance-gallery', 'Defiance Gallery', 'gallery', '47 Enmore Road, Newtown NSW', 'Newtown', 'https://www.defiancegallery.com', null, -33.899, 151.177, 'Sydney'),
+  ('gallery-9', 'Gallery 9', 'gallery', '9 Darley Street, Darlinghurst NSW', 'Darlinghurst', 'https://www.gallery9.com.au', null, -33.883, 151.217, 'Sydney'),
+  ('incinerator-art-space', 'Incinerator Art Space', 'gallery', '2 Small Street, Willoughby NSW', 'Willoughby', 'https://www.willoughby.nsw.gov.au/community/community-spaces/incinerator-art-space', null, -33.803, 151.19, 'Sydney'),
+  ('delmar-gallery', 'Delmar Gallery', 'gallery', '144 Victoria Street, Ashfield NSW', 'Ashfield', null, null, -33.883, 151.125, 'Sydney'),
+  ('woollahra-gallery-at-redleaf', 'Woollahra Gallery at Redleaf', 'gallery', '548 New South Head Road, Double Bay NSW', 'Double Bay', 'https://www.woollahra.nsw.gov.au/woollahragallery', null, -33.877, 151.245, 'Sydney'),
+  ('16albermarle', '16albermarle Project Space', 'gallery', '16 Albermarle Street, Newtown NSW', 'Newtown', 'https://www.16albermarle.com', null, -33.898, 151.181, 'Sydney')
 on conflict (slug) do update set
   name      = excluded.name,
   type      = excluded.type,
