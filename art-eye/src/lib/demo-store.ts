@@ -30,7 +30,7 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v3';
+const KEY = 'arteye.demo.v4';
 
 function seedState(): DemoState {
   const venues = SEED_VENUES.map((v) => ({ ...v }));

@@ -1,71 +1,71 @@
 -- ============================================================================
 --  ART EYE — SYDNEY VENUE REGISTER  (seed / upsert)
 -- ============================================================================
---  Safe to run as many times as you like: rows are matched on `slug`, so
---  re-running updates existing venues instead of creating duplicates.
+--  54 real Sydney venues (galleries, museums, ARIs), verified July 2026.
+--  Safe to run repeatedly: rows are matched on `slug`, so re-running updates
+--  existing venues instead of creating duplicates.
 --
 --  Run AFTER the migrations in ./migrations (needs the new columns + slug).
 --
---  HOW TO ADD A VENUE
---   1. Copy one line from the "ADD YOUR VENUES HERE" block below.
---   2. Fill in: name, type, address, suburb, website, instagram, lat, long.
---      - type must be one of:  'gallery' | 'museum' | 'ari'
---      - slug: lower-case, words-joined-by-hyphens, must be unique.
---        (Leave it and the DB will generate one from the name, but setting it
---         yourself keeps re-runs stable.)
---      - website/instagram/latitude/longitude may be NULL if unknown.
---   3. Run this file again. Done.
+--  To add another venue, copy a line, keep the comma between rows (no comma
+--  after the very last row), and set type to 'gallery' | 'museum' | 'ari'.
 -- ============================================================================
 
--- ---- Known, verified venues (the 13 July-2026 exhibitions hang here) --------
 insert into venues (slug, name, type, address, suburb, website, instagram, latitude, longitude, city) values
-  ('art-gallery-of-new-south-wales', 'Art Gallery of New South Wales', 'museum',
-     'Art Gallery Road, The Domain, Sydney NSW 2000', 'The Domain',
-     'https://www.artgallery.nsw.gov.au', '@artgalleryofnsw', -33.8688, 151.2173, 'Sydney'),
-
-  ('mca-australia', 'MCA Australia', 'museum',
-     '140 George Street, The Rocks, Sydney NSW 2000', 'The Rocks',
-     'https://www.mca.com.au', '@mca_australia', -33.8599, 151.2088, 'Sydney'),
-
-  ('roslyn-oxley9-gallery', 'Roslyn Oxley9 Gallery', 'gallery',
-     '8 Soudan Lane, Paddington NSW 2021', 'Paddington',
-     'https://www.roslynoxley9.com.au', null, null, null, 'Sydney'),
-
-  ('cassandra-bird', 'Cassandra Bird', 'gallery',
-     '54 Kellett Street, Potts Point NSW 2011', 'Potts Point',
-     null, null, null, null, 'Sydney'),
-
-  ('1301sw', '1301SW', 'gallery',
-     '3 Hiles Street, Alexandria NSW 2015', 'Alexandria',
-     null, null, null, null, 'Sydney'),
-
-  ('ames-yavuz', 'Ames Yavuz', 'gallery',
-     '114 Commonwealth Street, Surry Hills NSW 2010', 'Surry Hills',
-     null, null, null, null, 'Sydney'),
-
-  ('olsen-annexe', 'OLSEN Annexe', 'gallery',
-     '74 Queen Street, Woollahra NSW 2025', 'Woollahra',
-     null, null, null, null, 'Sydney'),
-
-  ('grace-cossington-smith-gallery', 'Grace Cossington Smith Gallery', 'gallery',
-     'Gate 7, 1666 Pacific Highway, Wahroonga NSW 2076', 'Wahroonga',
-     null, null, null, null, 'Sydney')
-
--- ============================================================================
--- ▼▼▼  ADD YOUR VENUES HERE  ▼▼▼
--- Duplicate a line, keep the comma between rows, no comma after the last row.
--- Aim for ~50 real Sydney galleries / museums / ARIs.
---
---   ,('carriageworks', 'Carriageworks', 'ari',
---       '245 Wilson Street, Eveleigh NSW 2015', 'Eveleigh',
---       'https://carriageworks.com.au', '@carriageworks', -33.8949, 151.1946, 'Sydney')
---   ,('your-venue-slug', 'Your Venue Name', 'gallery',
---       'Street address', 'Suburb',
---       null, null, null, null, 'Sydney')
---
--- ▲▲▲  END OF YOUR VENUES  ▲▲▲
--- ============================================================================
-
+  ('articulate-project-space', 'Articulate Project Space', 'ari', '497 Parramatta Road, Leichhardt NSW', 'Leichhardt', 'https://www.articulateprojectspace.org', '@articulateprojectspace', -33.8776, 151.1552, 'Sydney'),
+  ('boomalli', 'Boomalli Aboriginal Artists Co-operative', 'ari', '55–59 Flood Street, Leichhardt NSW', 'Leichhardt', 'https://boomalli.com.au', '@boomalli_aboriginal_art', -33.8858, 151.1504, 'Sydney'),
+  ('firstdraft', 'Firstdraft', 'ari', '13–17 Riley Street, Woolloomooloo NSW', 'Woolloomooloo', 'https://firstdraft.org.au', '@firstdraft_', -33.8725, 151.2155, 'Sydney'),
+  ('frontyard-projects', 'Frontyard Projects', 'ari', '228 Illawarra Road, Marrickville NSW', 'Marrickville', 'https://www.frontyardprojects.org', '@frontyardorg', -33.9107, 151.1549, 'Sydney'),
+  ('pari', 'Pari', 'ari', 'Shop 7, 14 Hunter Street, Parramatta NSW', 'Parramatta', 'https://pariari.org', '@pari_ari_', -33.813, 150.9987, 'Sydney'),
+  ('scratch-art-space', 'Scratch Art Space', 'ari', '67 Sydenham Road, Marrickville NSW', 'Marrickville', 'https://www.scratchartspace.com', '@scratchartspace', -33.9065, 151.1614, 'Sydney'),
+  ('tortuga-studios', 'Tortuga Studios', 'ari', '31 Princes Highway, St Peters NSW', 'St Peters', 'https://tortugastudios.org.au', '@tortuga.studios', -33.91, 151.1808, 'Sydney'),
+  ('4a-centre', '4A Centre for Contemporary Asian Art', 'gallery', '181–187 Hay Street, Haymarket NSW', 'Haymarket', 'https://4a.com.au', '@4a_aus', -33.879, 151.2037, 'Sydney'),
+  ('arthouse-gallery', 'Arthouse Gallery', 'gallery', '66 McLachlan Avenue, Rushcutters Bay NSW', 'Rushcutters Bay', 'https://arthousegallery.com.au', '@arthousegallery', -33.8781, 151.2236, 'Sydney'),
+  ('artspace', 'Artspace', 'gallery', '43–51 Cowper Wharf Roadway (The Gunnery), Woolloomooloo NSW', 'Woolloomooloo', 'https://www.artspace.org.au', '@artspacesydney', -33.8696, 151.2205, 'Sydney'),
+  ('australian-galleries-sydney', 'Australian Galleries', 'gallery', '15 Roylston Street, Paddington NSW', 'Paddington', 'https://australiangalleries.com.au', '@australiangalleries', -33.881, 151.2246, 'Sydney'),
+  ('bankstown-arts-centre', 'Bankstown Arts Centre', 'gallery', '5 Olympic Parade, Bankstown NSW', 'Bankstown', 'https://www.bankstownartscentre.com.au', '@bankstownartscentre', -33.9185, 151.0342, 'Sydney'),
+  ('coma-gallery', 'COMA Gallery', 'gallery', '37 Chapel Street, Marrickville NSW', 'Marrickville', 'https://www.comagallery.com', '@comagallery', -33.9078, 151.164, 'Sydney'),
+  ('campbelltown-arts-centre', 'Campbelltown Arts Centre', 'gallery', '1 Art Gallery Road, Campbelltown NSW', 'Campbelltown', 'https://c-a-c.com.au', '@campbelltownartscentre', -34.0728, 150.809, 'Sydney'),
+  ('carriageworks', 'Carriageworks', 'gallery', '245 Wilson Street, Eveleigh NSW', 'Eveleigh', 'https://carriageworks.com.au', '@carriageworks', -33.8946, 151.1935, 'Sydney'),
+  ('chalk-horse', 'Chalk Horse', 'gallery', '167 William Street (lower ground), Darlinghurst NSW', 'Darlinghurst', 'https://www.chalkhorse.com.au', '@chalkhorsegallery', -33.875, 151.2189, 'Sydney'),
+  ('china-heights', 'China Heights Gallery', 'gallery', 'Level 3, 16–28 Foster Street, Surry Hills NSW', 'Surry Hills', 'https://chinaheights.com', '@chinaheights', -33.8797, 151.2103, 'Sydney'),
+  ('darren-knight-gallery', 'Darren Knight Gallery', 'gallery', '840 Elizabeth Street, Waterloo NSW', 'Waterloo', 'https://darrenknightgallery.com', '@darrenknightgallery', -33.907, 151.2072, 'Sydney'),
+  ('dominik-mersch-gallery', 'Dominik Mersch Gallery', 'gallery', '1/75 McLachlan Avenue, Rushcutters Bay NSW', 'Rushcutters Bay', 'https://dominikmerschgallery.com', '@dominikmerschgallery', -33.8783, 151.2238, 'Sydney'),
+  ('fine-arts-sydney', 'Fine Arts, Sydney', 'gallery', '23 Hampden Street, Paddington NSW', 'Paddington', 'https://www.finearts.sydney', '@fineartssydney', -33.8828, 151.2211, 'Sydney'),
+  ('gallery-lane-cove', 'Gallery Lane Cove', 'gallery', 'Level 3, 164 Longueville Road, Lane Cove NSW', 'Lane Cove', 'https://www.gallerylanecove.com.au', '@gallerylanecove', -33.816, 151.1697, 'Sydney'),
+  ('granville-centre-art-gallery', 'Granville Centre Art Gallery', 'gallery', '1 Memorial Drive, Granville NSW', 'Granville', 'https://www.cumberland.nsw.gov.au/granville-centre-art-gallery', '@granvillecentreartgallery', -33.831, 151.014, 'Sydney'),
+  ('hazelhurst-arts-centre', 'Hazelhurst Arts Centre', 'gallery', '782 Kingsway, Gymea NSW', 'Gymea', 'https://hazelhurst.sutherlandshire.nsw.gov.au', '@hazelhurstartscentre', -34.0329, 151.0874, 'Sydney'),
+  ('king-street-gallery', 'King Street Gallery on William', 'gallery', '177 William Street, Darlinghurst NSW', 'Darlinghurst', 'https://kingstreetgallery.com.au', '@kingstreetgallery', -33.8747, 151.2184, 'Sydney'),
+  ('liverpool-powerhouse', 'Liverpool Powerhouse', 'gallery', '1 Powerhouse Road, Casula NSW', 'Casula', 'https://www.liverpoolpowerhouse.com.au', '@liverpoolpowerhouse', -33.9493, 150.9129, 'Sydney'),
+  ('liverpool-street-gallery', 'Liverpool Street Gallery', 'gallery', '243a Liverpool Street, Darlinghurst NSW', 'Darlinghurst', 'https://www.liverpoolstgallery.com.au', '@liverpoolstreetgallery', -33.8777, 151.2152, 'Sydney'),
+  ('manly-art-gallery-museum', 'Manly Art Gallery & Museum', 'gallery', '1a West Esplanade, Manly NSW', 'Manly', 'https://www.northernbeaches.nsw.gov.au/things-to-do/arts-and-culture/manly-art-gallery-museum', '@magamnsw', -33.7986, 151.2814, 'Sydney'),
+  ('martin-browne-contemporary', 'Martin Browne Contemporary', 'gallery', '15 Hampden Street, Paddington NSW', 'Paddington', 'https://martinbrownecontemporary.com', '@martinbrownecontemporary', -33.8825, 151.2338, 'Sydney'),
+  ('michael-reid-sydney', 'Michael Reid Sydney', 'gallery', '109 Shepherd Street, Chippendale NSW', 'Chippendale', 'https://michaelreid.com.au', '@michaelreidsydney', -33.8877, 151.1951, 'Sydney'),
+  ('mosman-art-gallery', 'Mosman Art Gallery', 'gallery', '1 Art Gallery Way, Mosman NSW', 'Mosman', 'https://mosmanartgallery.org.au', '@mosmanart', -33.8279, 151.2406, 'Sydney'),
+  ('n-smith-gallery', 'N.Smith Gallery', 'gallery', '15 Foster Street, Surry Hills NSW', 'Surry Hills', 'https://www.nsmithgallery.com', '@n.smithgallery', -33.88, 151.2097, 'Sydney'),
+  ('nanda-hobbs', 'Nanda\Hobbs', 'gallery', '12–14 Meagher Street, Chippendale NSW', 'Chippendale', 'https://nandahobbs.com', '@nandahobbs', -33.8867, 151.1986, 'Sydney'),
+  ('nas-gallery', 'National Art School Gallery', 'gallery', '156 Forbes Street, Darlinghurst NSW', 'Darlinghurst', 'https://nas.edu.au', '@nas_au', -33.8788, 151.2172, 'Sydney'),
+  ('olsen-gallery', 'Olsen Gallery', 'gallery', '63 Jersey Road, Woollahra NSW', 'Woollahra', 'https://www.olsengallery.com', '@olsen_gallery', -33.8875, 151.2337, 'Sydney'),
+  ('penrith-regional-gallery', 'Penrith Regional Gallery', 'gallery', '86 River Road, Emu Plains NSW', 'Emu Plains', 'https://www.penrithregionalgallery.com.au', '@penrithregionalgallery', -33.7458, 150.6669, 'Sydney'),
+  ('phoenix-central-park', 'Phoenix Central Park', 'gallery', '37–49 O''Connor Street, Chippendale NSW', 'Chippendale', 'https://phoenixcentralpark.com.au', '@phoenixcentralpark', -33.8865, 151.199, 'Sydney'),
+  ('roslyn-oxley9-gallery', 'Roslyn Oxley9 Gallery', 'gallery', '8 Soudan Lane, Paddington NSW', 'Paddington', 'https://www.roslynoxley9.com.au', '@roslynoxley9', -33.8826, 151.2341, 'Sydney'),
+  ('sh-ervin-gallery', 'S.H. Ervin Gallery', 'gallery', 'Watson Road, Observatory Hill, Millers Point NSW', 'Millers Point', 'https://www.shervingallery.com.au', '@shervingallery', -33.8599, 151.2049, 'Sydney'),
+  ('station-sydney', 'STATION Sydney', 'gallery', '91 Campbell Street, Surry Hills NSW', 'Surry Hills', 'https://stationgallery.com', '@stationgalleryaustralia', -33.8796, 151.2102, 'Sydney'),
+  ('saint-cloche', 'Saint Cloche', 'gallery', '37 MacDonald Street, Paddington NSW', 'Paddington', 'https://saintcloche.com', '@saint_cloche', -33.8824, 151.2231, 'Sydney'),
+  ('sullivan-strumpf', 'Sullivan+Strumpf', 'gallery', '799 Elizabeth Street, Zetland NSW', 'Zetland', 'https://www.sullivanstrumpf.com', '@sullivanstrumpf', -33.9065, 151.2067, 'Sydney'),
+  ('unsw-galleries', 'UNSW Galleries', 'gallery', 'Cnr Oxford Street & Greens Road, Paddington NSW', 'Paddington', 'https://www.galleries.unsw.edu.au', '@unswgalleries', -33.8845, 151.2223, 'Sydney'),
+  ('uts-gallery', 'UTS Gallery', 'gallery', 'Level 4, Building 6, 702 Harris Street, Ultimo NSW', 'Ultimo', 'https://art.uts.edu.au', '@uts_art', -33.8805, 151.2, 'Sydney'),
+  ('utopia-art-sydney', 'Utopia Art Sydney', 'gallery', '983 Bourke Street, Waterloo NSW', 'Waterloo', 'https://utopiaartsydney.com.au', '@utopiaartsydney', -33.9, 151.2106, 'Sydney'),
+  ('verge-gallery', 'Verge Gallery', 'gallery', 'Jane Foss Russell Plaza, 154 City Road, Darlington NSW', 'Darlington', 'https://www.verge-gallery.net', '@vergegallery', -33.8888, 151.1866, 'Sydney'),
+  ('art-gallery-of-new-south-wales', 'Art Gallery of New South Wales', 'museum', 'Art Gallery Road, The Domain, Sydney NSW', 'Sydney', 'https://www.artgallery.nsw.gov.au', '@artgalleryofnsw', -33.8688, 151.2173, 'Sydney'),
+  ('australian-museum', 'Australian Museum', 'museum', '1 William Street, Sydney NSW', 'Sydney', 'https://australian.museum', '@australianmuseum', -33.8712, 151.2133, 'Sydney'),
+  ('chau-chak-wing-museum', 'Chau Chak Wing Museum', 'museum', 'University Place, University of Sydney, Camperdown NSW', 'Camperdown', 'https://www.sydney.edu.au/museum/', '@ccwm_sydney', -33.8853, 151.1905, 'Sydney'),
+  ('fairfield-city-museum-gallery', 'Fairfield City Museum & Gallery', 'museum', '634 The Horsley Drive, Smithfield NSW', 'Smithfield', 'https://www.fcmg.nsw.gov.au', '@fairfieldcitymuseumgallery', -33.8481, 150.9427, 'Sydney'),
+  ('mca-australia', 'Museum of Contemporary Art Australia', 'museum', '140 George Street, The Rocks NSW', 'The Rocks', 'https://www.mca.com.au', '@mca_australia', -33.8601, 151.209, 'Sydney'),
+  ('museum-of-sydney', 'Museum of Sydney', 'museum', 'Cnr Phillip & Bridge Streets, Sydney NSW', 'Sydney', 'https://mhnsw.au/visit-us/museum-of-sydney/', '@museumsofhistorynsw', -33.8636, 151.2114, 'Sydney'),
+  ('powerhouse-parramatta', 'Powerhouse Parramatta', 'museum', '34 Phillip Street, Parramatta NSW', 'Parramatta', 'https://powerhouse.com.au/visit/parramatta', '@powerhousemuseum', -33.81, 151.0044, 'Sydney'),
+  ('sydney-jewish-museum', 'Sydney Jewish Museum', 'museum', '148 Darlinghurst Road, Darlinghurst NSW', 'Darlinghurst', 'https://sydneyjewishmuseum.com.au', '@sydneyjewishmuseum', -33.879, 151.2203, 'Sydney'),
+  ('white-rabbit-gallery', 'White Rabbit Gallery', 'museum', '30 Balfour Street, Chippendale NSW', 'Chippendale', 'https://whiterabbitcollection.org', '@whiterabbitgallery', -33.8865, 151.2003, 'Sydney')
 on conflict (slug) do update set
   name      = excluded.name,
   type      = excluded.type,
