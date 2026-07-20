@@ -335,7 +335,7 @@ export const demoApi: Api = {
       owner_user_id: null,
       is_claimed: false,
       is_fixture: input.is_fixture ?? false,
-      image_url: null,
+      image_url: input.image_url ?? null,
     };
     s.venues.push(venue);
     await persist();

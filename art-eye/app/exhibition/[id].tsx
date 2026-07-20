@@ -1,14 +1,27 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtImage } from '../../src/components/exhibition';
-import { ActionBar, Hairline, Kicker, Loading, RedDot } from '../../src/components/ui';
+import { ActionBar, Hairline, Kicker, Loading, MonoLink, RedDot } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { fmtOpening, fmtRange } from '../../src/lib/dates';
 import { Exhibition, Visit } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
+
+function openLink(url: string) {
+  Linking.openURL(url).catch(() => {});
+}
+function webUrl(raw: string) {
+  const t = raw.trim();
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+}
+function instaUrl(raw: string) {
+  const t = raw.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  return `https://instagram.com/${t.replace(/^@/, '')}`;
+}
 
 function SpecRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
@@ -129,18 +142,38 @@ export default function ExhibitionDetail() {
 
           <Text style={styles.description}>{e.description}</Text>
 
-          {e.venue?.image_url && (
+          {e.venue && (e.venue.image_url || e.venue.website || e.venue.instagram) && (
             <View style={styles.venueBlock}>
               <Kicker style={{ marginBottom: space.m }}>THE SPACE</Kicker>
-              <ArtImage
-                uri={e.venue.image_url}
-                fallbackId={e.venue.id}
-                style={styles.venueImage}
-                contentFit="cover"
-              />
+              {e.venue.image_url && (
+                <ArtImage
+                  uri={e.venue.image_url}
+                  fallbackId={e.venue.id}
+                  style={styles.venueImage}
+                  contentFit="cover"
+                />
+              )}
               <Text style={styles.venueName}>{e.venue.name.toUpperCase()}</Text>
               {e.venue.address && (
                 <Text style={styles.venueAddress}>{e.venue.address}</Text>
+              )}
+              {(e.venue.website || e.venue.instagram) && (
+                <View style={styles.venueLinks}>
+                  {e.venue.website && (
+                    <MonoLink
+                      label="WEBSITE ↗"
+                      active
+                      onPress={() => openLink(webUrl(e.venue!.website!))}
+                    />
+                  )}
+                  {e.venue.instagram && (
+                    <MonoLink
+                      label="INSTAGRAM ↗"
+                      active
+                      onPress={() => openLink(instaUrl(e.venue!.instagram!))}
+                    />
+                  )}
+                </View>
               )}
             </View>
           )}
@@ -245,6 +278,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
     color: colors.grey,
+  },
+  venueLinks: {
+    flexDirection: 'row',
+    gap: space.l,
+    marginTop: space.m,
   },
   seenBlock: {
     borderWidth: 1,

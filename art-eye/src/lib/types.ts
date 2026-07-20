@@ -117,6 +117,7 @@ export interface VenueDraft {
   latitude?: number | null;
   longitude?: number | null;
   is_fixture?: boolean;
+  image_url?: string | null; // photo of the space
 }
 
 export type AgendaFilter =

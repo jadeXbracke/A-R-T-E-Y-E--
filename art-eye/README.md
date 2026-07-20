@@ -71,6 +71,15 @@ Every one of these actions is gated twice: the screens only appear for the host,
 (`supabase/migrations/0004_host_controls.sql`) only lets an admin execute them — so control stays
 with the host account and nowhere else.
 
+### Venue pages & photos
+
+- **Venue accounts** get a *Manage your venue* screen (link on the Submit tab) to upload a photo of
+  the space and set their website / Instagram / address. RLS lets an owner edit only their own venue.
+- **Photos** are picked from the library and uploaded to the `exhibition-images` bucket (or kept as
+  local URIs in demo mode), the same path exhibition images use.
+- **The exhibition information page** shows the venue’s photo and tappable **Website** / **Instagram**
+  links when set — filled in by the venue account or the host.
+
 ## Design system
 
 Tokens live in `src/theme.ts`, extracted from the prototype spec: white `#FFFFFF` ground,

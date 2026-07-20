@@ -259,6 +259,7 @@ export const supabaseApi: Api = {
         latitude: input.latitude ?? null,
         longitude: input.longitude ?? null,
         is_fixture: input.is_fixture ?? false,
+        image_url: input.image_url ?? null,
         city: 'Sydney',
       })
       .select('*')

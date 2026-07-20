@@ -9,7 +9,7 @@ import {
   ExhibitionFormValues,
   validate,
 } from '../../src/components/exhibition-form';
-import { Hairline, Kicker } from '../../src/components/ui';
+import { Hairline, Kicker, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { fmtRange } from '../../src/lib/dates';
@@ -99,6 +99,14 @@ export default function SubmitScreen() {
           Know of a show our editors should see? Sydney exhibitions only — each submission is
           reviewed before it joins the agenda.
         </Text>
+        {isOwner && venue && (
+          <MonoLink
+            label="MANAGE YOUR VENUE — PHOTO & LINKS"
+            active
+            onPress={() => router.push('/venue-profile')}
+            style={{ alignSelf: 'flex-start', marginTop: space.l }}
+          />
+        )}
       </View>
       <Hairline style={{ marginBottom: space.l }} />
 

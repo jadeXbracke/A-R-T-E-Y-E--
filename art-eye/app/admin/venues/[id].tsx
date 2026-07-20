@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PhotoPicker } from '../../../src/components/image-upload';
 import { Field, Hairline, InkBar, Kicker, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth';
@@ -30,6 +31,7 @@ export default function VenueEditor() {
   const [instagram, setInstagram] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
+  const [image, setImage] = useState<string | null>(null);
   const [hidden, setHidden] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,7 @@ export default function VenueEditor() {
       setInstagram(v.instagram ?? '');
       setLat(v.latitude != null ? String(v.latitude) : '');
       setLng(v.longitude != null ? String(v.longitude) : '');
+      setImage(v.image_url ?? null);
       setHidden(!!v.is_fixture);
       setReady(true);
     });
@@ -70,18 +73,23 @@ export default function VenueEditor() {
     }
     setError(null);
     setBusy(true);
-    const draft: VenueDraft = {
-      name,
-      type: vType,
-      address: address.trim() || null,
-      suburb: suburb.trim() || null,
-      website: website.trim() || null,
-      instagram: instagram.trim() || null,
-      latitude: numOrNull(lat),
-      longitude: numOrNull(lng),
-      is_fixture: hidden,
-    };
     try {
+      let imageUrl = image;
+      if (imageUrl && !imageUrl.startsWith('http') && !imageUrl.startsWith('asset:')) {
+        imageUrl = await api.uploadImage(imageUrl);
+      }
+      const draft: VenueDraft = {
+        name,
+        type: vType,
+        address: address.trim() || null,
+        suburb: suburb.trim() || null,
+        website: website.trim() || null,
+        instagram: instagram.trim() || null,
+        latitude: numOrNull(lat),
+        longitude: numOrNull(lng),
+        is_fixture: hidden,
+        image_url: imageUrl,
+      };
       if (isNew) {
         await api.createVenue(draft);
       } else {
@@ -183,6 +191,11 @@ export default function VenueEditor() {
             placeholder="151.2173"
             style={{ flex: 1 }}
           />
+        </View>
+
+        <Kicker style={{ marginBottom: 10 }}>PHOTO OF THE SPACE</Kicker>
+        <View style={{ marginBottom: space.xl }}>
+          <PhotoPicker uri={image} onPick={setImage} addLabel="ADD A PHOTO" />
         </View>
 
         <View style={{ marginBottom: space.xl }}>
