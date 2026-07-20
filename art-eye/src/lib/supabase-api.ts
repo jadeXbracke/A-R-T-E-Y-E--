@@ -85,6 +85,7 @@ export const supabaseApi: Api = {
       .from('exhibitions')
       .select(EXHIBITION_SELECT)
       .eq('status', 'approved')
+      .eq('is_fixture', false) // fixture venues are already filtered by RLS
       .order('start_date');
     if (error) throw new Error(error.message);
     return (data ?? []) as Exhibition[];

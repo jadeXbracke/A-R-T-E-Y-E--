@@ -1,4 +1,4 @@
-import { Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, Visit } from './types';
+import { Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -6,7 +6,7 @@ export interface SignUpInput {
   display_name: string;
   profile_type: ProfileType;
   role: Exclude<Role, 'admin'>;
-  venue?: { name: string; type: 'museum' | 'gallery'; address: string };
+  venue?: { name: string; type: VenueType; address: string };
 }
 
 export interface Api {

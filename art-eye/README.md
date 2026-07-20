@@ -30,8 +30,12 @@ submissions and admin approval all work. Demo accounts (password `arteye`):
 ### Live mode (Supabase)
 
 1. Create a Supabase project.
-2. Run `supabase/migrations/0001_init.sql`, then `supabase/seed.sql` (SQL editor or
-   `supabase db push` + `psql -f`).
+2. Run the migrations in order, then the seeds (SQL editor, or `supabase db push` + `psql -f`):
+   - `supabase/migrations/0001_init.sql`
+   - `supabase/migrations/0002_venue_type_ari.sql`
+   - `supabase/migrations/0003_venue_register.sql`
+   - `supabase/seed.sql` — the 8 venues + 13 July-2026 exhibitions
+   - `supabase/venues_seed.sql` — the managed venue register (add your ~50 Sydney venues here)
 3. Create `.env` in `art-eye/`:
    ```
    EXPO_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
@@ -39,6 +43,16 @@ submissions and admin approval all work. Demo accounts (password `arteye`):
    ```
 4. Sign up in the app with `jadebrack@gmail.com`, then promote it to admin (snippet at the
    bottom of `seed.sql`).
+
+### Managing the venue register
+
+- **Add / edit venues:** edit `supabase/venues_seed.sql` (clearly-marked block, one line per
+  venue: name, type `gallery`/`museum`/`ari`, address, suburb, website, instagram, lat/long) and
+  re-run it. Rows are matched on `slug`, so re-running updates instead of duplicating.
+- **Hide test data:** rows you created while trying the app (e.g. `lalala`) live in the DB, not in
+  any seed file. List them in `supabase/maintenance/flag_fixture_data.sql` and run it — they get
+  `is_fixture = true` and disappear from the public agenda/directory (enforced in RLS), without
+  being deleted. Real venues such as *Cassandra Bird* are untouched.
 
 ## Design system
 
@@ -55,7 +69,8 @@ venues, labels, buttons, tab bar). Square corners everywhere — the only circle
   edit, admin review queue.
 - `src/lib/` — one `Api` interface, two backends: `demo-store.ts` (local) and
   `supabase-api.ts` (live), switched by env in `api.ts`.
-- `supabase/` — schema + RLS migration and the 13-exhibition seed.
+- `supabase/` — schema + RLS migrations, the 13-exhibition seed, the venue register
+  (`venues_seed.sql`) and the fixture-flagging script (`maintenance/flag_fixture_data.sql`).
 - `scripts/gen-placeholders.js` — regenerates the neutral tonal placeholder images used
   until venue press images are cleared (swap via admin → IMAGE URL, or `image_url` column).
 

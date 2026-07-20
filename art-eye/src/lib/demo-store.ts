@@ -29,7 +29,7 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v2';
+const KEY = 'arteye.demo.v3';
 
 function seedState(): DemoState {
   const venues = SEED_VENUES.map((v) => ({ ...v }));
@@ -180,8 +180,9 @@ export const demoApi: Api = {
 
   async listApprovedExhibitions() {
     const s = await load();
+    const fixtureVenues = new Set(s.venues.filter((v) => v.is_fixture).map((v) => v.id));
     return s.exhibitions
-      .filter((e) => e.status === 'approved')
+      .filter((e) => e.status === 'approved' && !e.is_fixture && !fixtureVenues.has(e.venue_id))
       .map((e) => withVenue(e, s.venues));
   },
 

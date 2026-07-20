@@ -17,6 +17,7 @@ const FILTERS: { value: AgendaFilter; label: string }[] = [
   { value: 'closing_soon', label: 'CLOSING SOON' },
   { value: 'museums', label: 'MUSEUMS' },
   { value: 'galleries', label: 'GALLERIES' },
+  { value: 'aris', label: 'ARIS' },
 ];
 
 export default function AgendaScreen() {
@@ -65,6 +66,8 @@ export default function AgendaScreen() {
         return all.filter((e) => e.venue?.type === 'museum');
       case 'galleries':
         return all.filter((e) => e.venue?.type === 'gallery');
+      case 'aris':
+        return all.filter((e) => e.venue?.type === 'ari');
       default:
         return all.sort((a, b) => (a.end_date < b.end_date ? -1 : 1));
     }

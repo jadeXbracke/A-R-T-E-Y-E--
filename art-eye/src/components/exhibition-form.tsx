@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { ExhibitionDraft, VenueType } from '../lib/types';
+import { ExhibitionDraft, VENUE_TYPES, VenueType } from '../lib/types';
 import { colors, fonts, space } from '../theme';
 import { Field, InkBar, Kicker, MonoLink } from './ui';
 
@@ -130,16 +130,14 @@ export function ExhibitionForm({
           />
           <Kicker style={{ marginBottom: 10 }}>VENUE TYPE</Kicker>
           <View style={{ flexDirection: 'row', gap: space.m, marginBottom: space.l }}>
-            <MonoLink
-              label="GALLERY"
-              active={values.venue_type === 'gallery'}
-              onPress={() => set({ venue_type: 'gallery' })}
-            />
-            <MonoLink
-              label="MUSEUM"
-              active={values.venue_type === 'museum'}
-              onPress={() => set({ venue_type: 'museum' })}
-            />
+            {VENUE_TYPES.map((vt) => (
+              <MonoLink
+                key={vt.value}
+                label={vt.label}
+                active={values.venue_type === vt.value}
+                onPress={() => set({ venue_type: vt.value })}
+              />
+            ))}
           </View>
           <Field
             label="VENUE ADDRESS — SYDNEY"
