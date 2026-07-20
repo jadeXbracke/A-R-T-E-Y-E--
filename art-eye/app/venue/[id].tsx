@@ -1,0 +1,189 @@
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArtImage, ExhibitionRow } from '../../src/components/exhibition';
+import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
+import { api } from '../../src/lib/api';
+import { isOnNow, todayStr } from '../../src/lib/dates';
+import { Exhibition, Venue } from '../../src/lib/types';
+import { colors, fonts, space, type } from '../../src/theme';
+
+function openLink(url: string) {
+  Linking.openURL(url).catch(() => {});
+}
+function webUrl(raw: string) {
+  const t = raw.trim();
+  return /^https?:\/\//i.test(t) ? t : `https://${t}`;
+}
+function instaUrl(raw: string) {
+  const t = raw.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  return `https://instagram.com/${t.replace(/^@/, '')}`;
+}
+function mapsUrl(v: Venue) {
+  if (v.latitude != null && v.longitude != null) {
+    return `https://maps.apple.com/?ll=${v.latitude},${v.longitude}&q=${encodeURIComponent(v.name)}`;
+  }
+  return `https://maps.apple.com/?q=${encodeURIComponent(`${v.name} ${v.address ?? 'Sydney'}`)}`;
+}
+
+export default function VenueDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const insets = useSafeAreaInsets();
+  const [venue, setVenue] = useState<Venue | null | undefined>(undefined);
+  const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      Promise.all([api.listVenues(), api.listApprovedExhibitions()]).then(([vs, es]) => {
+        if (!alive) return;
+        setVenue(vs.find((v) => v.id === id) ?? null);
+        setExhibitions(es.filter((e) => e.venue_id === id));
+      });
+      return () => {
+        alive = false;
+      };
+    }, [id])
+  );
+
+  const t = todayStr();
+  const onNow = useMemo(
+    () =>
+      exhibitions
+        .filter((e) => isOnNow(e.start_date, e.end_date))
+        .sort((a, b) => (a.end_date < b.end_date ? -1 : 1)),
+    [exhibitions]
+  );
+  const upcoming = useMemo(
+    () =>
+      exhibitions
+        .filter((e) => e.start_date > t)
+        .sort((a, b) => (a.start_date < b.start_date ? -1 : 1)),
+    [exhibitions, t]
+  );
+
+  if (venue === undefined) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+        <Loading />
+      </View>
+    );
+  }
+
+  if (venue === null) {
+    return (
+      <View style={styles.guard}>
+        <Text style={type.serifHeading}>Venue not found</Text>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Text style={styles.back}>← BACK</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      contentContainerStyle={{
+        paddingTop: insets.top + space.m,
+        paddingBottom: insets.bottom + space.xl,
+      }}
+    >
+      <View style={styles.head}>
+        <Kicker>{venue.type.toUpperCase()}{venue.suburb ? ` — ${venue.suburb.toUpperCase()}` : ''}</Kicker>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Text style={styles.back}>← BACK</Text>
+        </Pressable>
+      </View>
+
+      <View style={{ paddingHorizontal: space.page }}>
+        <Text style={[type.serifHeading, { marginBottom: space.m }]}>{venue.name}</Text>
+      </View>
+
+      {venue.image_url && (
+        <ArtImage
+          uri={venue.image_url}
+          fallbackId={venue.id}
+          style={styles.photo}
+          contentFit="cover"
+        />
+      )}
+
+      <View style={{ paddingHorizontal: space.page, paddingTop: space.m }}>
+        {venue.address && <Text style={styles.address}>{venue.address}</Text>}
+
+        <View style={styles.links}>
+          {venue.website && (
+            <MonoLink label="WEBSITE ↗" active onPress={() => openLink(webUrl(venue.website!))} />
+          )}
+          {venue.instagram && (
+            <MonoLink label="INSTAGRAM ↗" active onPress={() => openLink(instaUrl(venue.instagram!))} />
+          )}
+          <MonoLink label="MAP ↗" active onPress={() => openLink(mapsUrl(venue))} />
+        </View>
+
+        <Hairline style={{ marginBottom: space.m }} />
+
+        <Text style={styles.sectionTitle}>On now</Text>
+        {onNow.length === 0 ? (
+          <Text style={styles.emptyLine}>Nothing on view right now.</Text>
+        ) : null}
+      </View>
+      {onNow.map((e) => (
+        <ExhibitionRow key={e.id} exhibition={e} />
+      ))}
+
+      {upcoming.length > 0 && (
+        <>
+          <View style={{ paddingHorizontal: space.page, paddingTop: space.l }}>
+            <Text style={styles.sectionTitle}>Coming up</Text>
+          </View>
+          {upcoming.map((e) => (
+            <ExhibitionRow key={e.id} exhibition={e} />
+          ))}
+        </>
+      )}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  guard: { flex: 1, backgroundColor: colors.bg, paddingTop: 80, paddingHorizontal: space.page },
+  head: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: space.page,
+    paddingBottom: space.m,
+  },
+  back: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    color: colors.grey,
+  },
+  photo: { width: '100%', aspectRatio: 3 / 2, backgroundColor: colors.hairline },
+  address: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    color: colors.grey,
+    marginBottom: space.m,
+  },
+  links: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.l,
+    marginBottom: space.l,
+  },
+  sectionTitle: { ...type.serifHeading, fontSize: 26, marginBottom: space.s },
+  emptyLine: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 17,
+    lineHeight: 25,
+    color: colors.grey,
+    marginBottom: space.m,
+  },
+});

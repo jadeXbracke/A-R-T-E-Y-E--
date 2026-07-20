@@ -142,7 +142,7 @@ export default function ExhibitionDetail() {
 
           <Text style={styles.description}>{e.description}</Text>
 
-          {e.venue && (e.venue.image_url || e.venue.website || e.venue.instagram) && (
+          {e.venue && (
             <View style={styles.venueBlock}>
               <Kicker style={{ marginBottom: space.m }}>THE SPACE</Kicker>
               {e.venue.image_url && (
@@ -157,24 +157,27 @@ export default function ExhibitionDetail() {
               {e.venue.address && (
                 <Text style={styles.venueAddress}>{e.venue.address}</Text>
               )}
-              {(e.venue.website || e.venue.instagram) && (
-                <View style={styles.venueLinks}>
-                  {e.venue.website && (
-                    <MonoLink
-                      label="WEBSITE ↗"
-                      active
-                      onPress={() => openLink(webUrl(e.venue!.website!))}
-                    />
-                  )}
-                  {e.venue.instagram && (
-                    <MonoLink
-                      label="INSTAGRAM ↗"
-                      active
-                      onPress={() => openLink(instaUrl(e.venue!.instagram!))}
-                    />
-                  )}
-                </View>
-              )}
+              <View style={styles.venueLinks}>
+                <MonoLink
+                  label="VENUE PAGE →"
+                  active
+                  onPress={() => router.push(`/venue/${e.venue!.id}`)}
+                />
+                {e.venue.website && (
+                  <MonoLink
+                    label="WEBSITE ↗"
+                    active
+                    onPress={() => openLink(webUrl(e.venue!.website!))}
+                  />
+                )}
+                {e.venue.instagram && (
+                  <MonoLink
+                    label="INSTAGRAM ↗"
+                    active
+                    onPress={() => openLink(instaUrl(e.venue!.instagram!))}
+                  />
+                )}
+              </View>
             </View>
           )}
 
@@ -281,6 +284,7 @@ const styles = StyleSheet.create({
   },
   venueLinks: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: space.l,
     marginTop: space.m,
   },
