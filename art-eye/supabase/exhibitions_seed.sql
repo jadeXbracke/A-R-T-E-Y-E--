@@ -23,7 +23,21 @@ from (values
   ('nas-gallery', 'Mitch Cairns: Artist''s Mouth', 'Mitch Cairns', '2026-05-01', '2026-07-11',
    'Twenty years of Cairns'' cool, exact painting — 48 works, the 2017 Archibald winner among them — surveyed in the old Darlinghurst Gaol where he trained.', false),
   ('mosman-art-gallery', 'Jasper Knight: Collage, prints and works on paper', 'Jasper Knight', '2026-06-01', '2026-08-09',
-   'Harbour light at speed — Knight''s cut, layered and printed Sydney, from ferries to pylons, in a survey of his works on paper at Mosman.', false)
+   'Harbour light at speed — Knight''s cut, layered and printed Sydney, from ferries to pylons, in a survey of his works on paper at Mosman.', false),
+  ('manly-art-gallery-museum', 'Tamara Dean: Leave Only Footprints', 'Tamara Dean', '2026-06-12', '2026-08-02',
+   'Bodies folded into bushland, ocean and storm — the first survey of Dean''s staged photomedia, where the human figure is one animal among many.', false),
+  ('manly-art-gallery-museum', 'Min Wong: You shall definitely pass', 'Min Wong', '2026-06-12', '2026-08-02',
+   'Fresh from residencies in Berlin and Athens, Wong builds an immersive installation on power, belonging and the promises of self-improvement.', false),
+  ('manly-art-gallery-museum', 'Chronos: Australian ceramics from 1933', 'Australian ceramicists, 1933 to now', '2026-03-21', '2027-03-14',
+   'Nine decades of Australian clay — how ceramic practice holds and hands on cultural change, traced through the gallery''s collection.', false),
+  ('campbelltown-arts-centre', 'Friends Annual & Focus: Zara Collins', 'Friends of Campbelltown Arts Centre, Zara Collins', '2026-06-27', '2026-09-13',
+   'The region''s artists on their own walls — the Friends'' eclectic annual across styles and mediums, with Zara Collins as this year''s Focus artist.', false),
+  ('firstdraft', 'You wouldn''t remember him', 'Nina Dorabialski', '2026-07-18', '2026-08-22',
+   'The family album, present only by inference — Dorabialski circles the pictures never shown, unsettling the stories nuclear families tell about themselves.', false),
+  ('king-street-gallery', 'The Quick and the Slow', 'John Bartley', '2026-07-07', '2026-08-01',
+   'Bartley''s new paintings hold two speeds at once — quick marks over slow ground, landscape as something felt in tempo rather than seen in place.', false),
+  ('king-street-gallery', 'Proverbial', 'Nathan Nhan', '2026-08-04', '2026-08-29',
+   'Nhan takes the worn wisdom of proverbs and paints it strange again — inherited sayings tested against a first-generation present.', false)
 ) as x(venue_slug, title, artists, start_date, end_date, description, is_featured)
 join venues v on v.slug = x.venue_slug
 where not exists (
