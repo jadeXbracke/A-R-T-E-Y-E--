@@ -1,0 +1,33 @@
+name: Publish to Expo Go
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/art-eye-ios-app-lq636i, main]
+    paths: ['art-eye/**']
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: art-eye
+        run: npm ci
+
+      - name: Link EAS project
+        working-directory: art-eye
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli@latest init --force --non-interactive
+
+      - name: Publish update
+        working-directory: art-eye
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli@latest update --branch main --message "${{ github.event.head_commit.message || 'manual publish' }}" --non-interactive
