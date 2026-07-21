@@ -141,6 +141,7 @@ export default function CuratorScreen() {
                 {e && (
                   <ArtImage
                     uri={e.image_url}
+                    venueUri={e.venue?.image_url}
                     fallbackId={e.id}
                     style={styles.entryThumb}
                     contentFit="cover"

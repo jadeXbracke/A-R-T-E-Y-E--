@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Exhibition, ExhibitionDraft, Profile, RejectionReason, Venue, VenueDraft, VenueProposal } from './types';
+import { CuratedList, CuratorRole, Exhibition, ExhibitionDraft, Profile, RejectionReason, Venue, VenueDraft, VenueProposal } from './types';
 
 let client: SupabaseClient | null = null;
 
@@ -99,6 +99,26 @@ export const supabaseApi: Api = {
       .maybeSingle();
     if (error) throw new Error(error.message);
     return (data as Exhibition) ?? null;
+  },
+
+  async listCuratedLists() {
+    const { data, error } = await supabase()
+      .from('guides')
+      .select('id, title, intro, curator_name, curator_role, guide_items(exhibition_id, position)')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((g) => ({
+      id: g.id as string,
+      title: g.title as string,
+      curator_name: (g.curator_name as string) ?? 'ART EYE',
+      curator_role: ((g.curator_role as CuratorRole) ?? 'curator'),
+      intro: (g.intro as string) ?? '',
+      exhibition_ids: ((g.guide_items as { exhibition_id: string | null; position: number }[]) ?? [])
+        .sort((a, b) => a.position - b.position)
+        .map((i) => i.exhibition_id)
+        .filter((x): x is string => !!x),
+    })) as CuratedList[];
   },
 
   async listWatchlist(userId) {

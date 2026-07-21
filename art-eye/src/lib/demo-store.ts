@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
+  CuratedList,
   Exhibition,
   ExhibitionDraft,
   Profile,
@@ -15,6 +16,27 @@ import {
   Visit,
   WatchlistEntry,
 } from './types';
+
+// Demo curated lists — the demo personas' picks over real current shows.
+// In live mode these come from the public guides tables (migration 0007).
+const SEED_CURATED: CuratedList[] = [
+  {
+    id: 'g-editors',
+    title: 'Five shows to see this week',
+    curator_name: 'ART EYE Editors',
+    curator_role: 'curator',
+    intro: 'The week distilled — the rooms worth crossing the city for right now.',
+    exhibition_ids: ['e-black-myth', 'e-archibald', 'e-salon-des-refuses', 'e-tamara-dean', 'e-primavera'],
+  },
+  {
+    id: 'g-gallerist',
+    title: 'A gallerist is watching',
+    curator_name: 'Roslyn Oxley9 (demo account)',
+    curator_role: 'gallerist',
+    intro: 'What the trade goes to see after closing time — sharp painting and one big survey.',
+    exhibition_ids: ['e-mitch-cairns', 'e-bartley', 'e-armanious', 'e-nsw-fellowship'],
+  },
+];
 import { todayStr } from './dates';
 
 interface DemoUser extends Profile {
@@ -32,45 +54,10 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v7';
+const KEY = 'arteye.demo.v8';
 
-// Demo stand-ins for what the live pipeline files in venue_review_queue.
-const SEED_PROPOSALS: VenueProposal[] = [
-  {
-    id: 'p-demo-add',
-    venue_id: null,
-    action_type: 'add',
-    proposed_payload: {
-      slug: 'wentworth-galleries',
-      name: 'Wentworth Galleries',
-      type: 'gallery',
-      address: '61 Phillip Street, Sydney NSW',
-      suburb: 'Sydney',
-      website: 'https://www.wentworthgalleries.com.au',
-      city: 'Sydney',
-    },
-    evidence: [
-      { url: 'https://www.wentworthgalleries.com.au', snippet: 'CBD gallery with regular exhibitions — not yet in the ART EYE register. (demo sample)' },
-    ],
-    confidence: 0.72,
-    reason: 'Demo sample — the discovery job would suggest venues like this for your approval.',
-    status: 'pending',
-    created_at: '2026-07-19T09:00:00Z',
-  },
-  {
-    id: 'p-demo-update',
-    venue_id: 'v-cassandrabird',
-    action_type: 'update',
-    proposed_payload: { website: 'https://cassandrabird.com' },
-    evidence: [
-      { url: 'https://cassandrabird.com', snippet: 'Gallery website found for Cassandra Bird, Potts Point. (demo sample)' },
-    ],
-    confidence: 0.86,
-    reason: 'Demo sample — the validate job proposes filling in the missing website.',
-    status: 'pending',
-    created_at: '2026-07-19T09:05:00Z',
-  },
-];
+// No sample/test data in the seed — the inbox fills from the live pipeline.
+const SEED_PROPOSALS: VenueProposal[] = [];
 
 function seedState(): DemoState {
   const venues = SEED_VENUES.map((v) => ({ ...v }));
@@ -232,6 +219,10 @@ export const demoApi: Api = {
     const s = await load();
     const e = s.exhibitions.find((x) => x.id === id);
     return e ? withVenue(e, s.venues) : null;
+  },
+
+  async listCuratedLists() {
+    return SEED_CURATED.map((g) => ({ ...g }));
   },
 
   async listWatchlist(userId) {

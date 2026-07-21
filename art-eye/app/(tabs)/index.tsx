@@ -1,14 +1,14 @@
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExhibitionGridItem, ExhibitionRow } from '../../src/components/exhibition';
 import { HeroCarousel } from '../../src/components/hero-carousel';
-import { EmptyState, Hairline, Loading, MonoLink } from '../../src/components/ui';
+import { EmptyState, Hairline, Kicker, Lift, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { daysUntil, isOnNow, todayStr } from '../../src/lib/dates';
 import { useAuth } from '../../src/lib/auth';
-import { AgendaFilter, Exhibition } from '../../src/lib/types';
+import { AgendaFilter, CuratedList, Exhibition } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
 const FILTERS: { value: AgendaFilter; label: string }[] = [
@@ -27,11 +27,13 @@ export default function AgendaScreen() {
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<AgendaFilter>('all');
   const [view, setView] = useState<'list' | 'grid'>('list');
+  const [curated, setCurated] = useState<CuratedList[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       api.listApprovedExhibitions().then((list) => alive && setExhibitions(list));
+      api.listCuratedLists().then((lists) => alive && setCurated(lists));
       if (profile) {
         api.listVisits(profile.id).then(
           (v) => alive && setSeenIds(new Set(v.map((x) => x.exhibition_id)))
@@ -115,6 +117,33 @@ export default function AgendaScreen() {
             ))}
           </ScrollView>
 
+          {curated.length > 0 && (
+            <View style={{ marginBottom: space.m }}>
+              <Kicker style={{ paddingHorizontal: space.page, marginBottom: space.s }}>
+                CURATED — BY ARTISTS, GALLERISTS & EDITORS
+              </Kicker>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: space.page, gap: space.m }}
+              >
+                {curated.map((g) => (
+                  <Lift key={g.id} style={styles.curatedCard} onPress={() => router.push(`/guide/${g.id}`)}>
+                    <Text style={styles.curatedRole}>
+                      {g.curator_role.toUpperCase()} · {g.exhibition_ids.length} SHOWS
+                    </Text>
+                    <Text style={styles.curatedTitle} numberOfLines={2}>
+                      {g.title}
+                    </Text>
+                    <Text style={styles.curatedName} numberOfLines={1}>
+                      {g.curator_name.toUpperCase()}
+                    </Text>
+                  </Lift>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {agenda.length === 0 ? (
             <EmptyState>
               Nothing here just now. The agenda turns over weekly — check back soon.
@@ -142,6 +171,26 @@ export default function AgendaScreen() {
 }
 
 const styles = StyleSheet.create({
+  curatedCard: {
+    width: 230,
+    borderWidth: 1,
+    borderColor: colors.ink,
+    padding: space.m,
+  },
+  curatedRole: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    color: colors.red,
+    marginBottom: 8,
+  },
+  curatedTitle: { ...type.serifTitle, fontSize: 19, marginBottom: 8 },
+  curatedName: {
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    color: colors.grey,
+  },
   header: {
     paddingHorizontal: space.page,
     paddingBottom: space.m,

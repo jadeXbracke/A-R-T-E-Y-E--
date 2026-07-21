@@ -1,4 +1,4 @@
-import { Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { CuratedList, Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -19,6 +19,7 @@ export interface Api {
   // agenda
   listApprovedExhibitions(): Promise<Exhibition[]>;
   getExhibition(id: string): Promise<Exhibition | null>;
+  listCuratedLists(): Promise<CuratedList[]>;
 
   // curation
   listWatchlist(userId: string): Promise<string[]>;

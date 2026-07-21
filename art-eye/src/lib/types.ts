@@ -120,6 +120,20 @@ export interface VenueDraft {
   image_url?: string | null; // photo of the space
 }
 
+// ---- curated lists ----------------------------------------------------------
+export type CuratorRole = 'artist' | 'gallerist' | 'curator';
+
+// A public, human-curated selection of exhibitions — by an artist, a gallery
+// owner, or the editors. Lives in the guides tables in live mode.
+export interface CuratedList {
+  id: string;
+  title: string;
+  curator_name: string;
+  curator_role: CuratorRole;
+  intro: string;
+  exhibition_ids: string[];
+}
+
 // ---- venue freshness pipeline (owner review) --------------------------------
 export type ProposalAction = 'add' | 'archive' | 'update';
 export type ProposalStatus = 'pending' | 'approved' | 'rejected';

@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmptyState, Hairline, Loading, MonoLink } from '../../src/components/ui';
+import { EmptyState, Hairline, Lift, Loading, MonoLink } from '../../src/components/ui';
 import { VenueMap } from '../../src/components/venue-map';
 import { api } from '../../src/lib/api';
 import { Area, AREAS, areaForSuburb } from '../../src/lib/areas';
@@ -189,7 +189,7 @@ export default function VenuesScreen() {
               const on = onNow.get(v.id) ?? 0;
               const soon = upcoming.get(v.id) ?? 0;
               return (
-                <Pressable
+                <Lift
                   key={v.id}
                   style={styles.row}
                   onPress={() => router.push(`/venue/${v.id}`)}
@@ -208,7 +208,7 @@ export default function VenuesScreen() {
                   ) : soon > 0 ? (
                     <Text style={styles.upcomingTag}>{soon} COMING UP</Text>
                   ) : null}
-                </Pressable>
+                </Lift>
               );
             })}
           </View>

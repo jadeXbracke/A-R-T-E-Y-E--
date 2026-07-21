@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   StyleSheet,
   Text,
@@ -10,6 +11,35 @@ import {
   ViewStyle,
 } from 'react-native';
 import { colors, fonts, space, type } from '../theme';
+
+/**
+ * Pressable with motion: lifts slightly on hover (web) and eases down on
+ * press, spring-animated. Wrap list rows and cards for a live, tactile feel.
+ */
+export function Lift({
+  onPress,
+  style,
+  children,
+}: {
+  onPress?: () => void;
+  style?: ViewStyle | ViewStyle[];
+  children: React.ReactNode;
+}) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const to = (value: number) =>
+    Animated.spring(scale, { toValue: value, useNativeDriver: true, speed: 40, bounciness: 6 }).start();
+  return (
+    <Pressable
+      onPress={onPress}
+      onHoverIn={() => to(1.015)}
+      onHoverOut={() => to(1)}
+      onPressIn={() => to(0.985)}
+      onPressOut={() => to(1)}
+    >
+      <Animated.View style={[style, { transform: [{ scale }] }]}>{children}</Animated.View>
+    </Pressable>
+  );
+}
 
 /** Mono kicker label, e.g. "YOUR RATING" */
 export function Kicker({ children, style }: { children: React.ReactNode; style?: object }) {
