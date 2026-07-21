@@ -19,6 +19,7 @@ export default function VenueProfile() {
   const [suburb, setSuburb] = useState('');
   const [website, setWebsite] = useState('');
   const [instagram, setInstagram] = useState('');
+  const [hours, setHours] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,6 +38,7 @@ export default function VenueProfile() {
             setSuburb(v.suburb ?? '');
             setWebsite(v.website ?? '');
             setInstagram(v.instagram ?? '');
+            setHours(v.opening_hours ?? '');
             setImage(v.image_url ?? null);
             setVideo(v.video_url ?? '');
           }
@@ -76,6 +78,7 @@ export default function VenueProfile() {
         suburb: suburb.trim() || null,
         website: website.trim() || null,
         instagram: instagram.trim() || null,
+        opening_hours: hours.trim() || null,
         image_url: imageUrl,
         video_url: video.trim() || null,
       });
@@ -134,6 +137,12 @@ export default function VenueProfile() {
             onChangeText={setInstagram}
             autoCapitalize="none"
             placeholder="@handle"
+          />
+          <Field
+            label="OPENING HOURS"
+            value={hours}
+            onChangeText={setHours}
+            placeholder="e.g. Tue–Sat 10:00–17:00"
           />
           <Field
             label="VIDEO URL — OPTIONAL"

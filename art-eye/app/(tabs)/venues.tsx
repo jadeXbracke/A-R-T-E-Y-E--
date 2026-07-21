@@ -117,6 +117,7 @@ export default function VenuesScreen() {
             <Text style={type.serifHeading}>Venues</Text>
           </View>
           <View style={{ flexDirection: 'row', gap: space.m }}>
+            <MonoLink label="SEARCH" active onPress={() => router.push('/search')} />
             <MonoLink label="LIST" active={view === 'list'} onPress={() => setView('list')} />
             <MonoLink label="MAP" active={view === 'map'} onPress={() => setView('map')} />
           </View>

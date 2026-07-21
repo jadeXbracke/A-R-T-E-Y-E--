@@ -117,6 +117,12 @@ export default function VenueDetail() {
 
       <View style={{ paddingHorizontal: space.page, paddingTop: space.m }}>
         {venue.address && <Text style={styles.address}>{venue.address}</Text>}
+        {venue.opening_hours && (
+          <Text style={styles.hours}>
+            OPEN {venue.opening_hours.toUpperCase()}
+            {venue.hours_checked ? `  ·  CHECKED ${venue.hours_checked}` : ''}
+          </Text>
+        )}
         {venue.editorial_note && <Text style={styles.note}>{venue.editorial_note}</Text>}
 
         <View style={styles.links}>
@@ -177,6 +183,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
     color: colors.grey,
+    marginBottom: 6,
+  },
+  hours: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    color: colors.ink,
     marginBottom: space.m,
   },
   note: {

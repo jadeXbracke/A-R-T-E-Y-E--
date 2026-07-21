@@ -93,6 +93,21 @@ with the host account and nowhere else.
 - No footage is ever scraped or hotlinked automatically — clips are supplied by the host or the
   venue itself, same honest-sourcing rule as photos.
 
+### Search
+
+A dedicated search screen (`/search`, linked from the Agenda and Venues headers) covers the whole
+register and agenda in one box: exhibition titles, artists, venue names, suburbs, categories and
+districts, accent-insensitive, results grouped into EXHIBITIONS and VENUES.
+
+### Opening hours
+
+Venues carry `opening_hours` (compact human line, e.g. "Tue–Sat 10:00–17:00") plus
+`hours_checked`, the date it was last verified against the venue's own website — shown together
+on the venue page so stale information is visible rather than silent. Editable by the host
+(venue editor) and by claimed venue accounts (*Manage your venue*). Migration
+`0009_opening_hours.sql`; seeded hours for the 16 venues with current shows were verified
+2026-07-21.
+
 ### Venue freshness pipeline (live mode only)
 
 A self-validating pipeline keeps the register accurate over time — and **never changes data on
