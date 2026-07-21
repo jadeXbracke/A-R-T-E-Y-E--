@@ -207,3 +207,39 @@ from (values
   ('Grace Cossington Smith Gallery', 'Tue–Sat 10:00–17:00 (during exhibitions)')
 ) as x(name, hours)
 where venues.name = x.name;
+
+
+-- ---------------------------------------------------------------------------
+-- Venue photography — freely licensed (Wikimedia Commons), verified 2026-07-21.
+-- Served via Special:FilePath at 1600px. Only set where no photo exists yet,
+-- so venue-uploaded photos are never overwritten.
+-- ---------------------------------------------------------------------------
+update venues set image_url = x.url
+from (values
+  ('roslyn-oxley9-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/Roslyn_Oxley9_Gallery.jpg?width=1600'),
+  ('artspace', 'https://commons.wikimedia.org/wiki/Special:FilePath/Artspace%2C_The_Gunnery%2C_Woolloomooloo.jpg?width=1600'),
+  ('manly-art-gallery-museum', 'https://commons.wikimedia.org/wiki/Special:FilePath/Manly_Art_Gallery_and_Museum_pano.jpg?width=1600'),
+  ('nas-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/(1)_National_Art_School_(d).JPG?width=1600'),
+  ('sh-ervin-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/S._H._Ervin_Gallery_1.jpg?width=1600'),
+  ('australian-museum', 'https://commons.wikimedia.org/wiki/Special:FilePath/AustralianMuseum.jpg?width=1600'),
+  ('chau-chak-wing-museum', 'https://commons.wikimedia.org/wiki/Special:FilePath/Entrance_to_the_Chau_Chak_Wing_Museum_April_2021.jpg?width=1600'),
+  ('museum-of-sydney', 'https://commons.wikimedia.org/wiki/Special:FilePath/Museum_of_Sydney_2010.jpg?width=1600'),
+  ('sydney-jewish-museum', 'https://commons.wikimedia.org/wiki/Special:FilePath/Sydney_Jewish_Museum_Darlinghurst_Road_-_Burton_Street_junction_view.jpg?width=1600'),
+  ('white-rabbit-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/White_Rabbit_Gallery_tea_house.jpg?width=1600'),
+  ('incinerator-art-space', 'https://commons.wikimedia.org/wiki/Special:FilePath/(1)Griffin_incinerator_Willoughby_123.jpg?width=1600'),
+  ('woollahra-gallery-at-redleaf', 'https://commons.wikimedia.org/wiki/Special:FilePath/Double_Bay_Council_Chambers-A.jpg?width=1600'),
+  ('hyde-park-barracks', 'https://commons.wikimedia.org/wiki/Special:FilePath/HydeParkBarracks.JPG?width=1600'),
+  ('justice-police-museum', 'https://commons.wikimedia.org/wiki/Special:FilePath/Justice_and_Police_Museum.jpg?width=1600'),
+  ('state-library-of-nsw-galleries', 'https://commons.wikimedia.org/wiki/Special:FilePath/State_Library_of_New_South_Wales.jpg?width=1600'),
+  ('brett-whiteley-studio', 'https://commons.wikimedia.org/wiki/Special:FilePath/Brett_whiteley_studio_raper_street_surry_hills.jpg?width=1600'),
+  ('australian-national-maritime-museum', 'https://commons.wikimedia.org/wiki/Special:FilePath/Australian_National_Maritime_Museum_(30581601062).jpg?width=1600'),
+  ('customs-house', 'https://commons.wikimedia.org/wiki/Special:FilePath/Customs_House_(James_Barnet)%2C_Sydney_-_Wiki0055.jpg?width=1600'),
+  ('rose-seidler-house', 'https://commons.wikimedia.org/wiki/Special:FilePath/Rose_Seidler_House%2C_Wahroonga%2C_Sydney%2C_1951_-_photographed_by_Marcel_Seidler_(3461484773).jpg?width=1600'),
+  ('vaucluse-house', 'https://commons.wikimedia.org/wiki/Special:FilePath/130_Vaucluse_House%2C_Sydney%2C_1979_(52068393355).jpg?width=1600'),
+  ('old-government-house', 'https://commons.wikimedia.org/wiki/Special:FilePath/Old_Government_House_-_Parramatta_Park%2C_Parramatta%2C_NSW_(7822320214).jpg?width=1600'),
+  ('bondi-pavilion-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/Bondi_Beach_Pavilion.jpg?width=1600'),
+  ('wollongong-art-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/Wollongong_Art_Gallery_August_2020.jpg?width=1600'),
+  ('newcastle-art-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/Newcastle_Art_Gallery%2C_April_2026.jpg?width=1600'),
+  ('maitland-regional-art-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/Maitland_Regional_Art_Gallery%2C_December_2025_02.jpg?width=1600')
+) as x(slug, url)
+where venues.slug = x.slug and venues.image_url is null;

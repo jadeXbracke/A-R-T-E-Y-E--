@@ -54,7 +54,7 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v10';
+const KEY = 'arteye.demo.v11';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
