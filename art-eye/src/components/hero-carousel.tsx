@@ -58,6 +58,7 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
             <View>
               <ArtImage
                 uri={e.image_url}
+                venueUri={e.venue?.image_url}
                 fallbackId={e.id}
                 style={{ width, aspectRatio: 4 / 5, backgroundColor: colors.hairline }}
                 contentFit="cover"

@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Exhibition, ExhibitionDraft, Profile, RejectionReason, Venue, VenueDraft } from './types';
+import { CuratedList, CuratorRole, Exhibition, ExhibitionDraft, Profile, RejectionReason, Venue, VenueDraft, VenueProposal } from './types';
 
 let client: SupabaseClient | null = null;
 
@@ -99,6 +99,26 @@ export const supabaseApi: Api = {
       .maybeSingle();
     if (error) throw new Error(error.message);
     return (data as Exhibition) ?? null;
+  },
+
+  async listCuratedLists() {
+    const { data, error } = await supabase()
+      .from('guides')
+      .select('id, title, intro, curator_name, curator_role, guide_items(exhibition_id, position)')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((g) => ({
+      id: g.id as string,
+      title: g.title as string,
+      curator_name: (g.curator_name as string) ?? 'ART EYE',
+      curator_role: ((g.curator_role as CuratorRole) ?? 'curator'),
+      intro: (g.intro as string) ?? '',
+      exhibition_ids: ((g.guide_items as { exhibition_id: string | null; position: number }[]) ?? [])
+        .sort((a, b) => a.position - b.position)
+        .map((i) => i.exhibition_id)
+        .filter((x): x is string => !!x),
+    })) as CuratedList[];
   },
 
   async listWatchlist(userId) {
@@ -329,6 +349,55 @@ export const supabaseApi: Api = {
 
   async deleteExhibition(id) {
     const { error } = await supabase().from('exhibitions').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  // ---- owner inbox (RLS: owner only) ---------------------------------------
+  async listProposals() {
+    const { data, error } = await supabase()
+      .from('venue_review_queue')
+      .select('*')
+      .eq('status', 'pending')
+      .order('confidence', { ascending: false, nullsFirst: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as VenueProposal[];
+  },
+
+  async approveProposal(proposal, payload) {
+    const sb = supabase();
+    const today = new Date().toISOString().slice(0, 10);
+    const stamp = { verified_date: today, verification_source: 'owner' };
+    if (proposal.action_type === 'add') {
+      const { error } = await sb.from('venues').insert({ ...payload, ...stamp });
+      if (error) throw new Error(error.message);
+    } else if (proposal.action_type === 'archive') {
+      const { error } = await sb.from('venues')
+        .update({ status: 'archived', ...stamp })
+        .eq('id', proposal.venue_id!);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await sb.from('venues')
+        .update({ ...payload, ...stamp })
+        .eq('id', proposal.venue_id!);
+      if (error) throw new Error(error.message);
+    }
+    const { error } = await sb.from('venue_review_queue')
+      .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+      .eq('id', proposal.id);
+    if (error) throw new Error(error.message);
+  },
+
+  async rejectProposal(id, note) {
+    const snooze = new Date();
+    snooze.setDate(snooze.getDate() + 90);
+    const { error } = await supabase().from('venue_review_queue')
+      .update({
+        status: 'rejected',
+        review_note: note.trim() || null,
+        snooze_until: snooze.toISOString().slice(0, 10),
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', id);
     if (error) throw new Error(error.message);
   },
 

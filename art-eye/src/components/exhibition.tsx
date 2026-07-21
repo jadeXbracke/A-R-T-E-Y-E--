@@ -1,12 +1,12 @@
 import { Image, ImageProps } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { fmtRange } from '../lib/dates';
 import { FALLBACK_PLACEHOLDER, PLACEHOLDERS } from '../lib/seed';
 import { Exhibition } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
-import { RedDot } from './ui';
+import { Lift, RedDot } from './ui';
 
 function fallbackFor(id: string, imageUrl?: string | null): number {
   if (imageUrl?.startsWith('asset:')) {
@@ -20,38 +20,56 @@ function fallbackFor(id: string, imageUrl?: string | null): number {
 
 export function exhibitionSource(e: Exhibition) {
   if (e.image_url && !e.image_url.startsWith('asset:')) return { uri: e.image_url };
+  if (e.venue?.image_url) return { uri: e.venue.image_url };
   return fallbackFor(e.id, e.image_url);
 }
 
-/** Remote image with the tonal placeholder as loading state and error fallback. */
+/**
+ * Editorial-first image chain: the exhibition's own press image, else the
+ * venue's photo, else the tonal placeholder (loading state and error fallback).
+ */
 export function ArtImage({
   uri,
+  venueUri,
   fallbackId,
   ...props
-}: Omit<ImageProps, 'source'> & { uri?: string | null; fallbackId: string }) {
-  const [failed, setFailed] = useState(false);
+}: Omit<ImageProps, 'source'> & {
+  uri?: string | null;
+  venueUri?: string | null;
+  fallbackId: string;
+}) {
+  const [failed, setFailed] = useState<Set<string>>(new Set());
   const fallback = fallbackFor(fallbackId, uri);
-  const remote = uri && !uri.startsWith('asset:') && !failed;
+  const candidates = [uri, venueUri].filter(
+    (u): u is string => !!u && !u.startsWith('asset:') && !failed.has(u)
+  );
+  const remote = candidates[0];
   return (
     <Image
-      source={remote ? { uri } : fallback}
+      source={remote ? { uri: remote } : fallback}
       placeholder={remote ? fallback : undefined}
-      onError={() => setFailed(true)}
+      onError={() => remote && setFailed((prev) => new Set(prev).add(remote))}
       transition={200}
       {...props}
     />
   );
 }
 
-/** Agenda list row: thumbnail (+ red seen dot), mono date, italic title, caps artist, mono venue. */
+/** Agenda list row: thumbnail (+ red seen dot), mono date, serif title, caps artist, mono venue. */
 export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; seen?: boolean }) {
   return (
-    <Pressable
+    <Lift
       style={styles.row}
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
       <View>
-        <ArtImage uri={exhibition.image_url} fallbackId={exhibition.id} style={styles.thumb} contentFit="cover" />
+        <ArtImage
+          uri={exhibition.image_url}
+          venueUri={exhibition.venue?.image_url}
+          fallbackId={exhibition.id}
+          style={styles.thumb}
+          contentFit="cover"
+        />
         {seen && <RedDot size={9} style={styles.seenDot} />}
       </View>
       <View style={{ flex: 1 }}>
@@ -66,19 +84,25 @@ export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; se
           {exhibition.venue?.name.toUpperCase()}
         </Text>
       </View>
-    </Pressable>
+    </Lift>
   );
 }
 
 /** Grid cell for the 2-column agenda grid with hairline gaps. */
 export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibition; seen?: boolean }) {
   return (
-    <Pressable
+    <Lift
       style={styles.gridItem}
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
       <View>
-        <ArtImage uri={exhibition.image_url} fallbackId={exhibition.id} style={styles.gridImage} contentFit="cover" />
+        <ArtImage
+          uri={exhibition.image_url}
+          venueUri={exhibition.venue?.image_url}
+          fallbackId={exhibition.id}
+          style={styles.gridImage}
+          contentFit="cover"
+        />
         {seen && <RedDot size={9} style={styles.seenDot} />}
       </View>
       <Text style={styles.gridDate}>{fmtRange(exhibition.start_date, exhibition.end_date)}</Text>
@@ -88,7 +112,7 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
       <Text style={styles.gridVenue} numberOfLines={1}>
         {exhibition.venue?.name.toUpperCase()}
       </Text>
-    </Pressable>
+    </Lift>
   );
 }
 

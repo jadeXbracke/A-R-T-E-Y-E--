@@ -17,9 +17,11 @@ export const fonts = {
   sansMedium: 'Archivo_500Medium',
   sansSemi: 'Archivo_600SemiBold',
   serif: 'CormorantGaramond_400Regular',
-  serifItalic: 'CormorantGaramond_400Regular_Italic',
+  // Italics retired by owner request — these aliases now resolve to the
+  // upright faces so every former-italic usage renders as normal type.
+  serifItalic: 'CormorantGaramond_400Regular',
   serifMedium: 'CormorantGaramond_500Medium',
-  serifMediumItalic: 'CormorantGaramond_500Medium_Italic',
+  serifMediumItalic: 'CormorantGaramond_500Medium',
   mono: 'IBMPlexMono_400Regular',
   monoMedium: 'IBMPlexMono_500Medium',
 };
@@ -40,11 +42,11 @@ export const type = {
   artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.2, color: colors.ink },
   artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3, color: colors.white },
   // exhibition titles, reflections, large headings: Cormorant italic
-  serifTitle: { fontFamily: fonts.serifItalic, fontSize: 21, color: colors.ink },
-  serifHeading: { fontFamily: fonts.serifItalic, fontSize: 34, color: colors.ink },
-  serifHero: { fontFamily: fonts.serifItalic, fontSize: 34, color: colors.white },
+  serifTitle: { fontFamily: fonts.serifMedium, fontSize: 21, color: colors.ink },
+  serifHeading: { fontFamily: fonts.serifMedium, fontSize: 34, color: colors.ink },
+  serifHero: { fontFamily: fonts.serifMedium, fontSize: 34, color: colors.white },
   serifBody: { fontFamily: fonts.serif, fontSize: 18, lineHeight: 27, color: colors.ink },
-  serifQuote: { fontFamily: fonts.serifItalic, fontSize: 18, lineHeight: 26, color: colors.ink },
+  serifQuote: { fontFamily: fonts.serif, fontSize: 18, lineHeight: 26, color: colors.ink },
   // dates, venues, labels, filters, buttons, tab bar: IBM Plex Mono
   mono: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.4, color: colors.ink },
   monoSmall: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, color: colors.grey },

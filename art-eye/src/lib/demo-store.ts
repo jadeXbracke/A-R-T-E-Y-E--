@@ -5,15 +5,38 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
+  CuratedList,
   Exhibition,
   ExhibitionDraft,
   Profile,
   RejectionReason,
   Venue,
   VenueDraft,
+  VenueProposal,
   Visit,
   WatchlistEntry,
 } from './types';
+
+// Demo curated lists — the demo personas' picks over real current shows.
+// In live mode these come from the public guides tables (migration 0007).
+const SEED_CURATED: CuratedList[] = [
+  {
+    id: 'g-editors',
+    title: 'Five shows to see this week',
+    curator_name: 'ART EYE Editors',
+    curator_role: 'curator',
+    intro: 'The week distilled — the rooms worth crossing the city for right now.',
+    exhibition_ids: ['e-black-myth', 'e-archibald', 'e-salon-des-refuses', 'e-tamara-dean', 'e-primavera'],
+  },
+  {
+    id: 'g-gallerist',
+    title: 'A gallerist is watching',
+    curator_name: 'Roslyn Oxley9 (demo account)',
+    curator_role: 'gallerist',
+    intro: 'What the trade goes to see after closing time — sharp painting and one big survey.',
+    exhibition_ids: ['e-mitch-cairns', 'e-bartley', 'e-armanious', 'e-nsw-fellowship'],
+  },
+];
 import { todayStr } from './dates';
 
 interface DemoUser extends Profile {
@@ -26,11 +49,15 @@ interface DemoState {
   exhibitions: Exhibition[];
   watchlist: WatchlistEntry[];
   visits: Visit[];
+  proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v4';
+const KEY = 'arteye.demo.v8';
+
+// No sample/test data in the seed — the inbox fills from the live pipeline.
+const SEED_PROPOSALS: VenueProposal[] = [];
 
 function seedState(): DemoState {
   const venues = SEED_VENUES.map((v) => ({ ...v }));
@@ -87,6 +114,7 @@ function seedState(): DemoState {
         visit_date: '2026-07-10',
       },
     ],
+    proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
 }
@@ -191,6 +219,10 @@ export const demoApi: Api = {
     const s = await load();
     const e = s.exhibitions.find((x) => x.id === id);
     return e ? withVenue(e, s.venues) : null;
+  },
+
+  async listCuratedLists() {
+    return SEED_CURATED.map((g) => ({ ...g }));
   },
 
   async listWatchlist(userId) {
@@ -404,6 +436,57 @@ export const demoApi: Api = {
     s.exhibitions = s.exhibitions.filter((e) => e.id !== id);
     s.watchlist = s.watchlist.filter((w) => w.exhibition_id !== id);
     s.visits = s.visits.filter((v) => v.exhibition_id !== id);
+    await persist();
+  },
+
+  // ---- owner inbox ---------------------------------------------------------
+  async listProposals() {
+    const s = await load();
+    return (s.proposals ?? [])
+      .filter((p) => p.status === 'pending')
+      .sort((a, b) => (b.confidence ?? 0) - (a.confidence ?? 0));
+  },
+
+  async approveProposal(proposal, payload) {
+    const s = await load();
+    const p = s.proposals.find((x) => x.id === proposal.id);
+    if (!p) throw new Error('Proposal not found.');
+    if (p.action_type === 'add') {
+      const slug = String(payload.slug ?? uid('venue'));
+      s.venues.push({
+        id: `v-${slug}`,
+        name: String(payload.name ?? 'Untitled venue'),
+        slug,
+        type: (payload.type as Venue['type']) ?? 'gallery',
+        address: (payload.address as string) ?? null,
+        suburb: (payload.suburb as string) ?? null,
+        website: (payload.website as string) ?? null,
+        instagram: (payload.instagram as string) ?? null,
+        latitude: (payload.latitude as number) ?? null,
+        longitude: (payload.longitude as number) ?? null,
+        city: 'Sydney',
+        owner_user_id: null,
+        is_claimed: false,
+        is_fixture: false,
+        image_url: null,
+      });
+    } else if (p.action_type === 'archive') {
+      const venue = s.venues.find((v) => v.id === p.venue_id);
+      if (venue) venue.is_fixture = true; // demo analog of status='archived'
+    } else {
+      const venue = s.venues.find((v) => v.id === p.venue_id);
+      if (venue) Object.assign(venue, payload);
+    }
+    p.status = 'approved';
+    await persist();
+  },
+
+  async rejectProposal(id, note) {
+    const s = await load();
+    const p = s.proposals.find((x) => x.id === id);
+    if (!p) throw new Error('Proposal not found.');
+    p.status = 'rejected';
+    p.review_note = note.trim() || null;
     await persist();
   },
 

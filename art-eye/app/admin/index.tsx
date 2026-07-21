@@ -30,16 +30,26 @@ function DeskRow({
 export default function HostDesk() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const [counts, setCounts] = useState<{ pending: number; venues: number; shows: number } | null>(
-    null
-  );
+  const [counts, setCounts] = useState<{
+    pending: number;
+    venues: number;
+    shows: number;
+    inbox: number;
+  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       let alive = true;
       if (profile?.role === 'admin') {
-        Promise.all([api.listPending(), api.listVenues(), api.listAllExhibitions()]).then(
-          ([p, v, e]) => alive && setCounts({ pending: p.length, venues: v.length, shows: e.length })
+        Promise.all([
+          api.listPending(),
+          api.listVenues(),
+          api.listAllExhibitions(),
+          api.listProposals(),
+        ]).then(
+          ([p, v, e, q]) =>
+            alive &&
+            setCounts({ pending: p.length, venues: v.length, shows: e.length, inbox: q.length })
         );
       }
       return () => {
@@ -104,6 +114,11 @@ export default function HostDesk() {
         label="EXHIBITIONS"
         meta={counts ? `${counts.shows} TOTAL` : '…'}
         onPress={() => router.push('/admin/exhibitions')}
+      />
+      <DeskRow
+        label="OWNER INBOX — PIPELINE PROPOSALS"
+        meta={counts ? (counts.inbox > 0 ? `${counts.inbox} WAITING` : 'CLEAR') : '…'}
+        onPress={() => router.push('/admin/inbox')}
       />
     </ScrollView>
   );

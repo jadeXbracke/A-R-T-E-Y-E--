@@ -128,7 +128,9 @@ export default function VenueDetail() {
 
         <Text style={styles.sectionTitle}>On now</Text>
         {onNow.length === 0 ? (
-          <Text style={styles.emptyLine}>Nothing on view right now.</Text>
+          <Text style={styles.emptyLine}>
+            No shows listed in ART EYE yet — check the venue’s website for its current programme.
+          </Text>
         ) : null}
       </View>
       {onNow.map((e) => (

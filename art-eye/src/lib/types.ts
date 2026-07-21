@@ -120,6 +120,45 @@ export interface VenueDraft {
   image_url?: string | null; // photo of the space
 }
 
+// ---- curated lists ----------------------------------------------------------
+export type CuratorRole = 'artist' | 'gallerist' | 'curator';
+
+// A public, human-curated selection of exhibitions — by an artist, a gallery
+// owner, or the editors. Lives in the guides tables in live mode.
+export interface CuratedList {
+  id: string;
+  title: string;
+  curator_name: string;
+  curator_role: CuratorRole;
+  intro: string;
+  exhibition_ids: string[];
+}
+
+// ---- venue freshness pipeline (owner review) --------------------------------
+export type ProposalAction = 'add' | 'archive' | 'update';
+export type ProposalStatus = 'pending' | 'approved' | 'rejected';
+
+export interface EvidenceItem {
+  url: string;
+  snippet: string;
+  checked_at?: string;
+}
+
+// A proposed change from the pipeline. Nothing is applied until the owner
+// approves it in the Owner Inbox.
+export interface VenueProposal {
+  id: string;
+  venue_id: string | null; // null = new-venue suggestion
+  action_type: ProposalAction;
+  proposed_payload: Record<string, unknown>;
+  evidence: EvidenceItem[];
+  confidence: number | null;
+  reason: string;
+  status: ProposalStatus;
+  review_note?: string | null;
+  created_at: string;
+}
+
 export type AgendaFilter =
   | 'all'
   | 'opening_soon'
