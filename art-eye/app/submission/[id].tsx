@@ -31,6 +31,7 @@ export function valuesFromExhibition(e: Exhibition): ExhibitionFormValues {
     opening_time: opening ? `${pad(opening.getHours())}:${pad(opening.getMinutes())}` : '',
     description: e.description,
     image_url: e.image_url,
+    video_url: e.video_url ?? '',
   };
 }
 
@@ -73,6 +74,7 @@ export default function EditSubmission() {
           opening_datetime: d.opening_datetime,
           description: d.description,
           image_url: d.image_url,
+          video_url: d.video_url ?? null,
         },
         profile.id
       );

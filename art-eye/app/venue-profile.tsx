@@ -20,6 +20,7 @@ export default function VenueProfile() {
   const [website, setWebsite] = useState('');
   const [instagram, setInstagram] = useState('');
   const [image, setImage] = useState<string | null>(null);
+  const [video, setVideo] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -37,6 +38,7 @@ export default function VenueProfile() {
             setWebsite(v.website ?? '');
             setInstagram(v.instagram ?? '');
             setImage(v.image_url ?? null);
+            setVideo(v.video_url ?? '');
           }
         });
       } else {
@@ -75,6 +77,7 @@ export default function VenueProfile() {
         website: website.trim() || null,
         instagram: instagram.trim() || null,
         image_url: imageUrl,
+        video_url: video.trim() || null,
       });
       setSaved(true);
     } catch (err) {
@@ -131,6 +134,14 @@ export default function VenueProfile() {
             onChangeText={setInstagram}
             autoCapitalize="none"
             placeholder="@handle"
+          />
+          <Field
+            label="VIDEO URL — OPTIONAL"
+            value={video}
+            onChangeText={setVideo}
+            autoCapitalize="none"
+            keyboardType="url"
+            placeholder="Link to a short clip (.mp4) of your space"
           />
 
           {error && <Text style={styles.error}>{error}</Text>}

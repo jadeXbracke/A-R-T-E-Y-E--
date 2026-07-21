@@ -80,6 +80,19 @@ with the host account and nowhere else.
 - **The exhibition information page** shows the venue’s photo and tappable **Website** / **Instagram**
   links when set — filled in by the venue account or the host.
 
+### Moving backgrounds (Ken Burns + optional video)
+
+- Every hero cover — the opening carousel, the exhibition page, the venue page — moves. By default
+  the editorial photo gets a very slow **Ken Burns** zoom-and-drift loop (direction varies per
+  item), so the app opens with motion without needing any video assets.
+- Venues and exhibitions also take an optional **`video_url`** (migration
+  `0008_video_urls.sql`): a link to a short clip that plays as a **muted, looping,
+  control-less background** via `expo-video`, replacing the still. The host sets it in the venue /
+  exhibition editors; a claimed venue account sets its own under *Manage your venue*. Only the
+  active carousel slide plays, so multiple clips never run at once.
+- No footage is ever scraped or hotlinked automatically — clips are supplied by the host or the
+  venue itself, same honest-sourcing rule as photos.
+
 ### Venue freshness pipeline (live mode only)
 
 A self-validating pipeline keeps the register accurate over time — and **never changes data on

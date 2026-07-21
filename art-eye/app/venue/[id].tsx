@@ -2,7 +2,8 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArtImage, ExhibitionRow } from '../../src/components/exhibition';
+import { ExhibitionRow } from '../../src/components/exhibition';
+import { LiveArt } from '../../src/components/live-art';
 import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { isOnNow, todayStr } from '../../src/lib/dates';
@@ -105,12 +106,12 @@ export default function VenueDetail() {
         <Text style={[type.serifHeading, { marginBottom: space.m }]}>{venue.name}</Text>
       </View>
 
-      {venue.image_url && (
-        <ArtImage
+      {(venue.image_url || venue.video_url) && (
+        <LiveArt
+          videoUrl={venue.video_url}
           uri={venue.image_url}
           fallbackId={venue.id}
           style={styles.photo}
-          contentFit="cover"
         />
       )}
 

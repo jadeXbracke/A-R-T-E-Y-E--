@@ -21,6 +21,7 @@ export interface ExhibitionFormValues {
   opening_time: string;
   description: string;
   image_url: string | null;
+  video_url: string;
 }
 
 export function draftFromValues(v: ExhibitionFormValues): ExhibitionDraft {
@@ -38,6 +39,7 @@ export function draftFromValues(v: ExhibitionFormValues): ExhibitionDraft {
         : null,
     description: v.description,
     image_url: v.image_url,
+    video_url: v.video_url.trim() || null,
   };
 }
 
@@ -54,6 +56,7 @@ export function emptyValues(): ExhibitionFormValues {
     opening_time: '',
     description: '',
     image_url: null,
+    video_url: '',
   };
 }
 
@@ -209,6 +212,15 @@ export function ExhibitionForm({
         active
         onPress={pickImage}
         style={{ alignSelf: 'flex-start', marginBottom: space.xl }}
+      />
+
+      <Field
+        label="VIDEO URL — OPTIONAL"
+        value={values.video_url}
+        onChangeText={(t) => set({ video_url: t })}
+        autoCapitalize="none"
+        keyboardType="url"
+        placeholder="Link to a short clip (.mp4) — plays as a muted moving background"
       />
 
       {error && <Text style={styles.error}>{error}</Text>}

@@ -19,6 +19,7 @@ export default function AdminReview() {
   const [endDate, setEndDate] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
   const [featured, setFeatured] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,7 @@ export default function AdminReview() {
       setEndDate(e.end_date);
       setDescription(e.description);
       setImageUrl(e.image_url ?? '');
+      setVideoUrl(e.video_url ?? '');
       setFeatured(e.is_featured);
     });
   }, [id]);
@@ -44,6 +46,7 @@ export default function AdminReview() {
     end_date: endDate.trim(),
     description: description.trim(),
     image_url: imageUrl.trim() || null,
+    video_url: videoUrl.trim() || null,
     is_featured: featured,
   });
 
@@ -143,6 +146,13 @@ export default function AdminReview() {
           onChangeText={setImageUrl}
           autoCapitalize="none"
           placeholder="https:// … or asset:slug"
+        />
+        <Field
+          label="VIDEO URL — OPTIONAL"
+          value={videoUrl}
+          onChangeText={setVideoUrl}
+          autoCapitalize="none"
+          placeholder="https:// … short clip, plays as a muted moving background"
         />
         <Kicker style={{ marginBottom: 8 }}>DESCRIPTION</Kicker>
         <TextInput
