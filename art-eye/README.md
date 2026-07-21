@@ -95,9 +95,23 @@ with the host account and nowhere else.
 
 ### Search
 
-A dedicated search screen (`/search`, linked from the Agenda and Venues headers) covers the whole
-register and agenda in one box: exhibition titles, artists, venue names, suburbs, categories and
-districts, accent-insensitive, results grouped into EXHIBITIONS and VENUES.
+A dedicated search screen (`/search`) covers the whole register and agenda in one box: exhibition
+titles, artists, venue names, suburbs, categories and districts, accent-insensitive, results
+grouped into EXHIBITIONS and VENUES. Entry points: a full-width search bar under the hero on the
+Agenda tab and at the top of the Venues tab.
+
+### Imagery rules
+
+- **Exhibition covers show the show, never the building.** An exhibition renders its own press
+  image, else its per-show tonal placeholder — no venue-photo fallback, so several shows at one
+  venue never repeat the same facade.
+- **Venue pages show the space.** Venue photos (freely licensed, Wikimedia Commons, or uploaded
+  by the venue/host) appear only there.
+- **Press images arrive via the pipeline** (`enrich-images`, weekly, live mode): for current
+  shows without an image it finds the venue's own exhibition page (Claude + web search) and takes
+  that page's `og:image` — the sharing image the venue itself publishes. Applied only where
+  `image_url` is null, with `image_source` recording provenance (migration
+  `0010_press_images.sql`); the host can clear or replace any image in the admin editor.
 
 ### Opening hours
 

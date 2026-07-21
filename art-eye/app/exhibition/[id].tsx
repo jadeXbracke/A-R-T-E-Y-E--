@@ -108,9 +108,8 @@ export default function ExhibitionDetail() {
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xl }}>
         <View>
           <LiveArt
-            videoUrl={e.video_url ?? e.venue?.video_url}
+            videoUrl={e.video_url}
             uri={e.image_url}
-            venueUri={e.venue?.image_url}
             fallbackId={e.id}
             style={{ width, backgroundColor: colors.hairline }}
             aspectRatio={4 / 5}
