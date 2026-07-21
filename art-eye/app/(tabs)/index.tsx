@@ -83,7 +83,10 @@ export default function AgendaScreen() {
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
     >
       <View style={styles.header}>
-        <Text style={styles.wordmark}>ART EYE</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Text style={styles.wordmark}>ART EYE</Text>
+          <MonoLink label="SEARCH" active onPress={() => router.push('/search')} />
+        </View>
         <Text style={styles.tagline}>YOUR EYE ON THE ART WORLD — SYDNEY</Text>
       </View>
       <Hairline style={{ marginBottom: space.l }} />

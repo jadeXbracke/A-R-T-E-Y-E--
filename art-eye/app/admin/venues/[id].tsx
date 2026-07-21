@@ -29,6 +29,7 @@ export default function VenueEditor() {
   const [suburb, setSuburb] = useState('');
   const [website, setWebsite] = useState('');
   const [instagram, setInstagram] = useState('');
+  const [hours, setHours] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
   const [image, setImage] = useState<string | null>(null);
@@ -48,6 +49,7 @@ export default function VenueEditor() {
       setSuburb(v.suburb ?? '');
       setWebsite(v.website ?? '');
       setInstagram(v.instagram ?? '');
+      setHours(v.opening_hours ?? '');
       setLat(v.latitude != null ? String(v.latitude) : '');
       setLng(v.longitude != null ? String(v.longitude) : '');
       setImage(v.image_url ?? null);
@@ -87,6 +89,7 @@ export default function VenueEditor() {
         suburb: suburb.trim() || null,
         website: website.trim() || null,
         instagram: instagram.trim() || null,
+        opening_hours: hours.trim() || null,
         latitude: numOrNull(lat),
         longitude: numOrNull(lng),
         is_fixture: hidden,
@@ -174,6 +177,12 @@ export default function VenueEditor() {
           onChangeText={setInstagram}
           autoCapitalize="none"
           placeholder="@handle"
+        />
+        <Field
+          label="OPENING HOURS"
+          value={hours}
+          onChangeText={setHours}
+          placeholder="e.g. Tue–Sat 10:00–17:00"
         />
         <View style={{ flexDirection: 'row', gap: space.l }}>
           <Field

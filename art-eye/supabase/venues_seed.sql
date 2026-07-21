@@ -176,3 +176,34 @@ on conflict (slug) do update set
 -- closed per the v2 register: archive, never delete
 update venues set status = 'archived', verification_source = 'owner register v2'
   where slug in ('may-space', 'liverpool-street-gallery');
+
+-- ---------------------------------------------------------------------------
+-- Opening hours — verified against the venues' own sites on 2026-07-21.
+-- (Requires migration 0009_opening_hours.sql.)
+-- ---------------------------------------------------------------------------
+update venues set opening_hours = x.hours, hours_checked = date '2026-07-21'
+from (values
+  ('art-gallery-of-new-south-wales', 'Daily 10:00–17:00, Wed until 22:00'),
+  ('mca-australia',                  'Wed–Mon 10:00–17:00, closed Tue'),
+  ('white-rabbit-gallery',           'Wed–Sun 10:00–17:00'),
+  ('artspace',                       'Tue–Sun 11:00–17:00'),
+  ('chau-chak-wing-museum',          'Mon–Fri 10:00–17:00, Sat–Sun 12:00–16:00'),
+  ('sh-ervin-gallery',               'Tue–Sun 11:00–17:00'),
+  ('mosman-art-gallery',             'Daily 10:00–17:00'),
+  ('manly-art-gallery-museum',       'Tue–Sun 10:00–17:00'),
+  ('campbelltown-arts-centre',       'Daily 10:00–16:00'),
+  ('firstdraft',                     'Wed 11:00–20:00, Thu–Sat 11:00–17:00'),
+  ('king-street-gallery',            'Tue–Sat 10:00–18:00'),
+  ('olsen-gallery',                  'Tue–Fri 10:00–18:00, Sat 10:00–17:00'),
+  ('roslyn-oxley9-gallery',          'Tue–Fri 10:00–18:00, Sat 11:00–18:00')
+) as x(slug, hours)
+where venues.slug = x.slug;
+
+-- These three predate the slug backfill in some databases — match by name.
+update venues set opening_hours = x.hours, hours_checked = date '2026-07-21'
+from (values
+  ('Cassandra Bird',                 'Tue–Fri 10:00–17:00, Sat 11:00–17:00'),
+  ('Ames Yavuz',                     'Tue–Sat 10:00–18:00'),
+  ('Grace Cossington Smith Gallery', 'Tue–Sat 10:00–17:00 (during exhibitions)')
+) as x(name, hours)
+where venues.name = x.name;

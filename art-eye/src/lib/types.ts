@@ -64,6 +64,8 @@ export interface Venue {
   free_entry?: boolean | null;
   image_url?: string | null; // photo of the gallery/museum space
   video_url?: string | null; // short muted clip of the space — plays as a moving background
+  opening_hours?: string | null; // e.g. "Tue–Sat 10:00–17:00" — verified from the venue's website
+  hours_checked?: string | null; // YYYY-MM-DD the hours were last verified
 }
 
 export interface Exhibition {
@@ -126,6 +128,7 @@ export interface VenueDraft {
   is_fixture?: boolean;
   image_url?: string | null; // photo of the space
   video_url?: string | null; // short muted clip of the space
+  opening_hours?: string | null;
 }
 
 // ---- curated lists ----------------------------------------------------------
