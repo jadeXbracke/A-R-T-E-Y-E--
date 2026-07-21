@@ -92,7 +92,10 @@ export default function VenueDetail() {
       }}
     >
       <View style={styles.head}>
-        <Kicker>{venue.type.toUpperCase()}{venue.suburb ? ` — ${venue.suburb.toUpperCase()}` : ''}</Kicker>
+        <Kicker>
+          {(venue.category ?? venue.type).replace('_', ' ').toUpperCase()}
+          {venue.suburb ? ` — ${venue.suburb.toUpperCase()}` : ''}
+        </Kicker>
         <Pressable onPress={() => router.back()} hitSlop={12}>
           <Text style={styles.back}>← BACK</Text>
         </Pressable>
@@ -113,6 +116,7 @@ export default function VenueDetail() {
 
       <View style={{ paddingHorizontal: space.page, paddingTop: space.m }}>
         {venue.address && <Text style={styles.address}>{venue.address}</Text>}
+        {venue.editorial_note && <Text style={styles.note}>{venue.editorial_note}</Text>}
 
         <View style={styles.links}>
           {venue.website && (
@@ -172,6 +176,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
     color: colors.grey,
+    marginBottom: space.m,
+  },
+  note: {
+    ...type.serifBody,
+    color: colors.ink,
     marginBottom: space.m,
   },
   links: {

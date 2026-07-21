@@ -7,6 +7,7 @@ export const AREAS = [
   'Inner West',
   'North',
   'Greater Sydney',
+  'Day Trips',
 ] as const;
 
 export type Area = (typeof AREAS)[number];
@@ -20,6 +21,7 @@ const SUBURB_AREA: Record<string, Area> = {
   'millers point': 'City & The Rocks',
   'dawes point': 'City & The Rocks',
   ultimo: 'City & The Rocks',
+  'darling harbour': 'City & The Rocks',
   // east
   paddington: 'East',
   woollahra: 'East',
@@ -29,6 +31,12 @@ const SUBURB_AREA: Record<string, Area> = {
   'rushcutters bay': 'East',
   'double bay': 'East',
   woolloomooloo: 'East',
+  'elizabeth bay': 'East',
+  vaucluse: 'East',
+  bronte: 'East',
+  'bondi beach': 'East',
+  'kings cross': 'East',
+  kensington: 'East',
   // inner west & south inner
   chippendale: 'Inner West',
   newtown: 'Inner West',
@@ -51,6 +59,9 @@ const SUBURB_AREA: Record<string, Area> = {
   willoughby: 'North',
   wahroonga: 'North',
   hornsby: 'North',
+  'neutral bay': 'North',
+  chatswood: 'North',
+  'macquarie park': 'North',
   // greater
   parramatta: 'Greater Sydney',
   granville: 'Greater Sydney',
@@ -61,6 +72,19 @@ const SUBURB_AREA: Record<string, Area> = {
   'emu plains': 'Greater Sydney',
   gymea: 'Greater Sydney',
   smithfield: 'Greater Sydney',
+  'castle hill': 'Greater Sydney',
+  windsor: 'Greater Sydney',
+  blacktown: 'Greater Sydney',
+  auburn: 'Greater Sydney',
+  hurstville: 'Greater Sydney',
+  // worth the drive — outside the metro basin
+  wollongong: 'Day Trips',
+  bowral: 'Day Trips',
+  illaroo: 'Day Trips',
+  katoomba: 'Day Trips',
+  newcastle: 'Day Trips',
+  maitland: 'Day Trips',
+  gosford: 'Day Trips',
 };
 
 export function areaForSuburb(suburb?: string | null): Area {
