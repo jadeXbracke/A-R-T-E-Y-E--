@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExhibitionGridItem, ExhibitionRow } from '../../src/components/exhibition';
 import { HeroCarousel } from '../../src/components/hero-carousel';
+import { SearchBar } from '../../src/components/search-bar';
 import { EmptyState, Hairline, Kicker, Lift, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { daysUntil, isOnNow, todayStr } from '../../src/lib/dates';
@@ -83,10 +84,7 @@ export default function AgendaScreen() {
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
     >
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Text style={styles.wordmark}>ART EYE</Text>
-          <MonoLink label="SEARCH" active onPress={() => router.push('/search')} />
-        </View>
+        <Text style={styles.wordmark}>ART EYE</Text>
         <Text style={styles.tagline}>YOUR EYE ON THE ART WORLD — SYDNEY</Text>
       </View>
       <Hairline style={{ marginBottom: space.l }} />
@@ -96,6 +94,10 @@ export default function AgendaScreen() {
       ) : (
         <>
           <HeroCarousel exhibitions={featured} />
+
+          <SearchBar
+            style={{ marginHorizontal: space.page, marginTop: space.xl }}
+          />
 
           <View style={styles.sectionHead}>
             <Text style={type.serifHeading}>{heading}</Text>

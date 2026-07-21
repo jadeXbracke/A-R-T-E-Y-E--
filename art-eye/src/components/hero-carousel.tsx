@@ -57,9 +57,8 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
           >
             <View>
               <LiveArt
-                videoUrl={e.video_url ?? e.venue?.video_url}
+                videoUrl={e.video_url}
                 uri={e.image_url}
-                venueUri={e.venue?.image_url}
                 fallbackId={e.id}
                 active={i === active}
                 style={{ width, backgroundColor: colors.hairline }}

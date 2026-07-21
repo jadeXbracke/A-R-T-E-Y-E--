@@ -20,13 +20,14 @@ function fallbackFor(id: string, imageUrl?: string | null): number {
 
 export function exhibitionSource(e: Exhibition) {
   if (e.image_url && !e.image_url.startsWith('asset:')) return { uri: e.image_url };
-  if (e.venue?.image_url) return { uri: e.venue.image_url };
   return fallbackFor(e.id, e.image_url);
 }
 
 /**
- * Editorial-first image chain: the exhibition's own press image, else the
- * venue's photo, else the tonal placeholder (loading state and error fallback).
+ * Editorial image chain: the work's own press image, else the tonal
+ * placeholder (loading state and error fallback). Deliberately no venue-photo
+ * fallback on exhibition covers — a building facade repeated across several
+ * shows reads worse than a quiet placeholder, and the owner agrees.
  */
 export function ArtImage({
   uri,
@@ -65,7 +66,6 @@ export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; se
       <View>
         <ArtImage
           uri={exhibition.image_url}
-          venueUri={exhibition.venue?.image_url}
           fallbackId={exhibition.id}
           style={styles.thumb}
           contentFit="cover"
@@ -98,7 +98,6 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
       <View>
         <ArtImage
           uri={exhibition.image_url}
-          venueUri={exhibition.venue?.image_url}
           fallbackId={exhibition.id}
           style={styles.gridImage}
           contentFit="cover"

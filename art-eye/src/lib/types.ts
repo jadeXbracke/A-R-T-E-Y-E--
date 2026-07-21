@@ -78,6 +78,7 @@ export interface Exhibition {
   opening_datetime: string | null; // ISO
   description: string;
   image_url: string | null; // remote url, or "asset:<slug>" for bundled placeholders
+  image_source?: string | null; // page a pipeline-fetched press image came from
   video_url?: string | null; // short muted clip — plays as a moving background where set
   status: ExhibitionStatus;
   rejection_reason: RejectionReason | null;

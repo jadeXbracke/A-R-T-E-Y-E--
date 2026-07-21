@@ -30,7 +30,7 @@ export interface EvidenceItem {
 
 export interface RunLog {
   id?: string;
-  run_type: "validate" | "discover";
+  run_type: "validate" | "discover" | "enrich";
   venues_checked: number;
   proposals_created: number;
   errors: unknown[];
@@ -38,7 +38,7 @@ export interface RunLog {
   claude_calls: number;
 }
 
-export function newRunLog(run_type: "validate" | "discover"): RunLog {
+export function newRunLog(run_type: "validate" | "discover" | "enrich"): RunLog {
   return { run_type, venues_checked: 0, proposals_created: 0, errors: [], cost_estimate: 0, claude_calls: 0 };
 }
 
