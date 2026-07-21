@@ -58,6 +58,10 @@ export interface Venue {
   owner_user_id: string | null;
   is_claimed?: boolean; // an owner account is attached
   is_fixture?: boolean; // test data — kept out of the public feed
+  category?: string | null; // institution / public / commercial / ari / first_nations / event / day_trip / auction
+  tier?: string | null; // editorial weight: 1, 1b, 2, 2b, 3, 3b, 4
+  editorial_note?: string | null;
+  free_entry?: boolean | null;
   image_url?: string | null; // photo of the gallery/museum space
 }
 

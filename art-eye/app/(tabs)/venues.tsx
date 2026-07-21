@@ -26,6 +26,7 @@ const AREA_FILTERS: { value: 'all' | Area; label: string }[] = [
   { value: 'Inner West', label: 'INNER WEST' },
   { value: 'North', label: 'NORTH' },
   { value: 'Greater Sydney', label: 'GREATER SYDNEY' },
+  { value: 'Day Trips', label: 'DAY TRIPS' },
 ];
 
 export default function VenuesScreen() {
