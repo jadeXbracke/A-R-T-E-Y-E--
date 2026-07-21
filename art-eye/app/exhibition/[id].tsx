@@ -3,6 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtImage } from '../../src/components/exhibition';
+import { LiveArt } from '../../src/components/live-art';
 import { ActionBar, Hairline, Kicker, Loading, MonoLink, RedDot } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
@@ -106,12 +107,13 @@ export default function ExhibitionDetail() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xl }}>
         <View>
-          <ArtImage
+          <LiveArt
+            videoUrl={e.video_url ?? e.venue?.video_url}
             uri={e.image_url}
             venueUri={e.venue?.image_url}
             fallbackId={e.id}
-            style={{ width, aspectRatio: 4 / 5, backgroundColor: colors.hairline }}
-            contentFit="cover"
+            style={{ width, backgroundColor: colors.hairline }}
+            aspectRatio={4 / 5}
           />
           <View style={styles.overlay}>
             <Text style={styles.overlayArtist}>{e.artists.toUpperCase()}</Text>

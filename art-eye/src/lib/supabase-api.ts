@@ -193,6 +193,7 @@ export const supabaseApi: Api = {
       opening_datetime: draft.opening_datetime,
       description: draft.description.trim(),
       image_url: draft.image_url,
+      video_url: draft.video_url ?? null,
       status: 'pending',
       city: 'Sydney',
     });
@@ -280,6 +281,7 @@ export const supabaseApi: Api = {
         longitude: input.longitude ?? null,
         is_fixture: input.is_fixture ?? false,
         image_url: input.image_url ?? null,
+        video_url: input.video_url ?? null,
         city: 'Sydney',
       })
       .select('*')
@@ -341,6 +343,7 @@ export const supabaseApi: Api = {
       opening_datetime: draft.opening_datetime,
       description: draft.description.trim(),
       image_url: draft.image_url,
+      video_url: draft.video_url ?? null,
       status: 'approved',
       city: 'Sydney',
     });

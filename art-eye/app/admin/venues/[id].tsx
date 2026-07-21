@@ -32,6 +32,7 @@ export default function VenueEditor() {
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
   const [image, setImage] = useState<string | null>(null);
+  const [video, setVideo] = useState('');
   const [hidden, setHidden] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +51,7 @@ export default function VenueEditor() {
       setLat(v.latitude != null ? String(v.latitude) : '');
       setLng(v.longitude != null ? String(v.longitude) : '');
       setImage(v.image_url ?? null);
+      setVideo(v.video_url ?? '');
       setHidden(!!v.is_fixture);
       setReady(true);
     });
@@ -89,6 +91,7 @@ export default function VenueEditor() {
         longitude: numOrNull(lng),
         is_fixture: hidden,
         image_url: imageUrl,
+        video_url: video.trim() || null,
       };
       if (isNew) {
         await api.createVenue(draft);
@@ -197,6 +200,15 @@ export default function VenueEditor() {
         <View style={{ marginBottom: space.xl }}>
           <PhotoPicker uri={image} onPick={setImage} addLabel="ADD A PHOTO" />
         </View>
+
+        <Field
+          label="VIDEO URL — OPTIONAL"
+          value={video}
+          onChangeText={setVideo}
+          autoCapitalize="none"
+          keyboardType="url"
+          placeholder="Link to a short clip (.mp4) — plays as a muted moving background"
+        />
 
         <View style={{ marginBottom: space.xl }}>
           <MonoLink

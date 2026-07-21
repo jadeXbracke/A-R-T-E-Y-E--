@@ -290,6 +290,7 @@ export const demoApi: Api = {
       opening_datetime: draft.opening_datetime,
       description: draft.description.trim(),
       image_url: draft.image_url,
+      video_url: draft.video_url ?? null,
       status: 'pending',
       rejection_reason: null,
       is_featured: false,
@@ -368,6 +369,7 @@ export const demoApi: Api = {
       is_claimed: false,
       is_fixture: input.is_fixture ?? false,
       image_url: input.image_url ?? null,
+      video_url: input.video_url ?? null,
     };
     s.venues.push(venue);
     await persist();
@@ -423,6 +425,7 @@ export const demoApi: Api = {
       opening_datetime: draft.opening_datetime,
       description: draft.description.trim(),
       image_url: draft.image_url,
+      video_url: draft.video_url ?? null,
       status: 'approved', // the host publishes directly
       rejection_reason: null,
       is_featured: false,

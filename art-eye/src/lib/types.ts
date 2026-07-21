@@ -63,6 +63,7 @@ export interface Venue {
   editorial_note?: string | null;
   free_entry?: boolean | null;
   image_url?: string | null; // photo of the gallery/museum space
+  video_url?: string | null; // short muted clip of the space — plays as a moving background
 }
 
 export interface Exhibition {
@@ -75,6 +76,7 @@ export interface Exhibition {
   opening_datetime: string | null; // ISO
   description: string;
   image_url: string | null; // remote url, or "asset:<slug>" for bundled placeholders
+  video_url?: string | null; // short muted clip — plays as a moving background where set
   status: ExhibitionStatus;
   rejection_reason: RejectionReason | null;
   is_featured: boolean;
@@ -105,6 +107,7 @@ export interface ExhibitionDraft {
   opening_datetime: string | null;
   description: string;
   image_url: string | null;
+  video_url?: string | null;
   venue_name: string;
   venue_type: VenueType;
   venue_address: string;
@@ -122,6 +125,7 @@ export interface VenueDraft {
   longitude?: number | null;
   is_fixture?: boolean;
   image_url?: string | null; // photo of the space
+  video_url?: string | null; // short muted clip of the space
 }
 
 // ---- curated lists ----------------------------------------------------------

@@ -13,7 +13,7 @@ import {
 import { fmtRange } from '../lib/dates';
 import { Exhibition } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
-import { ArtImage } from './exhibition';
+import { LiveArt } from './live-art';
 import { Kicker } from './ui';
 
 /** Ocula-style Curator's picks carousel: full-bleed image, caps artist over
@@ -49,19 +49,21 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
         onScroll={onScroll}
         scrollEventThrottle={32}
       >
-        {exhibitions.map((e) => (
+        {exhibitions.map((e, i) => (
           <Pressable
             key={e.id}
             style={{ width }}
             onPress={() => router.push(`/exhibition/${e.id}`)}
           >
             <View>
-              <ArtImage
+              <LiveArt
+                videoUrl={e.video_url ?? e.venue?.video_url}
                 uri={e.image_url}
                 venueUri={e.venue?.image_url}
                 fallbackId={e.id}
-                style={{ width, aspectRatio: 4 / 5, backgroundColor: colors.hairline }}
-                contentFit="cover"
+                active={i === active}
+                style={{ width, backgroundColor: colors.hairline }}
+                aspectRatio={4 / 5}
               />
               <View style={styles.overlay}>
                 <Text style={styles.overlayArtist}>{e.artists.toUpperCase()}</Text>
