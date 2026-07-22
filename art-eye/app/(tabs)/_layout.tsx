@@ -8,6 +8,7 @@ const LABELS: Record<string, string> = {
   index: 'AGENDA',
   venues: 'VENUES',
   fairs: 'FAIRS',
+  feed: 'FEED',
   saved: 'SAVED',
   submit: 'SUBMIT',
   curator: 'CURATOR',
@@ -67,6 +68,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" />
       <Tabs.Screen name="venues" />
       <Tabs.Screen name="fairs" />
+      <Tabs.Screen name="feed" />
       <Tabs.Screen name="saved" />
       <Tabs.Screen name="submit" />
       <Tabs.Screen name="curator" />

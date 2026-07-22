@@ -41,6 +41,39 @@ export interface Profile {
   profile_type: ProfileType;
   display_name: string;
   city: string;
+  is_private?: boolean; // closed profile — activity only visible to accepted followers
+}
+
+// ---- social layer (Strava-style follow + activity feed) ---------------------
+export type FollowState = 'none' | 'requested' | 'following';
+
+export interface Follow {
+  follower_id: string;
+  followee_id: string;
+  status: 'accepted' | 'pending'; // pending = awaiting a private profile's approval
+  created_at: string;
+}
+
+// A profile as seen by a viewer, with social counts and the viewer's relationship.
+export interface PublicProfile extends Profile {
+  followers: number;
+  following: number;
+  visit_count: number;
+  follow_state: FollowState;
+  can_view_activity: boolean; // public, own profile, or an accepted follower
+}
+
+// One entry in the activity feed — a friend logging a visit to a show.
+export interface FeedItem {
+  id: string;
+  user_id: string;
+  display_name: string;
+  exhibition_id: string;
+  exhibition_title: string;
+  venue_name: string | null;
+  rating: number;
+  reflection: string;
+  visit_date: string; // YYYY-MM-DD
 }
 
 export interface Venue {

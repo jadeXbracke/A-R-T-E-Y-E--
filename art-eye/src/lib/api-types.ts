@@ -1,4 +1,4 @@
-import { CuratedList, Exhibition, ExhibitionDraft, Profile, ProfileType, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { CuratedList, Exhibition, ExhibitionDraft, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -56,6 +56,19 @@ export interface Api {
   listProposals(): Promise<VenueProposal[]>;
   approveProposal(proposal: VenueProposal, payload: Record<string, unknown>): Promise<void>;
   rejectProposal(id: string, note: string): Promise<void>;
+
+  // social layer — follow graph, privacy and the friends activity feed
+  getPublicProfile(userId: string, viewerId: string | null): Promise<PublicProfile>;
+  followUser(viewerId: string, targetId: string): Promise<FollowState>;
+  unfollowUser(viewerId: string, targetId: string): Promise<void>;
+  listFollowers(userId: string): Promise<Profile[]>;
+  listFollowing(userId: string): Promise<Profile[]>;
+  listFollowRequests(userId: string): Promise<Profile[]>; // pending requests to approve
+  respondFollowRequest(userId: string, requesterId: string, accept: boolean): Promise<void>;
+  setProfilePrivacy(userId: string, isPrivate: boolean): Promise<void>;
+  discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
+  friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows
+  userActivity(userId: string, viewerId: string | null): Promise<FeedItem[]>;
 
   // media
   uploadImage(localUri: string): Promise<string>;

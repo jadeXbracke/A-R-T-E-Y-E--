@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { CuratedList, CuratorRole, Exhibition, ExhibitionDraft, Profile, RejectionReason, Venue, VenueDraft, VenueProposal } from './types';
+import { CuratedList, CuratorRole, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 
 let client: SupabaseClient | null = null;
@@ -30,6 +30,30 @@ export function supabase(): SupabaseClient {
 }
 
 const EXHIBITION_SELECT = '*, venue:venues(*)';
+
+// Shape a joined user_visits row (with actor + exhibition + venue) into a FeedItem.
+function toFeedItem(row: unknown): FeedItem {
+  const r = row as {
+    user_id: string;
+    exhibition_id: string;
+    rating: number;
+    reflection: string;
+    visit_date: string;
+    actor?: { display_name?: string } | null;
+    exhibition?: { title?: string; venue?: { name?: string } | null } | null;
+  };
+  return {
+    id: `${r.user_id}:${r.exhibition_id}`,
+    user_id: r.user_id,
+    display_name: r.actor?.display_name ?? 'Someone',
+    exhibition_id: r.exhibition_id,
+    exhibition_title: r.exhibition?.title ?? 'a show',
+    venue_name: r.exhibition?.venue?.name ?? null,
+    rating: r.rating,
+    reflection: r.reflection,
+    visit_date: r.visit_date,
+  };
+}
 
 async function fetchProfile(userId: string, email: string): Promise<Profile> {
   const { data, error } = await supabase().from('profiles').select('*').eq('id', userId).single();
@@ -409,6 +433,144 @@ export const supabaseApi: Api = {
       })
       .eq('id', id);
     if (error) throw new Error(error.message);
+  },
+
+  // ---- social layer -------------------------------------------------------
+  async getPublicProfile(userId, viewerId) {
+    const sb = supabase();
+    const { data: profile, error } = await sb.from('profiles').select('*').eq('id', userId).single();
+    if (error) throw new Error(error.message);
+    const [{ count: followers }, { count: following }, { count: visits }, rel] = await Promise.all([
+      sb.from('follows').select('*', { count: 'exact', head: true }).eq('followee_id', userId).eq('status', 'accepted'),
+      sb.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId).eq('status', 'accepted'),
+      sb.from('user_visits').select('*', { count: 'exact', head: true }).eq('user_id', userId),
+      viewerId && viewerId !== userId
+        ? sb.from('follows').select('status').eq('follower_id', viewerId).eq('followee_id', userId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    const status = (rel as { data: { status?: string } | null }).data?.status;
+    const state: FollowState = status === 'accepted' ? 'following' : status === 'pending' ? 'requested' : 'none';
+    const isOwn = viewerId === userId;
+    return {
+      ...(profile as Profile),
+      followers: followers ?? 0,
+      following: following ?? 0,
+      visit_count: visits ?? 0,
+      follow_state: state,
+      can_view_activity: isOwn || !(profile as Profile).is_private || state === 'following',
+    } as PublicProfile;
+  },
+
+  async followUser(viewerId, targetId) {
+    const sb = supabase();
+    const { data: target } = await sb.from('profiles').select('is_private').eq('id', targetId).single();
+    const status: Follow['status'] = (target as { is_private?: boolean })?.is_private ? 'pending' : 'accepted';
+    const { error } = await sb
+      .from('follows')
+      .upsert({ follower_id: viewerId, followee_id: targetId, status }, { onConflict: 'follower_id,followee_id' });
+    if (error) throw new Error(error.message);
+    return status === 'accepted' ? 'following' : 'requested';
+  },
+
+  async unfollowUser(viewerId, targetId) {
+    const { error } = await supabase()
+      .from('follows')
+      .delete()
+      .eq('follower_id', viewerId)
+      .eq('followee_id', targetId);
+    if (error) throw new Error(error.message);
+  },
+
+  async listFollowers(userId) {
+    const { data, error } = await supabase()
+      .from('follows')
+      .select('follower:profiles!follows_follower_id_fkey(*)')
+      .eq('followee_id', userId)
+      .eq('status', 'accepted');
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => (r as unknown as { follower: Profile }).follower);
+  },
+
+  async listFollowing(userId) {
+    const { data, error } = await supabase()
+      .from('follows')
+      .select('followee:profiles!follows_followee_id_fkey(*)')
+      .eq('follower_id', userId)
+      .eq('status', 'accepted');
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => (r as unknown as { followee: Profile }).followee);
+  },
+
+  async listFollowRequests(userId) {
+    const { data, error } = await supabase()
+      .from('follows')
+      .select('follower:profiles!follows_follower_id_fkey(*)')
+      .eq('followee_id', userId)
+      .eq('status', 'pending');
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => (r as unknown as { follower: Profile }).follower);
+  },
+
+  async respondFollowRequest(userId, requesterId, accept) {
+    const sb = supabase();
+    if (accept) {
+      const { error } = await sb
+        .from('follows')
+        .update({ status: 'accepted' })
+        .eq('follower_id', requesterId)
+        .eq('followee_id', userId);
+      if (error) throw new Error(error.message);
+    } else {
+      const { error } = await sb
+        .from('follows')
+        .delete()
+        .eq('follower_id', requesterId)
+        .eq('followee_id', userId);
+      if (error) throw new Error(error.message);
+    }
+  },
+
+  async setProfilePrivacy(userId, isPrivate) {
+    const { error } = await supabase().from('profiles').update({ is_private: isPrivate }).eq('id', userId);
+    if (error) throw new Error(error.message);
+  },
+
+  async discoverPeople(viewerId) {
+    const sb = supabase();
+    const { data: mine } = await sb.from('follows').select('followee_id').eq('follower_id', viewerId);
+    const exclude = new Set([viewerId, ...((mine ?? []).map((r) => (r as { followee_id: string }).followee_id))]);
+    const { data, error } = await sb.from('profiles').select('*').neq('role', 'admin').limit(50);
+    if (error) throw new Error(error.message);
+    return (data ?? []).filter((p) => !exclude.has((p as Profile).id)) as Profile[];
+  },
+
+  async friendsFeed(viewerId) {
+    const sb = supabase();
+    const { data: following } = await sb
+      .from('follows')
+      .select('followee_id')
+      .eq('follower_id', viewerId)
+      .eq('status', 'accepted');
+    const ids = (following ?? []).map((r) => (r as { followee_id: string }).followee_id);
+    if (ids.length === 0) return [];
+    const { data, error } = await sb
+      .from('user_visits')
+      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .in('user_id', ids)
+      .order('visit_date', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toFeedItem);
+  },
+
+  async userActivity(userId, _viewerId) {
+    // RLS enforces visibility — a hidden profile simply returns no rows.
+    const { data, error } = await supabase()
+      .from('user_visits')
+      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .eq('user_id', userId)
+      .order('visit_date', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(toFeedItem);
   },
 
   async uploadImage(localUri) {

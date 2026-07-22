@@ -8,7 +8,11 @@ import {
   CuratedList,
   Exhibition,
   ExhibitionDraft,
+  FeedItem,
+  Follow,
+  FollowState,
   Profile,
+  PublicProfile,
   RejectionReason,
   Venue,
   VenueDraft,
@@ -50,12 +54,13 @@ interface DemoState {
   exhibitions: Exhibition[];
   watchlist: WatchlistEntry[];
   visits: Visit[];
+  follows: Follow[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v13';
+const KEY = 'arteye.demo.v14';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -95,6 +100,27 @@ function seedState(): DemoState {
         profile_type: 'enthusiast',
         display_name: 'Sam Curator',
         city: 'Sydney',
+        is_private: false,
+      },
+      {
+        id: 'u-mara',
+        email: 'mara@arteye.demo',
+        password: 'arteye',
+        role: 'user',
+        profile_type: 'collector',
+        display_name: 'Mara Ellison',
+        city: 'Sydney',
+        is_private: false,
+      },
+      {
+        id: 'u-theo',
+        email: 'theo@arteye.demo',
+        password: 'arteye',
+        role: 'user',
+        profile_type: 'artist',
+        display_name: 'Theo Nguyen',
+        city: 'Sydney',
+        is_private: true,
       },
     ],
     venues,
@@ -117,6 +143,36 @@ function seedState(): DemoState {
         reflection: 'Gabori’s blue holds the whole wall. Ledgerwood hums beside it.',
         visit_date: '2026-07-10',
       },
+      {
+        user_id: 'u-mara',
+        exhibition_id: 'e-archibald',
+        rating: 4,
+        reflection: 'Went in for one portrait, stayed two hours.',
+        visit_date: '2026-07-18',
+      },
+      {
+        user_id: 'u-mara',
+        exhibition_id: 'e-primavera',
+        rating: 5,
+        reflection: 'The most alive room in the city right now.',
+        visit_date: '2026-07-20',
+      },
+      {
+        user_id: 'u-theo',
+        exhibition_id: 'e-murakami',
+        rating: 5,
+        reflection: 'Studied the surface for the varnish. Immaculate.',
+        visit_date: '2026-07-15',
+      },
+    ],
+    // Follow graph: the admin (Jade) follows Sam and Mara; a pending request
+    // sits against Theo's private profile. Sam and Mara follow each other.
+    follows: [
+      { follower_id: 'u-admin', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-05T00:00:00.000Z' },
+      { follower_id: 'u-admin', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-06T00:00:00.000Z' },
+      { follower_id: 'u-admin', followee_id: 'u-theo', status: 'pending', created_at: '2026-07-19T00:00:00.000Z' },
+      { follower_id: 'u-curator', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-07T00:00:00.000Z' },
+      { follower_id: 'u-mara', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-08T00:00:00.000Z' },
     ],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
@@ -156,6 +212,33 @@ function stripUser(u: DemoUser): Profile {
 
 function withVenue(e: Exhibition, venues: Venue[]): Exhibition {
   return { ...e, venue: venues.find((v) => v.id === e.venue_id) };
+}
+
+// The viewer's relationship to a target user, from the follow graph.
+function followStateFor(s: DemoState, viewerId: string | null, targetId: string): FollowState {
+  if (!viewerId || viewerId === targetId) return 'none';
+  const f = s.follows.find((x) => x.follower_id === viewerId && x.followee_id === targetId);
+  if (!f) return 'none';
+  return f.status === 'accepted' ? 'following' : 'requested';
+}
+
+// Turn a Visit into a feed item by joining the actor and the exhibition/venue.
+function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
+  const user = s.users.find((u) => u.id === v.user_id);
+  const ex = s.exhibitions.find((e) => e.id === v.exhibition_id);
+  if (!user || !ex) return null;
+  const venue = s.venues.find((vn) => vn.id === ex.venue_id);
+  return {
+    id: `${v.user_id}:${v.exhibition_id}`,
+    user_id: v.user_id,
+    display_name: user.display_name,
+    exhibition_id: ex.id,
+    exhibition_title: ex.title,
+    venue_name: venue?.name ?? null,
+    rating: v.rating,
+    reflection: v.reflection,
+    visit_date: v.visit_date,
+  };
 }
 
 export const demoApi: Api = {
@@ -266,6 +349,134 @@ export const demoApi: Api = {
       (w) => !(w.user_id === visit.user_id && w.exhibition_id === visit.exhibition_id)
     );
     await persist();
+  },
+
+  // ---- social layer -------------------------------------------------------
+  async getPublicProfile(userId, viewerId) {
+    const s = await load();
+    const u = s.users.find((x) => x.id === userId);
+    if (!u) throw new Error('Profile not found.');
+    const state = followStateFor(s, viewerId, userId);
+    const isOwn = viewerId === userId;
+    return {
+      ...stripUser(u),
+      followers: s.follows.filter((f) => f.followee_id === userId && f.status === 'accepted').length,
+      following: s.follows.filter((f) => f.follower_id === userId && f.status === 'accepted').length,
+      visit_count: s.visits.filter((v) => v.user_id === userId).length,
+      follow_state: state,
+      can_view_activity: isOwn || !u.is_private || state === 'following',
+    } as PublicProfile;
+  },
+
+  async followUser(viewerId, targetId) {
+    const s = await load();
+    if (viewerId === targetId) return 'none';
+    const target = s.users.find((x) => x.id === targetId);
+    if (!target) throw new Error('Profile not found.');
+    const existing = s.follows.find(
+      (f) => f.follower_id === viewerId && f.followee_id === targetId
+    );
+    if (existing) return existing.status === 'accepted' ? 'following' : 'requested';
+    // Private profiles gate on approval; public profiles follow immediately.
+    const status: Follow['status'] = target.is_private ? 'pending' : 'accepted';
+    s.follows.push({
+      follower_id: viewerId,
+      followee_id: targetId,
+      status,
+      created_at: new Date().toISOString(),
+    });
+    await persist();
+    return status === 'accepted' ? 'following' : 'requested';
+  },
+
+  async unfollowUser(viewerId, targetId) {
+    const s = await load();
+    s.follows = s.follows.filter(
+      (f) => !(f.follower_id === viewerId && f.followee_id === targetId)
+    );
+    await persist();
+  },
+
+  async listFollowers(userId) {
+    const s = await load();
+    const ids = s.follows
+      .filter((f) => f.followee_id === userId && f.status === 'accepted')
+      .map((f) => f.follower_id);
+    return s.users.filter((u) => ids.includes(u.id)).map(stripUser);
+  },
+
+  async listFollowing(userId) {
+    const s = await load();
+    const ids = s.follows
+      .filter((f) => f.follower_id === userId && f.status === 'accepted')
+      .map((f) => f.followee_id);
+    return s.users.filter((u) => ids.includes(u.id)).map(stripUser);
+  },
+
+  async listFollowRequests(userId) {
+    const s = await load();
+    const ids = s.follows
+      .filter((f) => f.followee_id === userId && f.status === 'pending')
+      .map((f) => f.follower_id);
+    return s.users.filter((u) => ids.includes(u.id)).map(stripUser);
+  },
+
+  async respondFollowRequest(userId, requesterId, accept) {
+    const s = await load();
+    const f = s.follows.find(
+      (x) => x.follower_id === requesterId && x.followee_id === userId && x.status === 'pending'
+    );
+    if (!f) return;
+    if (accept) f.status = 'accepted';
+    else s.follows = s.follows.filter((x) => x !== f);
+    await persist();
+  },
+
+  async setProfilePrivacy(userId, isPrivate) {
+    const s = await load();
+    const u = s.users.find((x) => x.id === userId);
+    if (!u) throw new Error('Profile not found.');
+    u.is_private = isPrivate;
+    await persist();
+  },
+
+  async discoverPeople(viewerId) {
+    const s = await load();
+    // everyone the viewer isn't already connected to, excluding themselves
+    const connected = new Set(
+      s.follows.filter((f) => f.follower_id === viewerId).map((f) => f.followee_id)
+    );
+    return s.users
+      .filter((u) => u.id !== viewerId && !connected.has(u.id) && u.role !== 'admin')
+      .map(stripUser);
+  },
+
+  async friendsFeed(viewerId) {
+    const s = await load();
+    const following = new Set(
+      s.follows
+        .filter((f) => f.follower_id === viewerId && f.status === 'accepted')
+        .map((f) => f.followee_id)
+    );
+    return s.visits
+      .filter((v) => following.has(v.user_id))
+      .map((v) => feedItemFrom(s, v))
+      .filter((x): x is FeedItem => x !== null)
+      .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
+  },
+
+  async userActivity(userId, viewerId) {
+    const s = await load();
+    const u = s.users.find((x) => x.id === userId);
+    if (!u) return [];
+    const state = followStateFor(s, viewerId, userId);
+    const canView = viewerId === userId || !u.is_private || state === 'following';
+    if (!canView) return [];
+    return s.visits
+      .filter((v) => v.user_id === userId)
+      .map((v) => feedItemFrom(s, v))
+      .filter((x): x is FeedItem => x !== null)
+      .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
   },
 
   async submitExhibition(draft: ExhibitionDraft, userId) {
