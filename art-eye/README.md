@@ -97,8 +97,26 @@ with the host account and nowhere else.
 
 A dedicated search screen (`/search`) covers the whole register and agenda in one box: exhibition
 titles, artists, venue names, suburbs, categories and districts, accent-insensitive, results
-grouped into EXHIBITIONS and VENUES. Entry points: a full-width search bar under the hero on the
-Agenda tab and at the top of the Venues tab.
+grouped into EXHIBITIONS and VENUES. Entry points: a full-width search bar right above the show
+list on the Agenda tab (below the hero carousel and the curated strip) and at the top of the
+Venues tab. The host also gets a search box directly in **Host Control → Venue register** and
+**→ Exhibitions**, filtering the management list by name/suburb/artist/status for faster edits.
+
+### More links, and one‑tap directions
+
+- **Website/Instagram completion pass** (2026-07-21): a link-discovery sweep filled in whichever
+  of the two was missing across the register — 126 of 142 venues now have a website, 112 an
+  Instagram handle. Only genuinely unfindable venues (mostly small commercial galleries with no
+  web presence) are left blank; the pipeline or the host can fill the rest over time.
+- **Instagram Reel / TikTok links.** Venues and exhibitions take an optional `reel_url` — a link
+  to a Reel or TikTok the venue or gallery already posted. Where set, a **▶ WATCH THE REEL /
+  WATCH ON TIKTOK** button appears on the venue and exhibition pages and opens the actual post.
+  Nothing is embedded or scraped — it's the same one-tap-out pattern as Website/Instagram, just
+  for short-form video. Editable everywhere image/video links are (host editors, claimed venue
+  accounts, submissions). Migration `0011_reel_links.sql`.
+- **Google Maps directions.** Every venue address is tappable and opens Google Maps with the
+  route already started (`google.com/maps/dir/?api=1&destination=…`, using lat/long when known).
+  Appears on the venue page, the exhibition page's address row, and the "THE SPACE" block.
 
 ### Imagery rules
 

@@ -95,10 +95,6 @@ export default function AgendaScreen() {
         <>
           <HeroCarousel exhibitions={featured} />
 
-          <SearchBar
-            style={{ marginHorizontal: space.page, marginTop: space.xl }}
-          />
-
           <View style={styles.sectionHead}>
             <Text style={type.serifHeading}>{heading}</Text>
             <View style={{ flexDirection: 'row', gap: space.m }}>
@@ -148,6 +144,14 @@ export default function AgendaScreen() {
               </ScrollView>
             </View>
           )}
+
+          <SearchBar
+            style={{
+              marginHorizontal: space.page,
+              marginTop: space.s,
+              marginBottom: space.l,
+            }}
+          />
 
           {agenda.length === 0 ? (
             <EmptyState>

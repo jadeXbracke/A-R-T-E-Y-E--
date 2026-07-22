@@ -30,6 +30,7 @@ export default function VenueEditor() {
   const [website, setWebsite] = useState('');
   const [instagram, setInstagram] = useState('');
   const [hours, setHours] = useState('');
+  const [reelUrl, setReelUrl] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
   const [image, setImage] = useState<string | null>(null);
@@ -50,6 +51,7 @@ export default function VenueEditor() {
       setWebsite(v.website ?? '');
       setInstagram(v.instagram ?? '');
       setHours(v.opening_hours ?? '');
+      setReelUrl(v.reel_url ?? '');
       setLat(v.latitude != null ? String(v.latitude) : '');
       setLng(v.longitude != null ? String(v.longitude) : '');
       setImage(v.image_url ?? null);
@@ -95,6 +97,7 @@ export default function VenueEditor() {
         is_fixture: hidden,
         image_url: imageUrl,
         video_url: video.trim() || null,
+        reel_url: reelUrl.trim() || null,
       };
       if (isNew) {
         await api.createVenue(draft);
@@ -217,6 +220,14 @@ export default function VenueEditor() {
           autoCapitalize="none"
           keyboardType="url"
           placeholder="Link to a short clip (.mp4) — plays as a muted moving background"
+        />
+        <Field
+          label="INSTAGRAM REEL OR TIKTOK — OPTIONAL"
+          value={reelUrl}
+          onChangeText={setReelUrl}
+          autoCapitalize="none"
+          keyboardType="url"
+          placeholder="Link to a Reel or TikTok the venue posted"
         />
 
         <View style={{ marginBottom: space.xl }}>

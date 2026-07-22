@@ -54,7 +54,7 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v12';
+const KEY = 'arteye.demo.v13';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -291,6 +291,7 @@ export const demoApi: Api = {
       description: draft.description.trim(),
       image_url: draft.image_url,
       video_url: draft.video_url ?? null,
+      reel_url: draft.reel_url ?? null,
       status: 'pending',
       rejection_reason: null,
       is_featured: false,
@@ -370,6 +371,7 @@ export const demoApi: Api = {
       is_fixture: input.is_fixture ?? false,
       image_url: input.image_url ?? null,
       video_url: input.video_url ?? null,
+        reel_url: input.reel_url ?? null,
     };
     s.venues.push(venue);
     await persist();
@@ -426,6 +428,7 @@ export const demoApi: Api = {
       description: draft.description.trim(),
       image_url: draft.image_url,
       video_url: draft.video_url ?? null,
+      reel_url: draft.reel_url ?? null,
       status: 'approved', // the host publishes directly
       rejection_reason: null,
       is_featured: false,

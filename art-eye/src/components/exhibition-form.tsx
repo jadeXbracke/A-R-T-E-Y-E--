@@ -22,6 +22,7 @@ export interface ExhibitionFormValues {
   description: string;
   image_url: string | null;
   video_url: string;
+  reel_url: string;
 }
 
 export function draftFromValues(v: ExhibitionFormValues): ExhibitionDraft {
@@ -40,6 +41,7 @@ export function draftFromValues(v: ExhibitionFormValues): ExhibitionDraft {
     description: v.description,
     image_url: v.image_url,
     video_url: v.video_url.trim() || null,
+    reel_url: v.reel_url.trim() || null,
   };
 }
 
@@ -57,6 +59,7 @@ export function emptyValues(): ExhibitionFormValues {
     description: '',
     image_url: null,
     video_url: '',
+    reel_url: '',
   };
 }
 
@@ -221,6 +224,14 @@ export function ExhibitionForm({
         autoCapitalize="none"
         keyboardType="url"
         placeholder="Link to a short clip (.mp4) — plays as a muted moving background"
+      />
+      <Field
+        label="INSTAGRAM REEL OR TIKTOK — OPTIONAL"
+        value={values.reel_url}
+        onChangeText={(t) => set({ reel_url: t })}
+        autoCapitalize="none"
+        keyboardType="url"
+        placeholder="Link to a Reel or TikTok about the show"
       />
 
       {error && <Text style={styles.error}>{error}</Text>}

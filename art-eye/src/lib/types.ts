@@ -64,6 +64,7 @@ export interface Venue {
   free_entry?: boolean | null;
   image_url?: string | null; // photo of the gallery/museum space
   video_url?: string | null; // short muted clip of the space — plays as a moving background
+  reel_url?: string | null; // link to an Instagram Reel or TikTok the venue posted
   opening_hours?: string | null; // e.g. "Tue–Sat 10:00–17:00" — verified from the venue's website
   hours_checked?: string | null; // YYYY-MM-DD the hours were last verified
 }
@@ -80,6 +81,7 @@ export interface Exhibition {
   image_url: string | null; // remote url, or "asset:<slug>" for bundled placeholders
   image_source?: string | null; // page a pipeline-fetched press image came from
   video_url?: string | null; // short muted clip — plays as a moving background where set
+  reel_url?: string | null; // link to an Instagram Reel or TikTok about the show
   status: ExhibitionStatus;
   rejection_reason: RejectionReason | null;
   is_featured: boolean;
@@ -111,6 +113,7 @@ export interface ExhibitionDraft {
   description: string;
   image_url: string | null;
   video_url?: string | null;
+  reel_url?: string | null;
   venue_name: string;
   venue_type: VenueType;
   venue_address: string;
@@ -129,6 +132,7 @@ export interface VenueDraft {
   is_fixture?: boolean;
   image_url?: string | null; // photo of the space
   video_url?: string | null; // short muted clip of the space
+  reel_url?: string | null; // Instagram Reel or TikTok link
   opening_hours?: string | null;
 }
 

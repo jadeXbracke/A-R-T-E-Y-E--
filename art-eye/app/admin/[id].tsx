@@ -20,6 +20,7 @@ export default function AdminReview() {
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [reelUrl, setReelUrl] = useState('');
   const [featured, setFeatured] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export default function AdminReview() {
       setDescription(e.description);
       setImageUrl(e.image_url ?? '');
       setVideoUrl(e.video_url ?? '');
+      setReelUrl(e.reel_url ?? '');
       setFeatured(e.is_featured);
     });
   }, [id]);
@@ -47,6 +49,7 @@ export default function AdminReview() {
     description: description.trim(),
     image_url: imageUrl.trim() || null,
     video_url: videoUrl.trim() || null,
+    reel_url: reelUrl.trim() || null,
     is_featured: featured,
   });
 
@@ -153,6 +156,13 @@ export default function AdminReview() {
           onChangeText={setVideoUrl}
           autoCapitalize="none"
           placeholder="https:// … short clip, plays as a muted moving background"
+        />
+        <Field
+          label="INSTAGRAM REEL OR TIKTOK — OPTIONAL"
+          value={reelUrl}
+          onChangeText={setReelUrl}
+          autoCapitalize="none"
+          placeholder="https:// … link to a Reel or TikTok about the show"
         />
         <Kicker style={{ marginBottom: 8 }}>DESCRIPTION</Kicker>
         <TextInput
