@@ -91,6 +91,25 @@ export interface Exhibition {
   venue?: Venue;
 }
 
+// Art fairs — curated, mostly international editorial content (not user
+// submitted). Rendered in the Fairs tab the same way venues are listed.
+export interface Fair {
+  id: string;
+  name: string;
+  city: string;
+  country: string;
+  venue_name: string; // the host venue / convention centre
+  address: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  start_date: string; // YYYY-MM-DD
+  end_date: string; // YYYY-MM-DD
+  dates_estimated?: boolean; // true = edition dates not yet confirmed officially
+  description: string;
+  website: string;
+  google_maps_url?: string | null; // built from venue_name + address
+}
+
 export interface WatchlistEntry {
   user_id: string;
   exhibition_id: string;
