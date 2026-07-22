@@ -6,6 +6,7 @@ import { FeedItem, FollowState, Profile } from '../lib/types';
 import { PROFILE_TYPES } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
 import { Lift, MonoLink, RatingDots } from './ui';
+import { LiveArt } from './live-art';
 
 function typeLabel(pt: Profile['profile_type']): string {
   return PROFILE_TYPES.find((t) => t.value === pt)?.label ?? pt.toUpperCase();
@@ -31,6 +32,14 @@ export function ActivityRow({ item }: { item: FeedItem }) {
         <RatingDots value={item.rating} size={9} gap={7} />
       </View>
       {item.reflection ? <Text style={styles.reflection}>{item.reflection}</Text> : null}
+      {item.video_url ? (
+        <LiveArt
+          videoUrl={item.video_url}
+          fallbackId={item.id}
+          aspectRatio={4 / 5}
+          style={styles.video}
+        />
+      ) : null}
     </View>
   );
 }
@@ -87,6 +96,7 @@ const styles = StyleSheet.create({
   showTitle: { ...type.serifTitle, fontSize: 20 },
   venue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginTop: 3 },
   reflection: { ...type.serifBody, fontSize: 16, lineHeight: 24, marginTop: space.s },
+  video: { width: '100%', marginTop: space.m, backgroundColor: colors.hairline },
   personRow: {
     flexDirection: 'row',
     alignItems: 'center',

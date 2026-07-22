@@ -238,6 +238,7 @@ function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
     rating: v.rating,
     reflection: v.reflection,
     visit_date: v.visit_date,
+    video_url: v.video_url ?? null,
   };
 }
 

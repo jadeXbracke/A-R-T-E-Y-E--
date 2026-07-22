@@ -39,6 +39,7 @@ function toFeedItem(row: unknown): FeedItem {
     rating: number;
     reflection: string;
     visit_date: string;
+    video_url?: string | null;
     actor?: { display_name?: string } | null;
     exhibition?: { title?: string; venue?: { name?: string } | null } | null;
   };
@@ -52,6 +53,7 @@ function toFeedItem(row: unknown): FeedItem {
     rating: r.rating,
     reflection: r.reflection,
     visit_date: r.visit_date,
+    video_url: r.video_url ?? null,
   };
 }
 
@@ -575,11 +577,19 @@ export const supabaseApi: Api = {
 
   async uploadImage(localUri) {
     const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
+    const contentType =
+      ext === 'png'
+        ? 'image/png'
+        : ext === 'mp4' || ext === 'm4v'
+          ? 'video/mp4'
+          : ext === 'mov'
+            ? 'video/quicktime'
+            : 'image/jpeg';
     const path = `submissions/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
     const { error } = await supabase()
       .storage.from('exhibition-images')
-      .upload(path, decode(base64), { contentType: ext === 'png' ? 'image/png' : 'image/jpeg' });
+      .upload(path, decode(base64), { contentType });
     if (error) throw new Error(error.message);
     const { data } = supabase().storage.from('exhibition-images').getPublicUrl(path);
     return data.publicUrl;
