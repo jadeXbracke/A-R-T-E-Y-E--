@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.4,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.m,
   },
   row: {
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 0.8,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: 4,
   },
   edit: {

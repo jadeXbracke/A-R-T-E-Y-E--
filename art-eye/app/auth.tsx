@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.grey,
+    color: colors.ink,
     textDecorationLine: 'underline',
   },
   lede: {
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 16,
     letterSpacing: 0.4,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.l,
   },
 });

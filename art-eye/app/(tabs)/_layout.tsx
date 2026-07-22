@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.8,
-    color: colors.grey,
+    color: colors.ink,
     paddingBottom: 6,
   },
   rule: { height: 2, alignSelf: 'stretch', marginHorizontal: 18, backgroundColor: 'transparent' },

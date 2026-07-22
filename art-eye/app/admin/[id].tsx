@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.grey,
+    color: colors.ink,
     textDecorationLine: 'underline',
   },
   cover: { width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.hairline },
@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 11,
     letterSpacing: 0.8,
-    color: colors.grey,
+    color: colors.ink,
     marginBottom: space.l,
   },
   description: {

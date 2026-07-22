@@ -22,7 +22,7 @@ function statusLine(e: Exhibition): { text: string; color: string } {
     const reason = REJECTION_REASONS.find((r) => r.value === e.rejection_reason)?.label ?? 'OTHER';
     return { text: `NOT ACCEPTED — ${reason}`, color: colors.red };
   }
-  return { text: 'IN REVIEW', color: colors.grey };
+  return { text: 'IN REVIEW', color: colors.ink };
 }
 
 export default function SubmitScreen() {
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 17,
     lineHeight: 25,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.m,
   },
   doneBox: {
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.grey,
+    color: colors.ink,
     textDecorationLine: 'underline',
   },
   subRow: {
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
   },
-  subDates: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.grey, marginBottom: 3 },
+  subDates: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginBottom: 3 },
   subTitle: { ...type.serifTitle, fontSize: 19 },
   subStatus: {
     fontFamily: fonts.monoMedium,

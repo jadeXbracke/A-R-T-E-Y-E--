@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 0.8,
-    color: colors.grey,
+    color: colors.ink,
   },
   header: {
     paddingHorizontal: space.page,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 1.2,
-    color: colors.grey,
+    color: colors.ink,
   },
   sectionHead: {
     flexDirection: 'row',

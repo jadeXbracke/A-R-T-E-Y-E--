@@ -65,7 +65,7 @@ export function MonoLink({
       <Text
         style={[
           styles.monoLink,
-          { color: color ?? (active ? colors.ink : colors.grey) },
+          { color: color ?? colors.ink },
         ]}
       >
         {label}
@@ -119,7 +119,7 @@ export function RatingDots({
               height: size,
               borderRadius: size / 2,
               borderWidth: 1,
-              borderColor: filled ? colors.red : colors.grey,
+              borderColor: filled ? colors.red : colors.ink,
               backgroundColor: filled ? colors.red : 'transparent',
             }}
           />
@@ -270,6 +270,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 20,
     lineHeight: 30,
-    color: colors.grey,
+    color: colors.ink,
   },
 });

@@ -132,12 +132,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.grey,
+    color: colors.ink,
     textDecorationLine: 'underline',
   },
   artist: { ...type.artistCaps, marginBottom: 6 },
   title: { ...type.serifHeading, fontSize: 30, lineHeight: 36, marginBottom: 8 },
-  venue: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, color: colors.grey },
+  venue: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, color: colors.ink },
   note: {
     fontFamily: fonts.serif,
     fontSize: 20,
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 15,
     lineHeight: 22,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.m,
   },
   error: {

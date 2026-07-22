@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.4,
-    color: colors.grey,
+    color: colors.ink,
   },
   dates: {
     fontFamily: fonts.monoMedium,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 11,
     letterSpacing: 0.6,
-    color: colors.grey,
+    color: colors.ink,
   },
   body: {
     ...type.serifBody,

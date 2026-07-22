@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.6,
-    color: colors.grey,
+    color: colors.ink,
     flexShrink: 1,
   },
 });

@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.grey,
+    color: colors.ink,
     marginBottom: 10,
   },
   sectionHead: {
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 1,
-    color: colors.grey,
+    color: colors.ink,
   },
   row: {
     flexDirection: 'row',
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 0.8,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: 4,
   },
   date: {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 9,
     letterSpacing: 1.2,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: 4,
   },
 });

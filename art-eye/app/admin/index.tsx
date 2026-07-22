@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 18,
     lineHeight: 27,
-    color: colors.grey,
+    color: colors.ink,
     paddingHorizontal: space.page,
     marginBottom: space.l,
   },
@@ -144,14 +144,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.4,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.m,
   },
   note: {
     fontFamily: fonts.serifItalic,
     fontSize: 18,
     lineHeight: 27,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.m,
   },
   row: {
@@ -170,6 +170,6 @@ const styles = StyleSheet.create({
     color: colors.ink,
     marginBottom: 6,
   },
-  rowMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.grey },
+  rowMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink },
   arrow: { fontFamily: fonts.mono, fontSize: 18, color: colors.red },
 });

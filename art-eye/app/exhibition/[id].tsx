@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 11,
     letterSpacing: 0.6,
-    color: colors.grey,
+    color: colors.ink,
   },
   venueLinks: {
     flexDirection: 'row',
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.4,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.m,
     textDecorationLine: 'underline',
   },

@@ -182,14 +182,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.4,
-    color: colors.grey,
+    color: colors.ink,
   },
   photo: { width: '100%', aspectRatio: 3 / 2, backgroundColor: colors.hairline },
   address: {
     fontFamily: fonts.mono,
     fontSize: 11,
     letterSpacing: 0.6,
-    color: colors.grey,
+    color: colors.ink,
     marginBottom: 6,
   },
   hours: {
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 17,
     lineHeight: 25,
-    color: colors.grey,
+    color: colors.ink,
     marginBottom: space.m,
   },
 });

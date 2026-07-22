@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 15,
     lineHeight: 22,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.m,
   },
 });

@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.4,
-    color: colors.grey,
+    color: colors.ink,
   },
   input: {
     ...type.serifHeading,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0.6,
     lineHeight: 18,
-    color: colors.grey,
+    color: colors.ink,
     paddingHorizontal: space.page,
     paddingTop: space.l,
   },
@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 1,
-    color: colors.grey,
+    color: colors.ink,
   },
   row: {
     flexDirection: 'row',
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 0.8,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: 4,
   },
   open: {

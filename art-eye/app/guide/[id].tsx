@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.page,
     paddingBottom: space.m,
   },
-  back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.grey },
+  back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.ink },
   curator: {
     fontFamily: fonts.monoMedium,
     fontSize: 10,
@@ -100,12 +100,12 @@ const styles = StyleSheet.create({
     color: colors.red,
     marginBottom: space.s,
   },
-  intro: { ...type.serifBody, color: colors.grey, marginBottom: space.l },
+  intro: { ...type.serifBody, color: colors.ink, marginBottom: space.l },
   empty: {
     fontFamily: fonts.serif,
     fontSize: 18,
     lineHeight: 26,
-    color: colors.grey,
+    color: colors.ink,
     padding: space.page,
   },
 });
