@@ -7,6 +7,12 @@ import { FALLBACK_PLACEHOLDER, PLACEHOLDERS } from '../lib/seed';
 import { Exhibition } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
 import { Lift, RedDot } from './ui';
+import { DateBlock } from './date-block';
+
+// A real press image, as opposed to a bundled tonal placeholder.
+function hasRealImage(e: Exhibition): boolean {
+  return !!(e.image_url && !e.image_url.startsWith('asset:'));
+}
 
 function fallbackFor(id: string, imageUrl?: string | null): number {
   if (imageUrl?.startsWith('asset:')) {
@@ -64,12 +70,16 @@ export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; se
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
       <View>
-        <ArtImage
-          uri={exhibition.image_url}
-          fallbackId={exhibition.id}
-          style={styles.thumb}
-          contentFit="cover"
-        />
+        {hasRealImage(exhibition) ? (
+          <ArtImage
+            uri={exhibition.image_url}
+            fallbackId={exhibition.id}
+            style={styles.thumb}
+            contentFit="cover"
+          />
+        ) : (
+          <DateBlock date={exhibition.start_date} seed={exhibition.id} width={84} height={105} />
+        )}
         {seen && <RedDot size={9} style={styles.seenDot} />}
       </View>
       <View style={{ flex: 1 }}>
@@ -96,12 +106,16 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
       <View>
-        <ArtImage
-          uri={exhibition.image_url}
-          fallbackId={exhibition.id}
-          style={styles.gridImage}
-          contentFit="cover"
-        />
+        {hasRealImage(exhibition) ? (
+          <ArtImage
+            uri={exhibition.image_url}
+            fallbackId={exhibition.id}
+            style={styles.gridImage}
+            contentFit="cover"
+          />
+        ) : (
+          <DateBlock date={exhibition.start_date} seed={exhibition.id} style={styles.gridImage} />
+        )}
         {seen && <RedDot size={9} style={styles.seenDot} />}
       </View>
       <Text style={styles.gridDate}>{fmtRange(exhibition.start_date, exhibition.end_date)}</Text>
