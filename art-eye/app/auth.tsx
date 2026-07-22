@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Field, Hairline, InkBar, Kicker, MonoLink } from '../src/components/ui';
+import { Field, Hairline, InkBar, Kicker, MonoLink, Wordmark } from '../src/components/ui';
 import { DEMO_MODE } from '../src/lib/api';
 import { useAuth } from '../src/lib/auth';
 import { ProfileType, PROFILE_TYPES, VenueType } from '../src/lib/types';
@@ -77,7 +77,7 @@ export default function AuthScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.headRow}>
-          <Text style={type.wordmark}>ART EYE</Text>
+          <Wordmark size={22} />
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Text style={styles.cancel}>CLOSE</Text>
           </Pressable>

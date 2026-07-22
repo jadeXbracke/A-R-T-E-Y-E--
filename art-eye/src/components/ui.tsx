@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
   TextInputProps,
+  TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
@@ -44,6 +45,23 @@ export function Lift({
 /** Mono kicker label, e.g. "YOUR RATING" */
 export function Kicker({ children, style }: { children: React.ReactNode; style?: object }) {
   return <Text style={[styles.kicker, style]}>{children}</Text>;
+}
+
+/**
+ * The ARTEYE wordmark — the app's logo, rendered as thin, wide-tracked vector
+ * text so it stays razor-sharp at every size. Single source of truth: change
+ * it here and every header/splash reference updates.
+ */
+export function Wordmark({ size = 22, style }: { size?: number; style?: TextStyle }) {
+  return (
+    <Text
+      style={[type.wordmark, { fontSize: size, letterSpacing: size * 0.45 }, style]}
+      accessibilityRole="header"
+      accessibilityLabel="ARTEYE"
+    >
+      ARTEYE
+    </Text>
+  );
 }
 
 /** Underlined mono text link — the app's only "button" besides the bars. */

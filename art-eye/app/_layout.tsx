@@ -1,4 +1,5 @@
 import {
+  Archivo_300Light,
   Archivo_400Regular,
   Archivo_500Medium,
   Archivo_600SemiBold,
@@ -19,6 +20,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
+    Archivo_300Light,
     Archivo_400Regular,
     Archivo_500Medium,
     Archivo_600SemiBold,

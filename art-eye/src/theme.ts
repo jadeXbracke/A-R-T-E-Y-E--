@@ -20,6 +20,7 @@ export const colors = {
 // the app never renders a third family; the mono* aliases are kept so existing
 // styles keep working while resolving to the sans faces.
 export const fonts = {
+  sansLight: 'Archivo_300Light', // the ARTEYE wordmark: thin, hairline weight
   sans: 'Archivo_400Regular',
   sansMedium: 'Archivo_500Medium',
   sansSemi: 'Archivo_600SemiBold',
@@ -46,8 +47,8 @@ export const space = {
 
 // The single source of truth for the type scale. Every text colour here is ink.
 export const type = {
-  // wordmark + artist names: letterspaced uppercase Archivo
-  wordmark: { fontFamily: fonts.sansSemi, fontSize: 16, letterSpacing: 4, color: colors.ink },
+  // the ARTEYE wordmark — thin hairline weight, wide letter-spacing
+  wordmark: { fontFamily: fonts.sansLight, fontSize: 22, letterSpacing: 10, color: colors.ink },
   artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.2, color: colors.ink },
   artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3, color: colors.white },
   // exhibition titles, reflections, large headings: Cormorant (upright)
