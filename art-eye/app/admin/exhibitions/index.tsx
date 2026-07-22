@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, Hairline, Kicker, Loading, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
@@ -14,6 +14,7 @@ export default function ManageExhibitions() {
   const { profile } = useAuth();
   const [shows, setShows] = useState<Exhibition[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const reload = useCallback(() => {
     if (profile?.role === 'admin') api.listAllExhibitions().then(setShows);
@@ -23,6 +24,18 @@ export default function ManageExhibitions() {
     useCallback(() => {
       reload();
     }, [reload])
+  );
+
+  const q = query.trim().toLowerCase();
+  const shown = useMemo(
+    () =>
+      !q
+        ? shows
+        : (shows ?? []).filter((e) =>
+            [e.title, e.artists, e.venue?.name ?? '', e.status]
+              .some((f) => f.toLowerCase().includes(q))
+          ),
+    [shows, q]
   );
 
   if (profile?.role !== 'admin') {
@@ -86,14 +99,26 @@ export default function ManageExhibitions() {
           style={{ alignSelf: 'flex-start' }}
         />
       </View>
+      <View style={{ paddingHorizontal: space.page, marginBottom: space.m }}>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search — title, artist, venue, status…"
+          placeholderTextColor={colors.grey}
+          autoCorrect={false}
+          style={styles.search}
+        />
+      </View>
       <Hairline />
 
-      {shows === null ? (
+      {shown === null ? (
         <Loading />
-      ) : shows.length === 0 ? (
-        <EmptyState>No exhibitions yet. Add the first one.</EmptyState>
+      ) : shown.length === 0 ? (
+        <EmptyState>
+          {q ? `No exhibitions match “${query.trim()}”.` : 'No exhibitions yet. Add the first one.'}
+        </EmptyState>
       ) : (
-        shows.map((e) => (
+        shown.map((e) => (
           <View key={e.id} style={styles.row}>
             <Text style={styles.rowDates}>{fmtRange(e.start_date, e.end_date)}</Text>
             <Text style={styles.rowTitle} numberOfLines={1}>
@@ -140,6 +165,16 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     color: colors.grey,
     marginTop: space.m,
+  },
+  search: {
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    letterSpacing: 0.4,
+    color: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.ink,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
   row: {
     paddingHorizontal: space.page,

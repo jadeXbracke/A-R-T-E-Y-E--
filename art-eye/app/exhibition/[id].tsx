@@ -8,6 +8,8 @@ import { ActionBar, Hairline, Kicker, Loading, MonoLink, RedDot } from '../../sr
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { fmtOpening, fmtRange } from '../../src/lib/dates';
+import { directionsUrl } from '../../src/lib/maps';
+import { ReelLink } from '../../src/components/reel-link';
 import { Exhibition, Visit } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
@@ -24,13 +26,26 @@ function instaUrl(raw: string) {
   return `https://instagram.com/${t.replace(/^@/, '')}`;
 }
 
-function SpecRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function SpecRow({
+  label,
+  value,
+  accent,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+  onPress?: () => void;
+}) {
+  const row = (
+    <View style={styles.specRow}>
+      <Text style={styles.specLabel}>{label}</Text>
+      <Text style={[styles.specValue, accent && { color: colors.red }]}>{value}</Text>
+    </View>
+  );
   return (
     <>
-      <View style={styles.specRow}>
-        <Text style={styles.specLabel}>{label}</Text>
-        <Text style={[styles.specValue, accent && { color: colors.red }]}>{value}</Text>
-      </View>
+      {onPress ? <Pressable onPress={onPress}>{row}</Pressable> : row}
       <Hairline />
     </>
   );
@@ -140,9 +155,19 @@ export default function ExhibitionDetail() {
           {e.opening_datetime && (
             <SpecRow label="OPENING" value={fmtOpening(e.opening_datetime).toUpperCase()} accent />
           )}
-          {e.venue?.address && <SpecRow label="ADDRESS" value={e.venue.address.toUpperCase()} />}
+          {e.venue?.address && (
+            <SpecRow
+              label="ADDRESS — TAP FOR ROUTE"
+              value={e.venue.address.toUpperCase()}
+              onPress={() => openLink(directionsUrl(e.venue!))}
+            />
+          )}
 
           <Text style={styles.description}>{e.description}</Text>
+
+          {(e.reel_url || e.venue?.reel_url) && (
+            <ReelLink url={(e.reel_url || e.venue?.reel_url)!} style={{ marginBottom: space.l }} />
+          )}
 
           {e.venue && (
             <View style={styles.venueBlock}>
@@ -157,7 +182,9 @@ export default function ExhibitionDetail() {
               )}
               <Text style={styles.venueName}>{e.venue.name.toUpperCase()}</Text>
               {e.venue.address && (
-                <Text style={styles.venueAddress}>{e.venue.address}</Text>
+                <Pressable onPress={() => openLink(directionsUrl(e.venue!))} hitSlop={6}>
+                  <Text style={styles.venueAddress}>{e.venue.address}  → ROUTE</Text>
+                </Pressable>
               )}
               <View style={styles.venueLinks}>
                 <MonoLink

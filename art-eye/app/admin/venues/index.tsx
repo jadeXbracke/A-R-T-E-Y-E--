@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, Hairline, Kicker, Loading, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
@@ -12,6 +12,7 @@ export default function VenueRegister() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const [venues, setVenues] = useState<Venue[] | null>(null);
+  const [query, setQuery] = useState('');
 
   useFocusEffect(
     useCallback(() => {
@@ -23,6 +24,18 @@ export default function VenueRegister() {
         alive = false;
       };
     }, [profile])
+  );
+
+  const q = query.trim().toLowerCase();
+  const shown = useMemo(
+    () =>
+      !q
+        ? venues
+        : (venues ?? []).filter((v) =>
+            [v.name, v.suburb ?? '', v.type, v.address ?? '']
+              .some((f) => f.toLowerCase().includes(q))
+          ),
+    [venues, q]
   );
 
   if (profile?.role !== 'admin') {
@@ -58,14 +71,26 @@ export default function VenueRegister() {
           style={{ alignSelf: 'flex-start' }}
         />
       </View>
+      <View style={{ paddingHorizontal: space.page, marginBottom: space.m }}>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search the register — name, suburb, address…"
+          placeholderTextColor={colors.grey}
+          autoCorrect={false}
+          style={styles.search}
+        />
+      </View>
       <Hairline />
 
-      {venues === null ? (
+      {shown === null ? (
         <Loading />
-      ) : venues.length === 0 ? (
-        <EmptyState>No venues yet. Add the first one.</EmptyState>
+      ) : shown.length === 0 ? (
+        <EmptyState>
+          {q ? `Nothing in the register matches “${query.trim()}”.` : 'No venues yet. Add the first one.'}
+        </EmptyState>
       ) : (
-        venues.map((v) => (
+        shown.map((v) => (
           <Pressable
             key={v.id}
             style={styles.row}
@@ -114,6 +139,16 @@ const styles = StyleSheet.create({
     paddingVertical: space.m,
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
+  },
+  search: {
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    letterSpacing: 0.4,
+    color: colors.ink,
+    borderWidth: 1,
+    borderColor: colors.ink,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
   },
   rowTitle: { ...type.serifTitle, fontSize: 20 },
   rowMeta: {

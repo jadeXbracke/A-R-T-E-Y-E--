@@ -7,6 +7,8 @@ import { LiveArt } from '../../src/components/live-art';
 import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { isOnNow, todayStr } from '../../src/lib/dates';
+import { directionsUrl } from '../../src/lib/maps';
+import { ReelLink } from '../../src/components/reel-link';
 import { Exhibition, Venue } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
@@ -21,12 +23,6 @@ function instaUrl(raw: string) {
   const t = raw.trim();
   if (/^https?:\/\//i.test(t)) return t;
   return `https://instagram.com/${t.replace(/^@/, '')}`;
-}
-function mapsUrl(v: Venue) {
-  if (v.latitude != null && v.longitude != null) {
-    return `https://maps.apple.com/?ll=${v.latitude},${v.longitude}&q=${encodeURIComponent(v.name)}`;
-  }
-  return `https://maps.apple.com/?q=${encodeURIComponent(`${v.name} ${v.address ?? 'Sydney'}`)}`;
 }
 
 export default function VenueDetail() {
@@ -116,7 +112,11 @@ export default function VenueDetail() {
       )}
 
       <View style={{ paddingHorizontal: space.page, paddingTop: space.m }}>
-        {venue.address && <Text style={styles.address}>{venue.address}</Text>}
+        {venue.address && (
+          <Pressable onPress={() => openLink(directionsUrl(venue))} hitSlop={6}>
+            <Text style={styles.address}>{venue.address}  → ROUTE</Text>
+          </Pressable>
+        )}
         {venue.opening_hours && (
           <Text style={styles.hours}>
             OPEN {venue.opening_hours.toUpperCase()}
@@ -132,8 +132,10 @@ export default function VenueDetail() {
           {venue.instagram && (
             <MonoLink label="INSTAGRAM ↗" active onPress={() => openLink(instaUrl(venue.instagram!))} />
           )}
-          <MonoLink label="MAP ↗" active onPress={() => openLink(mapsUrl(venue))} />
+          <MonoLink label="ROUTE ↗" active onPress={() => openLink(directionsUrl(venue))} />
         </View>
+
+        {venue.reel_url && <ReelLink url={venue.reel_url} style={{ marginBottom: space.l }} />}
 
         <Hairline style={{ marginBottom: space.m }} />
 

@@ -20,6 +20,7 @@ export default function VenueProfile() {
   const [website, setWebsite] = useState('');
   const [instagram, setInstagram] = useState('');
   const [hours, setHours] = useState('');
+  const [reelUrl, setReelUrl] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [video, setVideo] = useState('');
   const [busy, setBusy] = useState(false);
@@ -39,6 +40,7 @@ export default function VenueProfile() {
             setWebsite(v.website ?? '');
             setInstagram(v.instagram ?? '');
             setHours(v.opening_hours ?? '');
+            setReelUrl(v.reel_url ?? '');
             setImage(v.image_url ?? null);
             setVideo(v.video_url ?? '');
           }
@@ -81,6 +83,7 @@ export default function VenueProfile() {
         opening_hours: hours.trim() || null,
         image_url: imageUrl,
         video_url: video.trim() || null,
+        reel_url: reelUrl.trim() || null,
       });
       setSaved(true);
     } catch (err) {
@@ -151,6 +154,14 @@ export default function VenueProfile() {
             autoCapitalize="none"
             keyboardType="url"
             placeholder="Link to a short clip (.mp4) of your space"
+          />
+          <Field
+            label="INSTAGRAM REEL OR TIKTOK — OPTIONAL"
+            value={reelUrl}
+            onChangeText={setReelUrl}
+            autoCapitalize="none"
+            keyboardType="url"
+            placeholder="Link to a Reel or TikTok you posted"
           />
 
           {error && <Text style={styles.error}>{error}</Text>}
