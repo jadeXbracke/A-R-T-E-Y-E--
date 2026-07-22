@@ -63,6 +63,8 @@ export interface Venue {
   tier?: string | null; // editorial weight: 1, 1b, 2, 2b, 3, 3b, 4
   editorial_note?: string | null;
   free_entry?: boolean | null;
+  founded_year?: number | null; // year the venue was established — verified, else null
+  entry_checked?: string | null; // YYYY-MM-DD the type/founded/entry facts were verified
   image_url?: string | null; // photo of the gallery/museum space
   video_url?: string | null; // short muted clip of the space — plays as a moving background
   reel_url?: string | null; // link to an Instagram Reel or TikTok the venue posted
