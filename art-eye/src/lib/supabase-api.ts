@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
 import { CuratedList, CuratorRole, Exhibition, ExhibitionDraft, Profile, RejectionReason, Venue, VenueDraft, VenueProposal } from './types';
+import { mapsSearchUrl } from './maps';
 
 let client: SupabaseClient | null = null;
 
@@ -265,7 +266,10 @@ export const supabaseApi: Api = {
   async listVenues() {
     const { data, error } = await supabase().from('venues').select('*').order('name');
     if (error) throw new Error(error.message);
-    return (data ?? []) as Venue[];
+    return (data ?? []).map((v) => ({
+      ...v,
+      google_maps_url: (v as Venue).google_maps_url ?? mapsSearchUrl(v as Venue),
+    })) as Venue[];
   },
 
   async createVenue(input: VenueDraft) {

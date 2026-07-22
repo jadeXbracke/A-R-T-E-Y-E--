@@ -38,6 +38,7 @@ const SEED_CURATED: CuratedList[] = [
   },
 ];
 import { todayStr } from './dates';
+import { mapsSearchUrl } from './maps';
 
 interface DemoUser extends Profile {
   password: string;
@@ -60,7 +61,10 @@ const KEY = 'arteye.demo.v13';
 const SEED_PROPOSALS: VenueProposal[] = [];
 
 function seedState(): DemoState {
-  const venues = SEED_VENUES.map((v) => ({ ...v }));
+  const venues = SEED_VENUES.map((v) => ({
+    ...v,
+    google_maps_url: v.google_maps_url ?? mapsSearchUrl(v),
+  }));
   const roslyn = venues.find((v) => v.id === 'v-roslynoxley9')!;
   roslyn.owner_user_id = 'u-venue';
   return {

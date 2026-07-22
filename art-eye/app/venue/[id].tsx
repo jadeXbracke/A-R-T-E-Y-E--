@@ -7,7 +7,7 @@ import { LiveArt } from '../../src/components/live-art';
 import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { isOnNow, todayStr } from '../../src/lib/dates';
-import { directionsUrl } from '../../src/lib/maps';
+import { directionsUrl, mapsSearchUrl } from '../../src/lib/maps';
 import { ReelLink } from '../../src/components/reel-link';
 import { Exhibition, Venue } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
@@ -113,8 +113,8 @@ export default function VenueDetail() {
 
       <View style={{ paddingHorizontal: space.page, paddingTop: space.m }}>
         {venue.address && (
-          <Pressable onPress={() => openLink(directionsUrl(venue))} hitSlop={6}>
-            <Text style={styles.address}>{venue.address}  → ROUTE</Text>
+          <Pressable onPress={() => openLink(venue.google_maps_url ?? mapsSearchUrl(venue))} hitSlop={6}>
+            <Text style={styles.address}>{venue.address}  → MAP</Text>
           </Pressable>
         )}
         {venue.opening_hours && (
@@ -132,6 +132,11 @@ export default function VenueDetail() {
           {venue.instagram && (
             <MonoLink label="INSTAGRAM ↗" active onPress={() => openLink(instaUrl(venue.instagram!))} />
           )}
+          <MonoLink
+            label="GOOGLE MAPS ↗"
+            active
+            onPress={() => openLink(venue.google_maps_url ?? mapsSearchUrl(venue))}
+          />
           <MonoLink label="ROUTE ↗" active onPress={() => openLink(directionsUrl(venue))} />
         </View>
 

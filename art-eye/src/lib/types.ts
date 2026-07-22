@@ -54,6 +54,7 @@ export interface Venue {
   instagram?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  google_maps_url?: string | null; // Google Maps search link built from name + address
   city: string;
   owner_user_id: string | null;
   is_claimed?: boolean; // an owner account is attached
