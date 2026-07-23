@@ -187,13 +187,13 @@ export default function ProposalDetail() {
 const styles = StyleSheet.create({
   guard: { flex: 1, backgroundColor: colors.bg, paddingTop: 80, paddingHorizontal: space.page },
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: space.m },
-  back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.grey },
-  meta: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.4, color: colors.grey, marginBottom: space.m },
+  back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.ink },
+  meta: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.4, color: colors.ink, marginBottom: space.m },
   reason: { fontFamily: fonts.serifItalic, fontSize: 18, lineHeight: 26, color: colors.ink, marginBottom: space.l },
   evidence: { borderWidth: 1, borderColor: colors.hairline, padding: space.m, marginBottom: space.s },
   evidenceUrl: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 0.6, color: colors.ink, marginBottom: 6 },
-  evidenceSnippet: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 22, color: colors.grey },
-  currentValue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.grey, marginBottom: 4 },
-  archiveNote: { fontFamily: fonts.serifItalic, fontSize: 17, lineHeight: 25, color: colors.grey, marginBottom: space.l },
+  evidenceSnippet: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 22, color: colors.ink },
+  currentValue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginBottom: 4 },
+  archiveNote: { fontFamily: fonts.serifItalic, fontSize: 17, lineHeight: 25, color: colors.ink, marginBottom: space.l },
   error: { fontFamily: fonts.mono, fontSize: 11, color: colors.red, marginBottom: space.m },
 });

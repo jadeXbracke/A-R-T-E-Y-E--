@@ -27,6 +27,16 @@ export function fmtOpening(iso: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]}, ${time}`;
 }
 
+/** "SEP" — three-letter month for a date string. */
+export function monthAbbr(d: string): string {
+  return MONTHS[parseDay(d).getMonth()];
+}
+
+/** 7 — day-of-month for a date string. */
+export function dayOfMonth(d: string): number {
+  return parseDay(d).getDate();
+}
+
 export function todayStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

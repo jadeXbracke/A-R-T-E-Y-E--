@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.grey,
+    color: colors.ink,
     textDecorationLine: 'underline',
   },
   note: {
     fontFamily: fonts.serifItalic,
     fontSize: 15,
     lineHeight: 22,
-    color: colors.grey,
+    color: colors.ink,
     marginBottom: space.l,
   },
 });

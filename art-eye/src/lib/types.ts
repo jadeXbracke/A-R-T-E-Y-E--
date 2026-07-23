@@ -41,6 +41,40 @@ export interface Profile {
   profile_type: ProfileType;
   display_name: string;
   city: string;
+  is_private?: boolean; // closed profile — activity only visible to accepted followers
+}
+
+// ---- social layer (Strava-style follow + activity feed) ---------------------
+export type FollowState = 'none' | 'requested' | 'following';
+
+export interface Follow {
+  follower_id: string;
+  followee_id: string;
+  status: 'accepted' | 'pending'; // pending = awaiting a private profile's approval
+  created_at: string;
+}
+
+// A profile as seen by a viewer, with social counts and the viewer's relationship.
+export interface PublicProfile extends Profile {
+  followers: number;
+  following: number;
+  visit_count: number;
+  follow_state: FollowState;
+  can_view_activity: boolean; // public, own profile, or an accepted follower
+}
+
+// One entry in the activity feed — a friend logging a visit to a show.
+export interface FeedItem {
+  id: string;
+  user_id: string;
+  display_name: string;
+  exhibition_id: string;
+  exhibition_title: string;
+  venue_name: string | null;
+  rating: number;
+  reflection: string;
+  visit_date: string; // YYYY-MM-DD
+  video_url?: string | null; // short clip attached to the post
 }
 
 export interface Venue {
@@ -54,6 +88,7 @@ export interface Venue {
   instagram?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  google_maps_url?: string | null; // Google Maps search link built from name + address
   city: string;
   owner_user_id: string | null;
   is_claimed?: boolean; // an owner account is attached
@@ -62,6 +97,8 @@ export interface Venue {
   tier?: string | null; // editorial weight: 1, 1b, 2, 2b, 3, 3b, 4
   editorial_note?: string | null;
   free_entry?: boolean | null;
+  founded_year?: number | null; // year the venue was established — verified, else null
+  entry_checked?: string | null; // YYYY-MM-DD the type/founded/entry facts were verified
   image_url?: string | null; // photo of the gallery/museum space
   video_url?: string | null; // short muted clip of the space — plays as a moving background
   reel_url?: string | null; // link to an Instagram Reel or TikTok the venue posted
@@ -90,6 +127,25 @@ export interface Exhibition {
   venue?: Venue;
 }
 
+// Art fairs — curated, mostly international editorial content (not user
+// submitted). Rendered in the Fairs tab the same way venues are listed.
+export interface Fair {
+  id: string;
+  name: string;
+  city: string;
+  country: string;
+  venue_name: string; // the host venue / convention centre
+  address: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  start_date: string; // YYYY-MM-DD
+  end_date: string; // YYYY-MM-DD
+  dates_estimated?: boolean; // true = edition dates not yet confirmed officially
+  description: string;
+  website: string;
+  google_maps_url?: string | null; // built from venue_name + address
+}
+
 export interface WatchlistEntry {
   user_id: string;
   exhibition_id: string;
@@ -102,6 +158,7 @@ export interface Visit {
   rating: number; // 1–5
   reflection: string;
   visit_date: string; // YYYY-MM-DD
+  video_url?: string | null; // short clip the user attached to the post
 }
 
 export interface ExhibitionDraft {

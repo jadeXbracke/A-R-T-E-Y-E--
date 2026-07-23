@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExhibitionGridItem, ExhibitionRow } from '../../src/components/exhibition';
 import { HeroCarousel } from '../../src/components/hero-carousel';
 import { SearchBar } from '../../src/components/search-bar';
-import { EmptyState, Hairline, Kicker, Lift, Loading, MonoLink } from '../../src/components/ui';
+import { EmptyState, Hairline, Kicker, Lift, Loading, MonoLink, Wordmark } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { daysUntil, isOnNow, todayStr } from '../../src/lib/dates';
 import { useAuth } from '../../src/lib/auth';
@@ -84,7 +84,7 @@ export default function AgendaScreen() {
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
     >
       <View style={styles.header}>
-        <Text style={styles.wordmark}>ART EYE</Text>
+        <Wordmark size={26} style={{ marginBottom: 6 }} />
         <Text style={styles.tagline}>YOUR EYE ON THE ART WORLD — SYDNEY</Text>
       </View>
       <Hairline style={{ marginBottom: space.l }} />
@@ -198,18 +198,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 0.8,
-    color: colors.grey,
+    color: colors.ink,
   },
   header: {
     paddingHorizontal: space.page,
     paddingBottom: space.m,
   },
-  wordmark: { ...type.wordmark, marginBottom: 6 },
   tagline: {
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 1.2,
-    color: colors.grey,
+    color: colors.ink,
   },
   sectionHead: {
     flexDirection: 'row',

@@ -7,6 +7,7 @@ import {
   Text,
   TextInput,
   TextInputProps,
+  TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
@@ -46,6 +47,23 @@ export function Kicker({ children, style }: { children: React.ReactNode; style?:
   return <Text style={[styles.kicker, style]}>{children}</Text>;
 }
 
+/**
+ * The ARTEYE wordmark — the app's logo, rendered as thin, wide-tracked vector
+ * text so it stays razor-sharp at every size. Single source of truth: change
+ * it here and every header/splash reference updates.
+ */
+export function Wordmark({ size = 22, style }: { size?: number; style?: TextStyle }) {
+  return (
+    <Text
+      style={[type.wordmark, { fontSize: size, letterSpacing: size * 0.45 }, style]}
+      accessibilityRole="header"
+      accessibilityLabel="ARTEYE"
+    >
+      ARTEYE
+    </Text>
+  );
+}
+
 /** Underlined mono text link — the app's only "button" besides the bars. */
 export function MonoLink({
   label,
@@ -65,7 +83,7 @@ export function MonoLink({
       <Text
         style={[
           styles.monoLink,
-          { color: color ?? (active ? colors.ink : colors.grey) },
+          { color: color ?? colors.ink },
         ]}
       >
         {label}
@@ -119,7 +137,7 @@ export function RatingDots({
               height: size,
               borderRadius: size / 2,
               borderWidth: 1,
-              borderColor: filled ? colors.red : colors.grey,
+              borderColor: filled ? colors.red : colors.ink,
               backgroundColor: filled ? colors.red : 'transparent',
             }}
           />
@@ -270,6 +288,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 20,
     lineHeight: 30,
-    color: colors.grey,
+    color: colors.ink,
   },
 });

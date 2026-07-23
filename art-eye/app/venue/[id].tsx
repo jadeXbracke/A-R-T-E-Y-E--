@@ -7,13 +7,39 @@ import { LiveArt } from '../../src/components/live-art';
 import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { isOnNow, todayStr } from '../../src/lib/dates';
-import { directionsUrl } from '../../src/lib/maps';
+import { directionsUrl, mapsSearchUrl } from '../../src/lib/maps';
+import { venueFacts } from '../../src/lib/venue-meta';
 import { ReelLink } from '../../src/components/reel-link';
 import { Exhibition, Venue } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
 function openLink(url: string) {
   Linking.openURL(url).catch(() => {});
+}
+
+// Short factual block: type · founded · entry. Only verified facts are shown;
+// anything unknown is flagged rather than guessed.
+function VenueDescription({ venue }: { venue: Venue }) {
+  const facts = venueFacts(venue);
+  const known = [
+    facts.typeLabel.toUpperCase(),
+    facts.foundedYear ? `EST. ${facts.foundedYear}` : null,
+    facts.entry === 'free' ? 'FREE ENTRY' : facts.entry === 'paid' ? 'PAID ENTRY' : null,
+  ].filter(Boolean);
+
+  const unknown = [
+    facts.foundedYear ? null : 'founding year',
+    facts.entry ? null : 'entry',
+  ].filter(Boolean);
+
+  return (
+    <View style={{ marginBottom: space.m }}>
+      <Text style={styles.facts}>{known.join('  ·  ')}</Text>
+      {unknown.length > 0 && (
+        <Text style={styles.factsFlag}>{unknown.join(' & ').toUpperCase()} NOT YET VERIFIED</Text>
+      )}
+    </View>
+  );
 }
 function webUrl(raw: string) {
   const t = raw.trim();
@@ -99,7 +125,8 @@ export default function VenueDetail() {
       </View>
 
       <View style={{ paddingHorizontal: space.page }}>
-        <Text style={[type.serifHeading, { marginBottom: space.m }]}>{venue.name}</Text>
+        <Text style={[type.serifHeading, { marginBottom: space.s }]}>{venue.name}</Text>
+        <VenueDescription venue={venue} />
       </View>
 
       {(venue.image_url || venue.video_url) && (
@@ -113,8 +140,8 @@ export default function VenueDetail() {
 
       <View style={{ paddingHorizontal: space.page, paddingTop: space.m }}>
         {venue.address && (
-          <Pressable onPress={() => openLink(directionsUrl(venue))} hitSlop={6}>
-            <Text style={styles.address}>{venue.address}  → ROUTE</Text>
+          <Pressable onPress={() => openLink(venue.google_maps_url ?? mapsSearchUrl(venue))} hitSlop={6}>
+            <Text style={styles.address}>{venue.address}  → MAP</Text>
           </Pressable>
         )}
         {venue.opening_hours && (
@@ -132,6 +159,11 @@ export default function VenueDetail() {
           {venue.instagram && (
             <MonoLink label="INSTAGRAM ↗" active onPress={() => openLink(instaUrl(venue.instagram!))} />
           )}
+          <MonoLink
+            label="GOOGLE MAPS ↗"
+            active
+            onPress={() => openLink(venue.google_maps_url ?? mapsSearchUrl(venue))}
+          />
           <MonoLink label="ROUTE ↗" active onPress={() => openLink(directionsUrl(venue))} />
         </View>
 
@@ -177,14 +209,28 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.4,
-    color: colors.grey,
+    color: colors.ink,
+  },
+  facts: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: colors.ink,
+  },
+  factsFlag: {
+    fontFamily: fonts.mono,
+    fontSize: 9,
+    letterSpacing: 1,
+    color: colors.ink,
+    marginTop: 4,
+    opacity: 0.55,
   },
   photo: { width: '100%', aspectRatio: 3 / 2, backgroundColor: colors.hairline },
   address: {
     fontFamily: fonts.mono,
     fontSize: 11,
     letterSpacing: 0.6,
-    color: colors.grey,
+    color: colors.ink,
     marginBottom: 6,
   },
   hours: {
@@ -210,7 +256,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 17,
     lineHeight: 25,
-    color: colors.grey,
+    color: colors.ink,
     marginBottom: space.m,
   },
 });

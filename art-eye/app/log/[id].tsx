@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Hairline, InkBar, Kicker, RatingDots } from '../../src/components/ui';
+import { PhotoPicker } from '../../src/components/image-upload';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { todayStr } from '../../src/lib/dates';
@@ -25,6 +26,7 @@ export default function LogVisit() {
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [rating, setRating] = useState(0);
   const [reflection, setReflection] = useState('');
+  const [video, setVideo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +38,7 @@ export default function LogVisit() {
         if (v) {
           setRating(v.rating);
           setReflection(v.reflection);
+          setVideo(v.video_url ?? null);
         }
       });
     }
@@ -46,12 +49,17 @@ export default function LogVisit() {
     setBusy(true);
     setError(null);
     try {
+      let videoUrl = video;
+      if (videoUrl && !videoUrl.startsWith('http')) {
+        videoUrl = await api.uploadImage(videoUrl); // uploads video too (content-type detected)
+      }
       await api.saveVisit({
         user_id: profile.id,
         exhibition_id: id,
         rating,
         reflection: reflection.trim(),
         visit_date: todayStr(),
+        video_url: videoUrl,
       });
       router.back();
     } catch (err) {
@@ -106,6 +114,10 @@ export default function LogVisit() {
           A line is enough. This is your record, not a review for anyone else.
         </Text>
 
+        <Kicker style={{ marginTop: space.xl, marginBottom: space.s }}>VIDEO (OPTIONAL)</Kicker>
+        <PhotoPicker uri={video} media="video" onPick={setVideo} addLabel="ADD A CLIP" />
+        <Text style={styles.hint}>A short clip from the room — up to a minute.</Text>
+
         {error && <Text style={styles.error}>{error}</Text>}
       </ScrollView>
 
@@ -132,12 +144,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.grey,
+    color: colors.ink,
     textDecorationLine: 'underline',
   },
   artist: { ...type.artistCaps, marginBottom: 6 },
   title: { ...type.serifHeading, fontSize: 30, lineHeight: 36, marginBottom: 8 },
-  venue: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, color: colors.grey },
+  venue: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.8, color: colors.ink },
   note: {
     fontFamily: fonts.serif,
     fontSize: 20,
@@ -155,7 +167,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 15,
     lineHeight: 22,
-    color: colors.grey,
+    color: colors.ink,
     marginTop: space.m,
   },
   error: {

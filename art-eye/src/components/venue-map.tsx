@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 9,
     letterSpacing: 1.2,
-    color: colors.grey,
+    color: colors.ink,
   },
   empty: {
     paddingVertical: 40,
@@ -138,6 +138,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: fonts.serifItalic,
     fontSize: 17,
-    color: colors.grey,
+    color: colors.ink,
   },
 });

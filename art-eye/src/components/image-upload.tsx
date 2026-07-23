@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { colors, space } from '../theme';
+import { StyleSheet, Text, View } from 'react-native';
+import { colors, fonts, space } from '../theme';
 import { MonoLink } from './ui';
 
 /**
@@ -13,20 +13,25 @@ import { MonoLink } from './ui';
 export function PhotoPicker({
   uri,
   onPick,
-  addLabel = 'ADD PHOTO',
+  media = 'image',
+  addLabel,
 }: {
   uri: string | null;
   onPick: (localUri: string) => void;
+  media?: 'image' | 'video';
   addLabel?: string;
 }) {
   const [picking, setPicking] = useState(false);
+  const isVideo = media === 'video';
+  const noun = isVideo ? 'VIDEO' : 'PHOTO';
 
   const pick = async () => {
     setPicking(true);
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: isVideo ? ['videos'] : ['images'],
         quality: 0.85,
+        videoMaxDuration: 60, // keep user clips short
       });
       if (!result.canceled && result.assets[0]) onPick(result.assets[0].uri);
     } finally {
@@ -34,15 +39,16 @@ export function PhotoPicker({
     }
   };
 
-  const showPreview = !!uri && !uri.startsWith('asset:');
+  const set = !!uri && !uri.startsWith('asset:');
 
   return (
     <View>
-      {showPreview && (
+      {set && !isVideo && (
         <Image source={{ uri: uri! }} style={styles.preview} contentFit="cover" />
       )}
+      {set && isVideo && <Text style={styles.videoTag}>VIDEO ATTACHED ✓</Text>}
       <MonoLink
-        label={picking ? 'OPENING LIBRARY…' : uri ? 'REPLACE PHOTO' : addLabel}
+        label={picking ? 'OPENING LIBRARY…' : set ? `REPLACE ${noun}` : addLabel ?? `ADD ${noun}`}
         active
         onPress={pick}
         style={{ alignSelf: 'flex-start' }}
@@ -56,6 +62,13 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 2,
     backgroundColor: colors.hairline,
+    marginBottom: space.m,
+  },
+  videoTag: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: colors.ink,
     marginBottom: space.m,
   },
 });

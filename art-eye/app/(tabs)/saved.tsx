@@ -7,7 +7,7 @@ import { EmptyState, Hairline, Kicker, Loading, MonoLink } from '../../src/compo
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { Exhibition } from '../../src/lib/types';
-import { colors, space, type } from '../../src/theme';
+import { colors, fonts, space, type } from '../../src/theme';
 
 export default function SavedScreen() {
   const insets = useSafeAreaInsets();
@@ -78,9 +78,9 @@ export default function SavedScreen() {
 
 const styles = StyleSheet.create({
   signedOut: {
-    fontFamily: 'CormorantGaramond_400Regular_Italic',
+    fontFamily: fonts.serif,
     fontSize: 20,
     lineHeight: 30,
-    color: colors.grey,
+    color: colors.ink,
   },
 });

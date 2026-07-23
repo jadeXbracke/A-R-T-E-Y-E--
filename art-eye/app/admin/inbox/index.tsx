@@ -116,11 +116,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.serifItalic,
     fontSize: 17,
     lineHeight: 25,
-    color: colors.grey,
+    color: colors.ink,
     paddingHorizontal: space.page,
     marginBottom: space.m,
   },
-  back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.grey, marginTop: space.m },
+  back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.ink, marginTop: space.m },
   sectionHead: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -141,6 +141,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hairline,
   },
   rowTitle: { ...type.serifTitle, fontSize: 20 },
-  rowMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6, color: colors.grey, marginTop: 4 },
+  rowMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6, color: colors.ink, marginTop: 4 },
   confidence: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1, color: colors.ink },
 });
