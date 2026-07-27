@@ -2,12 +2,13 @@ import React, { useRef } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Image,
+  ImageStyle,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   TextInputProps,
-  TextStyle,
   View,
   ViewStyle,
 } from 'react-native';
@@ -48,19 +49,22 @@ export function Kicker({ children, style }: { children: React.ReactNode; style?:
 }
 
 /**
- * The ARTEYE wordmark — the app's logo, rendered as thin, wide-tracked vector
- * text so it stays razor-sharp at every size. Single source of truth: change
- * it here and every header/splash reference updates.
+ * The ARTEYE wordmark — the app's logo, rendered from the supplied logo asset.
+ * `size` is the glyph height in px; width follows the artwork's aspect ratio.
+ * Single source of truth: swap the asset and every header/splash updates.
  */
-export function Wordmark({ size = 22, style }: { size?: number; style?: TextStyle }) {
+const WORDMARK = require('../../assets/logo-arteye.png');
+const WORDMARK_RATIO = 818 / 132; // artwork width / height
+
+export function Wordmark({ size = 22, style }: { size?: number; style?: ImageStyle }) {
+  const height = Math.round(size * 0.92);
   return (
-    <Text
-      style={[type.wordmark, { fontSize: size, letterSpacing: size * 0.45 }, style]}
-      accessibilityRole="header"
+    <Image
+      source={WORDMARK}
+      style={[{ width: height * WORDMARK_RATIO, height }, style]}
+      resizeMode="contain"
       accessibilityLabel="ARTEYE"
-    >
-      ARTEYE
-    </Text>
+    />
   );
 }
 

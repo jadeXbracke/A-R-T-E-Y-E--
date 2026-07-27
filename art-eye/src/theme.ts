@@ -13,14 +13,13 @@ export const colors = {
 };
 
 // ── Typography system ───────────────────────────────────────────────────────
-// Two families, one fixed scale, applied across the whole app:
-//   • Archivo (sans)     — every label, caption, date, button, nav and metadata
-//   • Cormorant (serif)  — editorial display: titles, headings and body copy
-// No italics anywhere. The former IBM Plex Mono role now maps onto Archivo so
-// the app never renders a third family; the mono* aliases are kept so existing
-// styles keep working while resolving to the sans faces.
+// Three roles, one fixed scale, applied across the whole app:
+//   • Archivo (sans)        — wordmark accents, artist caps
+//   • Cormorant (serif)     — editorial display: titles, headings and body copy
+//   • IBM Plex Mono (mono)  — labels, dates, filters, buttons, tab bar, metadata
+// No italics anywhere.
 export const fonts = {
-  sansLight: 'Archivo_300Light', // the ARTEYE wordmark: thin, hairline weight
+  sansLight: 'Archivo_300Light',
   sans: 'Archivo_400Regular',
   sansMedium: 'Archivo_500Medium',
   sansSemi: 'Archivo_600SemiBold',
@@ -30,9 +29,10 @@ export const fonts = {
   // former-italic usage renders as normal type.
   serifItalic: 'CormorantGaramond_400Regular',
   serifMediumItalic: 'CormorantGaramond_500Medium',
-  // "mono" role folded into Archivo — the app is a two-font system now.
-  mono: 'Archivo_400Regular',
-  monoMedium: 'Archivo_500Medium',
+  // The monospace face for labels, dates and UI chrome — restored by owner
+  // preference over the previous sans fold-in.
+  mono: 'IBMPlexMono_400Regular',
+  monoMedium: 'IBMPlexMono_500Medium',
 };
 
 export const space = {

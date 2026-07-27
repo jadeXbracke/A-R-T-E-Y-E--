@@ -8,6 +8,10 @@ import {
   CormorantGaramond_400Regular,
   CormorantGaramond_500Medium,
 } from '@expo-google-fonts/cormorant-garamond';
+import {
+  IBMPlexMono_400Regular,
+  IBMPlexMono_500Medium,
+} from '@expo-google-fonts/ibm-plex-mono';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -26,6 +30,8 @@ export default function RootLayout() {
     Archivo_600SemiBold,
     CormorantGaramond_400Regular,
     CormorantGaramond_500Medium,
+    IBMPlexMono_400Regular,
+    IBMPlexMono_500Medium,
   });
 
   useEffect(() => {
