@@ -13,26 +13,24 @@ export const colors = {
 };
 
 // ── Typography system ───────────────────────────────────────────────────────
-// Three roles, one fixed scale, applied across the whole app:
-//   • Archivo (sans)        — wordmark accents, artist caps
-//   • Cormorant (serif)     — editorial display: titles, headings and body copy
-//   • IBM Plex Mono (mono)  — labels, dates, filters, buttons, tab bar, metadata
-// No italics anywhere.
+// One family across the whole app: JOST — a geometric, Futura-style sans that
+// matches the thin, airy, wide-tracked ARTEYE wordmark (CARELLI-inspired).
+// Every former role (sans / serif / mono) now resolves to a Jost weight, so the
+// app and the logo read as one system. Big headings use the Light weight to
+// echo the logo's hairline strokes. No italics anywhere.
 export const fonts = {
-  sansLight: 'Archivo_300Light',
-  sans: 'Archivo_400Regular',
-  sansMedium: 'Archivo_500Medium',
-  sansSemi: 'Archivo_600SemiBold',
-  serif: 'CormorantGaramond_400Regular',
-  serifMedium: 'CormorantGaramond_500Medium',
-  // Italics retired — these aliases resolve to the upright serif faces so any
-  // former-italic usage renders as normal type.
-  serifItalic: 'CormorantGaramond_400Regular',
-  serifMediumItalic: 'CormorantGaramond_500Medium',
-  // The monospace face for labels, dates and UI chrome — restored by owner
-  // preference over the previous sans fold-in.
-  mono: 'IBMPlexMono_400Regular',
-  monoMedium: 'IBMPlexMono_500Medium',
+  sansLight: 'Jost_300Light',
+  sans: 'Jost_400Regular',
+  sansMedium: 'Jost_500Medium',
+  sansSemi: 'Jost_600SemiBold',
+  // "serif" role (titles, headings, body) — now Jost.
+  serif: 'Jost_400Regular',
+  serifMedium: 'Jost_400Regular',
+  serifItalic: 'Jost_400Regular',
+  serifMediumItalic: 'Jost_400Regular',
+  // "mono" role (labels, dates, filters, buttons, tab bar) — now Jost.
+  mono: 'Jost_400Regular',
+  monoMedium: 'Jost_500Medium',
 };
 
 export const space = {
@@ -51,13 +49,13 @@ export const type = {
   wordmark: { fontFamily: fonts.sansLight, fontSize: 22, letterSpacing: 10, color: colors.ink },
   artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.2, color: colors.ink },
   artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3, color: colors.white },
-  // exhibition titles, reflections, large headings: Cormorant (upright)
+  // exhibition/venue titles: Jost regular; big page headings go light + airy
   serifTitle: { fontFamily: fonts.serifMedium, fontSize: 21, color: colors.ink },
-  serifHeading: { fontFamily: fonts.serifMedium, fontSize: 34, color: colors.ink },
-  serifHero: { fontFamily: fonts.serifMedium, fontSize: 34, color: colors.white },
+  serifHeading: { fontFamily: fonts.sansLight, fontSize: 34, letterSpacing: 0.5, color: colors.ink },
+  serifHero: { fontFamily: fonts.sansLight, fontSize: 34, letterSpacing: 0.5, color: colors.white },
   serifBody: { fontFamily: fonts.serif, fontSize: 18, lineHeight: 27, color: colors.ink },
   serifQuote: { fontFamily: fonts.serif, fontSize: 18, lineHeight: 26, color: colors.ink },
-  // dates, venues, labels, filters, buttons, tab bar: Archivo (sans)
+  // dates, venues, labels, filters, buttons, tab bar: Jost
   mono: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 0.4, color: colors.ink },
   monoSmall: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, color: colors.ink },
   monoLabel: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.6, color: colors.ink },

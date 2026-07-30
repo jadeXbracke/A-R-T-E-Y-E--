@@ -54,7 +54,7 @@ export function Kicker({ children, style }: { children: React.ReactNode; style?:
  * Single source of truth: swap the asset and every header/splash updates.
  */
 const WORDMARK = require('../../assets/logo-arteye.png');
-const WORDMARK_RATIO = 818 / 132; // artwork width / height
+const WORDMARK_RATIO = 863 / 115; // artwork width / height
 
 export function Wordmark({ size = 22, style }: { size?: number; style?: ImageStyle }) {
   const height = Math.round(size * 0.92);
