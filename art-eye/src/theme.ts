@@ -15,24 +15,25 @@ export const colors = {
 };
 
 // ── Typography system ───────────────────────────────────────────────────────
-// One family, one voice: Jost (geometric sans, Futura-like) everywhere —
+// One family, one voice: Montserrat (wide geometric grotesque) everywhere —
 // every heading, label, caption, date, button and body block. Display and
-// body copy render in caps with wide tracking, M.A.P-style. The former
-// serif/mono roles are kept as aliases so existing styles keep working
-// while resolving to the single sans family.
+// body copy render in caps with wide tracking, M.A.P-style: headings solid
+// and wide, body/meta feather-light. The former serif/mono roles are kept
+// as aliases so existing styles keep working while resolving to the single
+// sans family.
 export const fonts = {
-  sansLight: 'Jost_300Light',
-  sans: 'Jost_400Regular',
-  sansMedium: 'Jost_500Medium',
-  sansSemi: 'Jost_600SemiBold',
-  // Serif retired — editorial display is now wide-tracked geometric caps.
-  serif: 'Jost_400Regular',
-  serifMedium: 'Jost_500Medium',
-  serifItalic: 'Jost_400Regular',
-  serifMediumItalic: 'Jost_500Medium',
+  sansLight: 'Montserrat_300Light',
+  sans: 'Montserrat_400Regular',
+  sansMedium: 'Montserrat_500Medium',
+  sansSemi: 'Montserrat_600SemiBold',
+  // Serif retired — editorial body copy is now light, wide-tracked caps.
+  serif: 'Montserrat_300Light',
+  serifMedium: 'Montserrat_500Medium',
+  serifItalic: 'Montserrat_300Light',
+  serifMediumItalic: 'Montserrat_500Medium',
   // "mono" role folded into the same family — the app is a one-font system.
-  mono: 'Jost_400Regular',
-  monoMedium: 'Jost_500Medium',
+  mono: 'Montserrat_400Regular',
+  monoMedium: 'Montserrat_500Medium',
 };
 
 export const space = {
@@ -56,8 +57,8 @@ export const type = {
   serifTitle: { fontFamily: fonts.sansSemi, fontSize: 17, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   serifHeading: { fontFamily: fonts.sansSemi, fontSize: 26, letterSpacing: 3.4, color: colors.ink, textTransform: 'uppercase' },
   serifHero: { fontFamily: fonts.sansSemi, fontSize: 26, letterSpacing: 3.4, color: colors.white, textTransform: 'uppercase' },
-  serifBody: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 24, letterSpacing: 2, color: colors.ink, textTransform: 'uppercase' },
-  serifQuote: { fontFamily: fonts.sans, fontSize: 13, lineHeight: 23, letterSpacing: 2, color: colors.ink, textTransform: 'uppercase' },
+  serifBody: { fontFamily: fonts.sansLight, fontSize: 13, lineHeight: 25, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
+  serifQuote: { fontFamily: fonts.sansLight, fontSize: 13, lineHeight: 24, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   // dates, venues, labels, filters, buttons, tab bar
   mono: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 1.6, color: colors.ink, textTransform: 'uppercase' },
   monoSmall: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.6, color: colors.ink, textTransform: 'uppercase' },

@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 0.8,
-    color: colors.ink,
+    color: colors.grey,
     marginTop: 4,
   },
   open: {
