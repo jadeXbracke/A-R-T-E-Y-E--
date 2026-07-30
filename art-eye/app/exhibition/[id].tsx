@@ -125,6 +125,7 @@ export default function ExhibitionDetail() {
           <LiveArt
             videoUrl={e.video_url}
             uri={e.image_url}
+            venueUri={e.venue?.image_url}
             fallbackId={e.id}
             style={{ width, backgroundColor: colors.dim }}
             aspectRatio={4 / 5}
