@@ -22,6 +22,7 @@ export const colors = {
 // as aliases so existing styles keep working while resolving to the single
 // sans family.
 export const fonts = {
+  sansThin: 'Montserrat_200ExtraLight', // the wordmark's hairline weight
   sansLight: 'Montserrat_300Light',
   sans: 'Montserrat_400Regular',
   sansMedium: 'Montserrat_400Regular',
@@ -51,7 +52,7 @@ export const space = {
 // Caps + tracking are baked in so content stays as-is but renders M.A.P-style.
 export const type = {
   // the ARTEYE wordmark — thin hairline weight, wide letter-spacing
-  wordmark: { fontFamily: fonts.sansLight, fontSize: 22, letterSpacing: 10, color: colors.ink },
+  wordmark: { fontFamily: fonts.sansThin, fontSize: 22, letterSpacing: 10, color: colors.ink },
   artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3.2, color: colors.white, textTransform: 'uppercase' },
   // exhibition titles, reflections, large headings: bold geometric caps
