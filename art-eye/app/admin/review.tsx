@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hairline,
   },
   rowDates: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginBottom: 3 },
-  rowTitle: { ...type.serifTitle, fontSize: 20 },
+  rowTitle: { ...type.serifTitle, fontSize: 15, letterSpacing: 2.2 },
   rowVenue: {
     fontFamily: fonts.mono,
     fontSize: 10,

@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   preview: {
     width: '100%',
     aspectRatio: 3 / 2,
-    backgroundColor: colors.hairline,
+    backgroundColor: colors.dim,
     marginBottom: space.m,
   },
   videoTag: {

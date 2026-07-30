@@ -156,7 +156,8 @@ const styles = StyleSheet.create({
   },
   input: {
     ...type.serifHeading,
-    fontSize: 26,
+    fontSize: 16,
+    letterSpacing: 2.4,
     color: colors.ink,
     paddingVertical: 6,
   },
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
   },
-  rowName: { ...type.serifTitle, fontSize: 20 },
+  rowName: { ...type.serifTitle, fontSize: 15, letterSpacing: 2.2 },
   rowMeta: {
     fontFamily: fonts.mono,
     fontSize: 10,

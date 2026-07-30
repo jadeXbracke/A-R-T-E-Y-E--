@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   showTitle: { ...type.serifTitle, fontSize: 20 },
   venue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginTop: 3 },
   reflection: { ...type.serifBody, fontSize: 16, lineHeight: 24, marginTop: space.s },
-  video: { width: '100%', marginTop: space.m, backgroundColor: colors.hairline },
+  video: { width: '100%', marginTop: space.m, backgroundColor: colors.dim },
   personRow: {
     flexDirection: 'row',
     alignItems: 'center',

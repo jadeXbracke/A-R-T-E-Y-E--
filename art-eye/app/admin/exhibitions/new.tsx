@@ -103,9 +103,9 @@ const styles = StyleSheet.create({
     marginTop: space.m,
   },
   intro: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 17,
-    lineHeight: 25,
+    fontFamily: fonts.serifItalic, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
+    lineHeight: 21,
     color: colors.ink,
     marginBottom: space.l,
   },

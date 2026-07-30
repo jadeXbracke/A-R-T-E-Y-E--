@@ -68,7 +68,7 @@ export function VenueMap({
               <View
                 style={[
                   styles.dot,
-                  { backgroundColor: on ? colors.red : colors.ink },
+                  { backgroundColor: on ? colors.ink : colors.grey },
                   selected && styles.dotSelected,
                 ]}
               />
@@ -77,9 +77,9 @@ export function VenueMap({
         })}
       </View>
       <View style={styles.legend}>
-        <View style={[styles.legendDot, { backgroundColor: colors.red }]} />
+        <View style={[styles.legendDot, { backgroundColor: colors.ink }]} />
         <Text style={styles.legendText}>ON NOW</Text>
-        <View style={[styles.legendDot, { backgroundColor: colors.ink, marginLeft: 14 }]} />
+        <View style={[styles.legendDot, { backgroundColor: colors.grey, marginLeft: 14 }]} />
         <Text style={styles.legendText}>VENUE</Text>
         {missing > 0 && (
           <Text style={[styles.legendText, { marginLeft: 'auto' }]}>
@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 17,
+    fontFamily: fonts.serifItalic, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
     color: colors.ink,
   },
 });

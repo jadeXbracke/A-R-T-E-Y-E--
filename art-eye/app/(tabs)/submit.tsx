@@ -169,9 +169,9 @@ export default function SubmitScreen() {
 
 const styles = StyleSheet.create({
   intro: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 17,
-    lineHeight: 25,
+    fontFamily: fonts.serifItalic, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
+    lineHeight: 21,
     color: colors.ink,
     marginTop: space.m,
   },
@@ -182,9 +182,9 @@ const styles = StyleSheet.create({
     padding: space.l,
   },
   doneText: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 19,
-    lineHeight: 28,
+    fontFamily: fonts.serifItalic, letterSpacing: 2.1, textTransform: 'uppercase',
+    fontSize: 15,
+    lineHeight: 24,
     color: colors.ink,
     marginBottom: space.m,
   },
