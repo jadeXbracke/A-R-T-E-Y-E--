@@ -79,20 +79,22 @@ function gradient(slug, top, bottom, seed) {
 const outDir = path.join(__dirname, '..', 'assets', 'exhibitions');
 fs.mkdirSync(outDir, { recursive: true });
 
+// Light, modern editorial fields — bone, stone, sage, clay, fog — so a show
+// without a press image reads like quiet gallery paper, not a dark block.
 const sets = [
-  ['archibald', '#8A8378', '#3E3A34'],
-  ['murakami', '#C8B98F', '#7A5C3A'],
-  ['primavera', '#9BA48D', '#4C5344'],
-  ['armanious', '#B7B2A9', '#6E6A62'],
-  ['kahukiwa', '#A2543E', '#4E2A21'],
-  ['nell', '#23211E', '#6F6B64'],
-  ['constructed-world', '#B0B6BC', '#5B6166'],
-  ['bennett', '#C2A56A', '#845F31'],
-  ['gabori-ledgerwood', '#7E8BA0', '#39404D'],
-  ['infinite-gesture', '#8F8E96', '#3C3B44'],
-  ['crothers', '#93A0A4', '#44514F'],
-  ['pulse', '#A88D8D', '#54403F'],
-  ['abbotsleigh', '#9C9784', '#4A473C'],
+  ['archibald', '#F0EEE9', '#D6D2C9'],
+  ['murakami', '#F2E7DA', '#DECBB4'],
+  ['primavera', '#E8EDE6', '#CBD4C8'],
+  ['armanious', '#EEECE8', '#D2CEC6'],
+  ['kahukiwa', '#EFE0D6', '#D8BCAB'],
+  ['nell', '#EAEAEC', '#CBCCD1'],
+  ['constructed-world', '#E8ECF0', '#C8D0D9'],
+  ['bennett', '#F2EBDE', '#DCCEB2'],
+  ['gabori-ledgerwood', '#E6EAF0', '#BFC8D6'],
+  ['infinite-gesture', '#ECEAF0', '#CECBD8'],
+  ['crothers', '#E7ECEC', '#C5CFCF'],
+  ['pulse', '#F2E8E6', '#DCC7C2'],
+  ['abbotsleigh', '#EEEDE4', '#D2D0C0'],
 ];
 
 sets.forEach(([slug, a, b], i) => {

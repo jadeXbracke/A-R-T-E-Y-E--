@@ -120,28 +120,28 @@ export default function ExhibitionDetail() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + space.xl }}>
-        <View>
+      <ScrollView
+        contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: insets.bottom + space.xl }}
+      >
+        <View style={styles.topBar}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Text style={styles.backLabel}>← BACK</Text>
+          </Pressable>
+          {visit && <RedDot size={10} />}
+        </View>
+        <View style={{ paddingHorizontal: space.page }}>
           <LiveArt
             videoUrl={e.video_url}
             uri={e.image_url}
             venueUri={e.venue?.image_url}
             fallbackId={e.id}
-            style={{ width, backgroundColor: colors.dim }}
-            aspectRatio={4 / 5}
+            style={{ width: width - space.page * 2, backgroundColor: colors.dim }}
+            aspectRatio={4 / 3}
           />
-          <View style={styles.overlay}>
-            <Text style={styles.overlayArtist}>{e.artists.toUpperCase()}</Text>
-            <Text style={styles.overlayTitle}>{e.title}</Text>
-          </View>
-          <Pressable
-            onPress={() => router.back()}
-            style={[styles.back, { top: insets.top + 8 }]}
-            hitSlop={12}
-          >
-            <Text style={styles.backLabel}>← BACK</Text>
-          </Pressable>
-          {visit && <RedDot size={10} style={{ position: 'absolute', top: insets.top + 16, right: space.page }} />}
+        </View>
+        <View style={styles.caption}>
+          <Text style={styles.captionTitle}>{e.title}</Text>
+          <Text style={styles.captionArtist}>{e.artists.toUpperCase()}</Text>
         </View>
 
         <View style={{ paddingHorizontal: space.page, paddingTop: space.l }}>
@@ -248,25 +248,27 @@ export default function ExhibitionDetail() {
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.scrim,
-    paddingHorizontal: space.l,
+    paddingHorizontal: space.page,
+    paddingBottom: space.m,
   },
-  overlayArtist: { ...type.artistCapsLarge, textAlign: 'center', marginBottom: space.s },
-  overlayTitle: { ...type.serifHero, fontSize: 40, lineHeight: 46, textAlign: 'center' },
-  back: { position: 'absolute', left: space.page },
+  caption: { paddingHorizontal: space.page, paddingTop: space.l },
+  captionTitle: { ...type.serifHeading, fontSize: 23, lineHeight: 35, marginBottom: space.s },
+  captionArtist: {
+    fontFamily: fonts.sans,
+    fontSize: 11,
+    letterSpacing: 2.4,
+    color: colors.ink,
+    textTransform: 'uppercase',
+  },
   backLabel: {
     fontFamily: fonts.monoMedium,
     fontSize: 11,
     letterSpacing: 1.4,
-    color: colors.white,
+    color: colors.ink,
   },
   openingTag: {
     fontFamily: fonts.monoMedium,
