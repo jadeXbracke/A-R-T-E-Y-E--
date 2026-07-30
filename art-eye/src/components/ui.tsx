@@ -55,7 +55,7 @@ export function Kicker({ children, style }: { children: React.ReactNode; style?:
 export function Wordmark({ size = 22, style }: { size?: number; style?: TextStyle }) {
   return (
     <Text
-      style={[type.wordmark, { fontSize: size, letterSpacing: size * 0.45 }, style]}
+      style={[type.wordmark, { fontSize: size, letterSpacing: size * 0.55 }, style]}
       accessibilityRole="header"
       accessibilityLabel="ARTEYE"
     >
