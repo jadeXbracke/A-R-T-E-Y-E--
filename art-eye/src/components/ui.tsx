@@ -48,18 +48,18 @@ export function Kicker({ children, style }: { children: React.ReactNode; style?:
 }
 
 /**
- * The ARTEYE wordmark — the app's logo, rendered as thin, wide-tracked vector
- * text so it stays razor-sharp at every size. Single source of truth: change
- * it here and every header/splash reference updates.
+ * The A.R.T E.Y.E wordmark — the app's logo, rendered as solid, wide-tracked
+ * vector text so it stays razor-sharp at every size. Single source of truth:
+ * change it here and every header/splash reference updates.
  */
 export function Wordmark({ size = 22, style }: { size?: number; style?: TextStyle }) {
   return (
     <Text
-      style={[type.wordmark, { fontSize: size, letterSpacing: size * 0.45 }, style]}
+      style={[type.wordmark, { fontSize: size, letterSpacing: size * 0.3 }, style]}
       accessibilityRole="header"
-      accessibilityLabel="ARTEYE"
+      accessibilityLabel="ART EYE"
     >
-      ARTEYE
+      A.R.T&nbsp;&nbsp;E.Y.E
     </Text>
   );
 }
@@ -91,7 +91,7 @@ export function MonoLink({
       <View
         style={[
           styles.monoLinkRule,
-          { backgroundColor: active ? colors.red : color ?? colors.hairline },
+          { backgroundColor: active ? colors.ink : color ?? colors.dim },
         ]}
       />
     </Pressable>
@@ -285,9 +285,9 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hairline,
   },
   empty: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 20,
-    lineHeight: 30,
+    fontFamily: fonts.serifItalic, letterSpacing: 2.2, textTransform: 'uppercase',
+    fontSize: 16,
+    lineHeight: 26,
     color: colors.ink,
   },
 });

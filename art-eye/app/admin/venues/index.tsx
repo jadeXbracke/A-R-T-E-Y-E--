@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
-  rowTitle: { ...type.serifTitle, fontSize: 20 },
+  rowTitle: { ...type.serifTitle, fontSize: 15, letterSpacing: 2.2 },
   rowMeta: {
     fontFamily: fonts.mono,
     fontSize: 10,

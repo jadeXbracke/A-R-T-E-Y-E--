@@ -208,8 +208,8 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   lede: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 26,
+    fontFamily: fonts.serifItalic, letterSpacing: 2.9, textTransform: 'uppercase',
+    fontSize: 21,
     color: colors.ink,
     marginBottom: space.xl,
   },

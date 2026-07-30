@@ -186,9 +186,9 @@ export default function CuratorScreen() {
 
 const styles = StyleSheet.create({
   signedOut: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 20,
-    lineHeight: 30,
+    fontFamily: fonts.serifItalic, letterSpacing: 2.2, textTransform: 'uppercase',
+    fontSize: 16,
+    lineHeight: 26,
     color: colors.ink,
     marginTop: space.l,
   },
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   stats: { flexDirection: 'row', paddingVertical: space.l },
   stat: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, backgroundColor: colors.hairline },
-  statValue: { fontFamily: fonts.serifMedium, fontSize: 30, color: colors.ink, marginBottom: 4 },
+  statValue: { fontFamily: fonts.serifMedium, letterSpacing: 3.4, textTransform: 'uppercase', fontSize: 24, color: colors.ink, marginBottom: 4 },
   statLabel: { ...type.monoLabel },
   entry: {
     flexDirection: 'row',
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.page,
     paddingVertical: space.m,
   },
-  entryThumb: { width: 64, height: 80, backgroundColor: colors.hairline },
+  entryThumb: { width: 64, height: 80, backgroundColor: colors.dim },
   entryMeta: {
     fontFamily: fonts.mono,
     fontSize: 10,
@@ -219,9 +219,9 @@ const styles = StyleSheet.create({
   },
   entryTitle: { ...type.serifTitle, fontSize: 19, marginBottom: 7 },
   entryNote: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 16,
-    lineHeight: 23,
+    fontFamily: fonts.serifItalic, letterSpacing: 1.8, textTransform: 'uppercase',
+    fontSize: 13,
+    lineHeight: 20,
     color: colors.ink,
     marginTop: 8,
   },

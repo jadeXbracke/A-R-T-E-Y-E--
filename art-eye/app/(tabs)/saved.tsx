@@ -78,9 +78,9 @@ export default function SavedScreen() {
 
 const styles = StyleSheet.create({
   signedOut: {
-    fontFamily: fonts.serif,
-    fontSize: 20,
-    lineHeight: 30,
+    fontFamily: fonts.serif, letterSpacing: 2.2, textTransform: 'uppercase',
+    fontSize: 16,
+    lineHeight: 26,
     color: colors.ink,
   },
 });

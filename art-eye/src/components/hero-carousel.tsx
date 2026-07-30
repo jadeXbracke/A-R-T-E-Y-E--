@@ -59,9 +59,10 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
               <LiveArt
                 videoUrl={e.video_url}
                 uri={e.image_url}
+                venueUri={e.venue?.image_url}
                 fallbackId={e.id}
                 active={i === active}
-                style={{ width, backgroundColor: colors.hairline }}
+                style={{ width, backgroundColor: colors.dim }}
                 aspectRatio={4 / 5}
               />
               <View style={styles.overlay}>
@@ -87,7 +88,7 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
             <View
               style={[
                 styles.tabRule,
-                { backgroundColor: i === active ? colors.red : colors.hairline },
+                { backgroundColor: i === active ? colors.ink : colors.dim },
               ]}
             />
           </Pressable>

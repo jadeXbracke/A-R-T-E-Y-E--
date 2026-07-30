@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: fonts.monoMedium,
     fontSize: 10,
-    letterSpacing: 1.8,
+    letterSpacing: 1.2,
     color: colors.ink,
     paddingBottom: 6,
   },

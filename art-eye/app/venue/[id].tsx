@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     opacity: 0.55,
   },
-  photo: { width: '100%', aspectRatio: 3 / 2, backgroundColor: colors.hairline },
+  photo: { width: '100%', aspectRatio: 3 / 2, backgroundColor: colors.dim },
   address: {
     fontFamily: fonts.mono,
     fontSize: 11,
@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { ...type.serifHeading, fontSize: 26, marginBottom: space.s },
   emptyLine: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 17,
-    lineHeight: 25,
+    fontFamily: fonts.serifItalic, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
+    lineHeight: 21,
     color: colors.ink,
     marginBottom: space.m,
   },

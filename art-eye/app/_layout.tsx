@@ -1,13 +1,9 @@
 import {
-  Archivo_300Light,
-  Archivo_400Regular,
-  Archivo_500Medium,
-  Archivo_600SemiBold,
-} from '@expo-google-fonts/archivo';
-import {
-  CormorantGaramond_400Regular,
-  CormorantGaramond_500Medium,
-} from '@expo-google-fonts/cormorant-garamond';
+  Montserrat_300Light,
+  Montserrat_400Regular,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+} from '@expo-google-fonts/montserrat';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -20,12 +16,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Archivo_300Light,
-    Archivo_400Regular,
-    Archivo_500Medium,
-    Archivo_600SemiBold,
-    CormorantGaramond_400Regular,
-    CormorantGaramond_500Medium,
+    Montserrat_300Light,
+    Montserrat_400Regular,
+    Montserrat_500Medium,
+    Montserrat_600SemiBold,
   });
 
   useEffect(() => {

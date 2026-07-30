@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
     textDecorationLine: 'underline',
   },
-  cover: { width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.hairline },
+  cover: { width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.dim },
   venueLine: {
     fontFamily: fonts.mono,
     fontSize: 11,
@@ -225,9 +225,9 @@ const styles = StyleSheet.create({
     marginBottom: space.l,
   },
   description: {
-    fontFamily: fonts.serif,
-    fontSize: 17,
-    lineHeight: 25,
+    fontFamily: fonts.serif, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
+    lineHeight: 21,
     color: colors.ink,
     minHeight: 90,
     textAlignVertical: 'top',

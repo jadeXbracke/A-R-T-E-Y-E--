@@ -190,9 +190,9 @@ const styles = StyleSheet.create({
     marginTop: space.m,
   },
   note: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 18,
-    lineHeight: 27,
+    fontFamily: fonts.serifItalic, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
+    lineHeight: 23,
     color: colors.ink,
     marginTop: space.m,
   },

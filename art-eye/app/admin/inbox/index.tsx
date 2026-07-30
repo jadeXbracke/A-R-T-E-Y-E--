@@ -113,9 +113,9 @@ const styles = StyleSheet.create({
     paddingBottom: space.m,
   },
   intro: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 17,
-    lineHeight: 25,
+    fontFamily: fonts.serifItalic, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
+    lineHeight: 21,
     color: colors.ink,
     paddingHorizontal: space.page,
     marginBottom: space.m,
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
   },
-  rowTitle: { ...type.serifTitle, fontSize: 20 },
+  rowTitle: { ...type.serifTitle, fontSize: 15, letterSpacing: 2.2 },
   rowMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6, color: colors.ink, marginTop: 4 },
   confidence: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1, color: colors.ink },
 });
