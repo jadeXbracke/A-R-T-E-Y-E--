@@ -2,7 +2,6 @@ import {
   Montserrat_300Light,
   Montserrat_400Regular,
   Montserrat_500Medium,
-  Montserrat_600SemiBold,
 } from '@expo-google-fonts/montserrat';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -19,7 +18,6 @@ export default function RootLayout() {
     Montserrat_300Light,
     Montserrat_400Regular,
     Montserrat_500Medium,
-    Montserrat_600SemiBold,
   });
 
   useEffect(() => {

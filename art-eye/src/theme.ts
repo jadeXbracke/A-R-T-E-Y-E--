@@ -24,16 +24,17 @@ export const colors = {
 export const fonts = {
   sansLight: 'Montserrat_300Light',
   sans: 'Montserrat_400Regular',
-  sansMedium: 'Montserrat_500Medium',
-  sansSemi: 'Montserrat_600SemiBold',
+  sansMedium: 'Montserrat_400Regular',
+  // Slimmed a step for the editorial look: headings sit at medium, never bold.
+  sansSemi: 'Montserrat_500Medium',
   // Serif retired — editorial body copy is now light, wide-tracked caps.
   serif: 'Montserrat_300Light',
-  serifMedium: 'Montserrat_500Medium',
+  serifMedium: 'Montserrat_400Regular',
   serifItalic: 'Montserrat_300Light',
-  serifMediumItalic: 'Montserrat_500Medium',
+  serifMediumItalic: 'Montserrat_400Regular',
   // "mono" role folded into the same family — the app is a one-font system.
   mono: 'Montserrat_400Regular',
-  monoMedium: 'Montserrat_500Medium',
+  monoMedium: 'Montserrat_400Regular',
 };
 
 export const space = {
@@ -54,9 +55,9 @@ export const type = {
   artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3.2, color: colors.white, textTransform: 'uppercase' },
   // exhibition titles, reflections, large headings: bold geometric caps
-  serifTitle: { fontFamily: fonts.sansSemi, fontSize: 17, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
-  serifHeading: { fontFamily: fonts.sansSemi, fontSize: 26, letterSpacing: 3.4, color: colors.ink, textTransform: 'uppercase' },
-  serifHero: { fontFamily: fonts.sansSemi, fontSize: 26, letterSpacing: 3.4, color: colors.white, textTransform: 'uppercase' },
+  serifTitle: { fontFamily: fonts.sansSemi, fontSize: 16, letterSpacing: 3, color: colors.ink, textTransform: 'uppercase' },
+  serifHeading: { fontFamily: fonts.sansSemi, fontSize: 25, letterSpacing: 3.8, color: colors.ink, textTransform: 'uppercase' },
+  serifHero: { fontFamily: fonts.sansSemi, fontSize: 25, letterSpacing: 3.8, color: colors.white, textTransform: 'uppercase' },
   serifBody: { fontFamily: fonts.sansLight, fontSize: 13, lineHeight: 25, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   serifQuote: { fontFamily: fonts.sansLight, fontSize: 13, lineHeight: 24, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   // dates, venues, labels, filters, buttons, tab bar
