@@ -50,14 +50,15 @@ export const space = {
 // The single source of truth for the type scale. Every text colour here is ink.
 // Caps + tracking are baked in so content stays as-is but renders M.A.P-style.
 export const type = {
-  // the ART EYE wordmark — solid medium-bold caps, wide letter-spacing
-  wordmark: { fontFamily: fonts.sansSemi, fontSize: 22, letterSpacing: 6, color: colors.ink },
+  // the ARTEYE wordmark — thin hairline weight, wide letter-spacing
+  wordmark: { fontFamily: fonts.sansLight, fontSize: 22, letterSpacing: 10, color: colors.ink },
   artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3.2, color: colors.white, textTransform: 'uppercase' },
   // exhibition titles, reflections, large headings: bold geometric caps
   serifTitle: { fontFamily: fonts.sansSemi, fontSize: 16, letterSpacing: 3, color: colors.ink, textTransform: 'uppercase' },
-  serifHeading: { fontFamily: fonts.sansSemi, fontSize: 25, letterSpacing: 3.8, color: colors.ink, textTransform: 'uppercase' },
-  serifHero: { fontFamily: fonts.sansSemi, fontSize: 25, letterSpacing: 3.8, color: colors.white, textTransform: 'uppercase' },
+  // big display headings run light with generous air — contemporary editorial
+  serifHeading: { fontFamily: fonts.sans, fontSize: 25, letterSpacing: 4.2, color: colors.ink, textTransform: 'uppercase' },
+  serifHero: { fontFamily: fonts.sans, fontSize: 25, letterSpacing: 4.2, color: colors.white, textTransform: 'uppercase' },
   serifBody: { fontFamily: fonts.sansLight, fontSize: 13, lineHeight: 25, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   serifQuote: { fontFamily: fonts.sansLight, fontSize: 13, lineHeight: 24, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
   // dates, venues, labels, filters, buttons, tab bar
