@@ -1,4 +1,5 @@
 import {
+  Montserrat_200ExtraLight,
   Montserrat_300Light,
   Montserrat_400Regular,
   Montserrat_500Medium,
@@ -15,6 +16,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
+    Montserrat_200ExtraLight,
     Montserrat_300Light,
     Montserrat_400Regular,
     Montserrat_500Medium,
