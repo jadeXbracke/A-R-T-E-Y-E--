@@ -7,12 +7,6 @@ import { FALLBACK_PLACEHOLDER, PLACEHOLDERS } from '../lib/seed';
 import { Exhibition } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
 import { Lift, RedDot } from './ui';
-import { DateBlock } from './date-block';
-
-// A real press image, as opposed to a bundled tonal placeholder.
-function hasRealImage(e: Exhibition): boolean {
-  return !!(e.image_url && !e.image_url.startsWith('asset:'));
-}
 
 function fallbackFor(id: string, imageUrl?: string | null): number {
   if (imageUrl?.startsWith('asset:')) {
@@ -62,7 +56,7 @@ export function ArtImage({
   );
 }
 
-/** Agenda list row: thumbnail (+ red seen dot), mono date, serif title, caps artist, mono venue. */
+/** Editorial agenda card: full-width image, then date, bold title, artist, venue. */
 export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; seen?: boolean }) {
   return (
     <Lift
@@ -70,30 +64,24 @@ export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; se
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
       <View>
-        {hasRealImage(exhibition) ? (
-          <ArtImage
-            uri={exhibition.image_url}
-            fallbackId={exhibition.id}
-            style={styles.thumb}
-            contentFit="cover"
-          />
-        ) : (
-          <DateBlock date={exhibition.start_date} seed={exhibition.id} width={84} height={105} />
-        )}
+        <ArtImage
+          uri={exhibition.image_url}
+          fallbackId={exhibition.id}
+          style={styles.cover}
+          contentFit="cover"
+        />
         {seen && <RedDot size={9} style={styles.seenDot} />}
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.rowDate}>{fmtRange(exhibition.start_date, exhibition.end_date)}</Text>
-        <Text style={styles.rowTitle} numberOfLines={2}>
-          {exhibition.title}
-        </Text>
-        <Text style={styles.rowArtist} numberOfLines={1}>
-          {exhibition.artists.toUpperCase()}
-        </Text>
-        <Text style={styles.rowVenue} numberOfLines={1}>
-          {exhibition.venue?.name.toUpperCase()}
-        </Text>
-      </View>
+      <Text style={styles.rowDate}>{fmtRange(exhibition.start_date, exhibition.end_date)}</Text>
+      <Text style={styles.rowTitle} numberOfLines={2}>
+        {exhibition.title}
+      </Text>
+      <Text style={styles.rowArtist} numberOfLines={1}>
+        {exhibition.artists}
+      </Text>
+      <Text style={styles.rowVenue} numberOfLines={1}>
+        {exhibition.venue?.name}
+      </Text>
     </Lift>
   );
 }
@@ -106,16 +94,12 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
       <View>
-        {hasRealImage(exhibition) ? (
-          <ArtImage
-            uri={exhibition.image_url}
-            fallbackId={exhibition.id}
-            style={styles.gridImage}
-            contentFit="cover"
-          />
-        ) : (
-          <DateBlock date={exhibition.start_date} seed={exhibition.id} style={styles.gridImage} />
-        )}
+        <ArtImage
+          uri={exhibition.image_url}
+          fallbackId={exhibition.id}
+          style={styles.gridImage}
+          contentFit="cover"
+        />
         {seen && <RedDot size={9} style={styles.seenDot} />}
       </View>
       <Text style={styles.gridDate}>{fmtRange(exhibition.start_date, exhibition.end_date)}</Text>
@@ -123,7 +107,7 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
         {exhibition.title}
       </Text>
       <Text style={styles.gridVenue} numberOfLines={1}>
-        {exhibition.venue?.name.toUpperCase()}
+        {exhibition.venue?.name}
       </Text>
     </Lift>
   );
@@ -131,26 +115,23 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    gap: space.m,
-    paddingVertical: space.m,
+    paddingTop: space.m,
+    paddingBottom: space.l,
     paddingHorizontal: space.page,
   },
-  thumb: { width: 84, height: 105, backgroundColor: colors.hairline },
-  seenDot: { position: 'absolute', top: 8, right: 8 },
-  rowDate: { ...type.monoSmall, marginBottom: 4 },
-  rowTitle: { ...type.serifTitle, marginBottom: 4 },
+  cover: { width: '100%', aspectRatio: 4 / 3, backgroundColor: colors.hairline, marginBottom: space.s },
+  seenDot: { position: 'absolute', top: 10, right: 10 },
+  rowDate: { ...type.monoSmall, marginBottom: 6 },
+  rowTitle: { ...type.serifTitle, fontSize: 22, lineHeight: 26, marginBottom: 6 },
   rowArtist: { ...type.artistCaps, fontSize: 11, marginBottom: 3 },
-  rowVenue: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 0.6, color: colors.ink },
+  rowVenue: { ...type.monoSmall, fontSize: 11 },
   gridItem: { width: '50%', paddingBottom: space.l, paddingHorizontal: 0.5 },
   gridImage: { width: '100%', aspectRatio: 4 / 5, backgroundColor: colors.hairline },
   gridDate: { ...type.monoSmall, fontSize: 10, marginTop: 8, marginBottom: 2, paddingRight: 8 },
   gridTitle: { ...type.serifTitle, fontSize: 18, lineHeight: 22, paddingRight: 8 },
   gridVenue: {
-    fontFamily: fonts.mono,
+    ...type.monoSmall,
     fontSize: 10,
-    letterSpacing: 0.6,
-    color: colors.ink,
     marginTop: 3,
     paddingRight: 8,
   },

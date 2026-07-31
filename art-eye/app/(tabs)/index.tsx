@@ -84,8 +84,7 @@ export default function AgendaScreen() {
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
     >
       <View style={styles.header}>
-        <Wordmark size={26} style={{ marginBottom: 6 }} />
-        <Text style={styles.tagline}>YOUR EYE ON THE ART WORLD — SYDNEY</Text>
+        <Wordmark size={26} />
       </View>
       <Hairline style={{ marginBottom: space.l }} />
 
@@ -201,14 +200,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   header: {
+    alignItems: 'center',
     paddingHorizontal: space.page,
     paddingBottom: space.m,
-  },
-  tagline: {
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    letterSpacing: 1.2,
-    color: colors.ink,
   },
   sectionHead: {
     flexDirection: 'row',
