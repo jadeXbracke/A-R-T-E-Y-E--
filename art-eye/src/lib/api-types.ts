@@ -1,4 +1,4 @@
-import { CuratedList, Exhibition, ExhibitionDraft, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { Comment, CuratedList, Exhibition, ExhibitionDraft, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -69,6 +69,13 @@ export interface Api {
   discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows
   userActivity(userId: string, viewerId: string | null): Promise<FeedItem[]>;
+
+  // reactions on posts (Letterboxd-style) — a post is (postUserId, exhibitionId)
+  getPost(postUserId: string, exhibitionId: string, viewerId: string | null): Promise<FeedItem | null>;
+  likePost(likerId: string, postUserId: string, exhibitionId: string): Promise<void>;
+  unlikePost(likerId: string, postUserId: string, exhibitionId: string): Promise<void>;
+  listComments(postUserId: string, exhibitionId: string): Promise<Comment[]>;
+  addComment(authorId: string, postUserId: string, exhibitionId: string, text: string): Promise<Comment>;
 
   // media
   uploadImage(localUri: string): Promise<string>;

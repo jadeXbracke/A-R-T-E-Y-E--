@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { CuratedList, CuratorRole, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { Comment, CuratedList, CuratorRole, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 
 let client: SupabaseClient | null = null;
@@ -54,7 +54,34 @@ function toFeedItem(row: unknown): FeedItem {
     reflection: r.reflection,
     visit_date: r.visit_date,
     video_url: r.video_url ?? null,
+    like_count: 0,
+    liked_by_me: false,
+    comment_count: 0,
   };
+}
+
+// Fill like/comment counts (and the viewer's liked state) onto a set of feed items.
+async function withReactions(items: FeedItem[], viewerId: string | null): Promise<FeedItem[]> {
+  if (items.length === 0) return items;
+  const exIds = [...new Set(items.map((i) => i.exhibition_id))];
+  const ownerIds = [...new Set(items.map((i) => i.user_id))];
+  const [{ data: likes }, { data: comments }] = await Promise.all([
+    supabase().from('post_likes').select('user_id, post_user_id, exhibition_id').in('post_user_id', ownerIds).in('exhibition_id', exIds),
+    supabase().from('post_comments').select('post_user_id, exhibition_id').in('post_user_id', ownerIds).in('exhibition_id', exIds),
+  ]);
+  const key = (u: string, e: string) => `${u}:${e}`;
+  const likeRows = (likes ?? []) as { user_id: string; post_user_id: string; exhibition_id: string }[];
+  const commentRows = (comments ?? []) as { post_user_id: string; exhibition_id: string }[];
+  return items.map((it) => {
+    const k = key(it.user_id, it.exhibition_id);
+    const postLikes = likeRows.filter((l) => key(l.post_user_id, l.exhibition_id) === k);
+    return {
+      ...it,
+      like_count: postLikes.length,
+      liked_by_me: !!viewerId && postLikes.some((l) => l.user_id === viewerId),
+      comment_count: commentRows.filter((c) => key(c.post_user_id, c.exhibition_id) === k).length,
+    };
+  });
 }
 
 async function fetchProfile(userId: string, email: string): Promise<Profile> {
@@ -561,10 +588,10 @@ export const supabaseApi: Api = {
       .in('user_id', ids)
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []).map(toFeedItem);
+    return withReactions((data ?? []).map(toFeedItem), viewerId);
   },
 
-  async userActivity(userId, _viewerId) {
+  async userActivity(userId, viewerId) {
     // RLS enforces visibility — a hidden profile simply returns no rows.
     const { data, error } = await supabase()
       .from('user_visits')
@@ -572,7 +599,83 @@ export const supabaseApi: Api = {
       .eq('user_id', userId)
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []).map(toFeedItem);
+    return withReactions((data ?? []).map(toFeedItem), viewerId);
+  },
+
+  async getPost(postUserId, exhibitionId, viewerId) {
+    const { data, error } = await supabase()
+      .from('user_visits')
+      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .eq('user_id', postUserId)
+      .eq('exhibition_id', exhibitionId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    return (await withReactions([toFeedItem(data)], viewerId))[0];
+  },
+
+  async likePost(likerId, postUserId, exhibitionId) {
+    const { error } = await supabase()
+      .from('post_likes')
+      .upsert({ user_id: likerId, post_user_id: postUserId, exhibition_id: exhibitionId });
+    if (error) throw new Error(error.message);
+  },
+
+  async unlikePost(likerId, postUserId, exhibitionId) {
+    const { error } = await supabase()
+      .from('post_likes')
+      .delete()
+      .eq('user_id', likerId)
+      .eq('post_user_id', postUserId)
+      .eq('exhibition_id', exhibitionId);
+    if (error) throw new Error(error.message);
+  },
+
+  async listComments(postUserId, exhibitionId) {
+    const { data, error } = await supabase()
+      .from('post_comments')
+      .select('*, author:profiles!post_comments_author_id_fkey(display_name)')
+      .eq('post_user_id', postUserId)
+      .eq('exhibition_id', exhibitionId)
+      .order('created_at', { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => {
+      const row = r as unknown as {
+        id: string; post_user_id: string; exhibition_id: string; author_id: string;
+        text: string; created_at: string; author?: { display_name?: string } | null;
+      };
+      return {
+        id: row.id,
+        post_user_id: row.post_user_id,
+        exhibition_id: row.exhibition_id,
+        author_id: row.author_id,
+        author_name: row.author?.display_name ?? 'Someone',
+        text: row.text,
+        created_at: row.created_at,
+      };
+    });
+  },
+
+  async addComment(authorId, postUserId, exhibitionId, text) {
+    const { data, error } = await supabase()
+      .from('post_comments')
+      .insert({ author_id: authorId, post_user_id: postUserId, exhibition_id: exhibitionId, text: text.trim() })
+      .select('*, author:profiles!post_comments_author_id_fkey(display_name)')
+      .single();
+    if (error) throw new Error(error.message);
+    const row = data as unknown as {
+      id: string; post_user_id: string; exhibition_id: string; author_id: string;
+      text: string; created_at: string; author?: { display_name?: string } | null;
+    };
+    return {
+      id: row.id,
+      post_user_id: row.post_user_id,
+      exhibition_id: row.exhibition_id,
+      author_id: row.author_id,
+      author_name: row.author?.display_name ?? 'Someone',
+      text: row.text,
+      created_at: row.created_at,
+    };
   },
 
   async uploadImage(localUri) {

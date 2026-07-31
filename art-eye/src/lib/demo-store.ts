@@ -5,12 +5,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
+  Comment,
   CuratedList,
   Exhibition,
   ExhibitionDraft,
   FeedItem,
   Follow,
   FollowState,
+  Like,
   Profile,
   PublicProfile,
   RejectionReason,
@@ -55,12 +57,14 @@ interface DemoState {
   watchlist: WatchlistEntry[];
   visits: Visit[];
   follows: Follow[];
+  likes: Like[];
+  comments: Comment[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v14';
+const KEY = 'arteye.demo.v15';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -174,6 +178,21 @@ function seedState(): DemoState {
       { follower_id: 'u-curator', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-07T00:00:00.000Z' },
       { follower_id: 'u-mara', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-08T00:00:00.000Z' },
     ],
+    likes: [
+      { user_id: 'u-mara', post_user_id: 'u-curator', exhibition_id: 'e-murakami', created_at: '2026-07-16T00:00:00.000Z' },
+      { user_id: 'u-curator', post_user_id: 'u-mara', exhibition_id: 'e-primavera', created_at: '2026-07-21T00:00:00.000Z' },
+    ],
+    comments: [
+      {
+        id: 'c-seed-1',
+        post_user_id: 'u-curator',
+        exhibition_id: 'e-murakami',
+        author_id: 'u-mara',
+        author_name: 'Mara Ellison',
+        text: 'That silver room is unreal. Did you make it upstairs too?',
+        created_at: '2026-07-16T09:30:00.000Z',
+      },
+    ],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
@@ -222,12 +241,16 @@ function followStateFor(s: DemoState, viewerId: string | null, targetId: string)
   return f.status === 'accepted' ? 'following' : 'requested';
 }
 
-// Turn a Visit into a feed item by joining the actor and the exhibition/venue.
-function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
+// Turn a Visit into a feed item by joining the actor, exhibition, venue and
+// this post's like/comment reactions (from the viewer's perspective).
+function feedItemFrom(s: DemoState, v: Visit, viewerId: string | null): FeedItem | null {
   const user = s.users.find((u) => u.id === v.user_id);
   const ex = s.exhibitions.find((e) => e.id === v.exhibition_id);
   if (!user || !ex) return null;
   const venue = s.venues.find((vn) => vn.id === ex.venue_id);
+  const postLikes = s.likes.filter(
+    (l) => l.post_user_id === v.user_id && l.exhibition_id === v.exhibition_id
+  );
   return {
     id: `${v.user_id}:${v.exhibition_id}`,
     user_id: v.user_id,
@@ -239,6 +262,11 @@ function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
     reflection: v.reflection,
     visit_date: v.visit_date,
     video_url: v.video_url ?? null,
+    like_count: postLikes.length,
+    liked_by_me: !!viewerId && postLikes.some((l) => l.user_id === viewerId),
+    comment_count: s.comments.filter(
+      (c) => c.post_user_id === v.user_id && c.exhibition_id === v.exhibition_id
+    ).length,
   };
 }
 
@@ -461,7 +489,7 @@ export const demoApi: Api = {
     );
     return s.visits
       .filter((v) => following.has(v.user_id))
-      .map((v) => feedItemFrom(s, v))
+      .map((v) => feedItemFrom(s, v, viewerId))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
   },
@@ -475,9 +503,60 @@ export const demoApi: Api = {
     if (!canView) return [];
     return s.visits
       .filter((v) => v.user_id === userId)
-      .map((v) => feedItemFrom(s, v))
+      .map((v) => feedItemFrom(s, v, viewerId))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
+  },
+
+  async getPost(postUserId, exhibitionId, viewerId) {
+    const s = await load();
+    const v = s.visits.find(
+      (x) => x.user_id === postUserId && x.exhibition_id === exhibitionId
+    );
+    return v ? feedItemFrom(s, v, viewerId) : null;
+  },
+
+  async likePost(likerId, postUserId, exhibitionId) {
+    const s = await load();
+    const exists = s.likes.some(
+      (l) => l.user_id === likerId && l.post_user_id === postUserId && l.exhibition_id === exhibitionId
+    );
+    if (!exists) {
+      s.likes.push({ user_id: likerId, post_user_id: postUserId, exhibition_id: exhibitionId, created_at: new Date().toISOString() });
+      await persist();
+    }
+  },
+
+  async unlikePost(likerId, postUserId, exhibitionId) {
+    const s = await load();
+    s.likes = s.likes.filter(
+      (l) => !(l.user_id === likerId && l.post_user_id === postUserId && l.exhibition_id === exhibitionId)
+    );
+    await persist();
+  },
+
+  async listComments(postUserId, exhibitionId) {
+    const s = await load();
+    return s.comments
+      .filter((c) => c.post_user_id === postUserId && c.exhibition_id === exhibitionId)
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+  },
+
+  async addComment(authorId, postUserId, exhibitionId, text) {
+    const s = await load();
+    const author = s.users.find((u) => u.id === authorId);
+    const comment: Comment = {
+      id: uid('c'),
+      post_user_id: postUserId,
+      exhibition_id: exhibitionId,
+      author_id: authorId,
+      author_name: author?.display_name ?? 'Someone',
+      text: text.trim(),
+      created_at: new Date().toISOString(),
+    };
+    s.comments.push(comment);
+    await persist();
+    return comment;
   },
 
   async submitExhibition(draft: ExhibitionDraft, userId) {

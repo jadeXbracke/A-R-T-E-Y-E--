@@ -1,9 +1,11 @@
 import { router } from 'expo-router';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { fmtDay } from '../lib/dates';
 import { FeedItem, FollowState, Profile } from '../lib/types';
 import { PROFILE_TYPES } from '../lib/types';
+import { api } from '../lib/api';
+import { useAuth } from '../lib/auth';
 import { colors, fonts, space, type } from '../theme';
 import { Lift, MonoLink, RatingDots } from './ui';
 import { LiveArt } from './live-art';
@@ -12,8 +14,34 @@ function typeLabel(pt: Profile['profile_type']): string {
   return PROFILE_TYPES.find((t) => t.value === pt)?.label ?? pt.toUpperCase();
 }
 
-/** One activity-feed entry: a person logging a visit to a show. */
+// Route param for a post = owner + exhibition, joined by a URL-safe separator.
+export function postParam(item: Pick<FeedItem, 'user_id' | 'exhibition_id'>): string {
+  return `${item.user_id}~${item.exhibition_id}`;
+}
+
+/** One activity-feed entry: a person logging a visit, with like + comment actions. */
 export function ActivityRow({ item }: { item: FeedItem }) {
+  const { profile } = useAuth();
+  const [liked, setLiked] = useState(item.liked_by_me);
+  const [likes, setLikes] = useState(item.like_count);
+
+  const toggleLike = async () => {
+    if (!profile) {
+      router.push('/auth');
+      return;
+    }
+    const next = !liked;
+    setLiked(next);
+    setLikes((n) => n + (next ? 1 : -1));
+    try {
+      if (next) await api.likePost(profile.id, item.user_id, item.exhibition_id);
+      else await api.unlikePost(profile.id, item.user_id, item.exhibition_id);
+    } catch {
+      setLiked(!next); // revert on failure
+      setLikes((n) => n + (next ? -1 : 1));
+    }
+  };
+
   return (
     <View style={styles.activity}>
       <View style={styles.activityHead}>
@@ -33,13 +61,20 @@ export function ActivityRow({ item }: { item: FeedItem }) {
       </View>
       {item.reflection ? <Text style={styles.reflection}>{item.reflection}</Text> : null}
       {item.video_url ? (
-        <LiveArt
-          videoUrl={item.video_url}
-          fallbackId={item.id}
-          aspectRatio={4 / 5}
-          style={styles.video}
-        />
+        <LiveArt videoUrl={item.video_url} fallbackId={item.id} aspectRatio={4 / 5} style={styles.video} />
       ) : null}
+      <View style={styles.actions}>
+        <Pressable onPress={toggleLike} hitSlop={8} style={styles.action}>
+          <Text style={[styles.actionGlyph, liked && { color: colors.ink }]}>{liked ? '♥' : '♡'}</Text>
+          <Text style={styles.actionLabel}>{likes > 0 ? `${likes} ` : ''}LIKE{likes === 1 ? '' : 'S'}</Text>
+        </Pressable>
+        <Pressable onPress={() => router.push(`/post/${postParam(item)}`)} hitSlop={8} style={styles.action}>
+          <Text style={styles.actionGlyph}>✎</Text>
+          <Text style={styles.actionLabel}>
+            {item.comment_count > 0 ? `${item.comment_count} ` : ''}COMMENT{item.comment_count === 1 ? '' : 'S'}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -96,7 +131,11 @@ const styles = StyleSheet.create({
   showTitle: { ...type.serifTitle, fontSize: 20 },
   venue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginTop: 3 },
   reflection: { ...type.serifBody, fontSize: 16, lineHeight: 24, marginTop: space.s },
-  video: { width: '100%', marginTop: space.m, backgroundColor: colors.hairline },
+  video: { width: '100%', marginTop: space.m, backgroundColor: colors.bg },
+  actions: { flexDirection: 'row', gap: space.l, marginTop: space.m, alignItems: 'center' },
+  action: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  actionGlyph: { fontSize: 15, color: colors.ink },
+  actionLabel: { fontFamily: fonts.monoMedium, fontSize: 9, letterSpacing: 1.4, color: colors.ink },
   personRow: {
     flexDirection: 'row',
     alignItems: 'center',
