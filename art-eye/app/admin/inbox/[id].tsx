@@ -179,7 +179,7 @@ export default function ProposalDetail() {
         onChangeText={setNote}
         placeholder="Why this is wrong — snoozed for 90 days either way"
       />
-      <MonoLink label="REJECT — SNOOZE FOR 90 DAYS" color={colors.red} onPress={reject} style={{ alignSelf: 'flex-start' }} />
+      <MonoLink label="REJECT — SNOOZE FOR 90 DAYS" color={colors.ink} onPress={reject} style={{ alignSelf: 'flex-start' }} />
     </ScrollView>
   );
 }
@@ -195,5 +195,5 @@ const styles = StyleSheet.create({
   evidenceSnippet: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 22, color: colors.ink },
   currentValue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginBottom: 4 },
   archiveNote: { fontFamily: fonts.serifItalic, fontSize: 17, lineHeight: 25, color: colors.ink, marginBottom: space.l },
-  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.red, marginBottom: space.m },
+  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.ink, marginBottom: space.m },
 });

@@ -47,7 +47,7 @@ function MonoTabBar({ state, navigation }: TabBarProps) {
               {LABELS[route.name] ?? route.name.toUpperCase()}
             </Text>
             <View
-              style={[styles.rule, focused && { backgroundColor: colors.red }]}
+              style={[styles.rule, focused && { backgroundColor: colors.ink }]}
             />
           </Pressable>
         );

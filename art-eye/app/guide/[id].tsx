@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.red,
+    color: colors.ink,
     marginBottom: space.s,
   },
   intro: { ...type.serifBody, color: colors.ink, marginBottom: space.l },

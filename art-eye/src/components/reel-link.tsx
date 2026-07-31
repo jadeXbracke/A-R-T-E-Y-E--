@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     alignSelf: 'flex-start',
   },
-  glyph: { fontSize: 11, color: colors.red },
+  glyph: { fontSize: 11, color: colors.ink },
   label: {
     fontFamily: fonts.monoMedium,
     fontSize: 10,

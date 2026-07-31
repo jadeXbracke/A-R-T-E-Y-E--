@@ -87,7 +87,7 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
             <View
               style={[
                 styles.tabRule,
-                { backgroundColor: i === active ? colors.red : colors.hairline },
+                { backgroundColor: i === active ? colors.ink : colors.hairline },
               ]}
             />
           </Pressable>

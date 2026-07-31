@@ -191,7 +191,7 @@ export default function AdminReview() {
             <MonoLink
               key={r.value}
               label={r.label}
-              color={colors.red}
+              color={colors.ink}
               onPress={() => reject(r.value)}
             />
           ))}
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: fonts.mono,
     fontSize: 11,
-    color: colors.red,
+    color: colors.ink,
     marginBottom: space.m,
   },
   reasons: {

@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 9,
     letterSpacing: 1.4,
-    color: colors.red,
+    color: colors.ink,
     marginBottom: 8,
   },
   curatedTitle: { ...type.serifTitle, fontSize: 19, marginBottom: 8 },

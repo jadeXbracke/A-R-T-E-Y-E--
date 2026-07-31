@@ -8,6 +8,11 @@ import { Exhibition } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
 import { Lift, RedDot } from './ui';
 
+// Only real photographs (http/https) are shown as covers — no grey placeholders.
+function photo(e: Exhibition): string | null {
+  return e.image_url && /^https?:\/\//i.test(e.image_url) ? e.image_url : null;
+}
+
 function fallbackFor(id: string, imageUrl?: string | null): number {
   if (imageUrl?.startsWith('asset:')) {
     return PLACEHOLDERS[imageUrl.slice(6)] ?? FALLBACK_PLACEHOLDER;
@@ -63,15 +68,12 @@ export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; se
       style={styles.row}
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
-      <View>
-        <ArtImage
-          uri={exhibition.image_url}
-          fallbackId={exhibition.id}
-          style={styles.cover}
-          contentFit="cover"
-        />
-        {seen && <RedDot size={9} style={styles.seenDot} />}
-      </View>
+      {photo(exhibition) && (
+        <View>
+          <Image source={{ uri: photo(exhibition)! }} style={styles.cover} contentFit="cover" transition={200} />
+          {seen && <RedDot size={9} style={styles.seenDot} />}
+        </View>
+      )}
       <Text style={styles.rowDate}>{fmtRange(exhibition.start_date, exhibition.end_date)}</Text>
       <Text style={styles.rowTitle} numberOfLines={2}>
         {exhibition.title}
@@ -93,15 +95,12 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
       style={styles.gridItem}
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
-      <View>
-        <ArtImage
-          uri={exhibition.image_url}
-          fallbackId={exhibition.id}
-          style={styles.gridImage}
-          contentFit="cover"
-        />
-        {seen && <RedDot size={9} style={styles.seenDot} />}
-      </View>
+      {photo(exhibition) && (
+        <View>
+          <Image source={{ uri: photo(exhibition)! }} style={styles.gridImage} contentFit="cover" transition={200} />
+          {seen && <RedDot size={9} style={styles.seenDot} />}
+        </View>
+      )}
       <Text style={styles.gridDate}>{fmtRange(exhibition.start_date, exhibition.end_date)}</Text>
       <Text style={styles.gridTitle} numberOfLines={2}>
         {exhibition.title}
@@ -119,14 +118,14 @@ const styles = StyleSheet.create({
     paddingBottom: space.l,
     paddingHorizontal: space.page,
   },
-  cover: { width: '100%', aspectRatio: 4 / 3, backgroundColor: colors.hairline, marginBottom: space.s },
+  cover: { width: '100%', aspectRatio: 4 / 3, backgroundColor: colors.bg, marginBottom: space.s },
   seenDot: { position: 'absolute', top: 10, right: 10 },
   rowDate: { ...type.monoSmall, marginBottom: 6 },
   rowTitle: { ...type.serifTitle, fontSize: 22, lineHeight: 26, marginBottom: 6 },
   rowArtist: { ...type.artistCaps, fontSize: 11, marginBottom: 3 },
   rowVenue: { ...type.monoSmall, fontSize: 11 },
   gridItem: { width: '50%', paddingBottom: space.l, paddingHorizontal: 0.5 },
-  gridImage: { width: '100%', aspectRatio: 4 / 5, backgroundColor: colors.hairline },
+  gridImage: { width: '100%', aspectRatio: 4 / 5, backgroundColor: colors.bg },
   gridDate: { ...type.monoSmall, fontSize: 10, marginTop: 8, marginBottom: 2, paddingRight: 8 },
   gridTitle: { ...type.serifTitle, fontSize: 18, lineHeight: 22, paddingRight: 8 },
   gridVenue: {

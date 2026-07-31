@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     paddingBottom: space.s,
   },
   sectionTitle: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.8, color: colors.ink },
-  badge: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1, color: colors.red },
+  badge: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1, color: colors.ink },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

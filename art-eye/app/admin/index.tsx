@@ -171,5 +171,5 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   rowMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink },
-  arrow: { fontFamily: fonts.mono, fontSize: 18, color: colors.red },
+  arrow: { fontFamily: fonts.mono, fontSize: 18, color: colors.ink },
 });

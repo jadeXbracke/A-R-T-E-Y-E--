@@ -95,7 +95,7 @@ export function MonoLink({
       <View
         style={[
           styles.monoLinkRule,
-          { backgroundColor: active ? colors.red : color ?? colors.hairline },
+          { backgroundColor: active ? colors.ink : color ?? colors.hairline },
         ]}
       />
     </Pressable>
@@ -111,7 +111,7 @@ export function RedDot({ size = 7, style }: { size?: number; style?: ViewStyle }
   return (
     <View
       style={[
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.red },
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.ink },
         style,
       ]}
     />
@@ -141,8 +141,8 @@ export function RatingDots({
               height: size,
               borderRadius: size / 2,
               borderWidth: 1,
-              borderColor: filled ? colors.red : colors.ink,
-              backgroundColor: filled ? colors.red : 'transparent',
+              borderColor: filled ? colors.ink : colors.ink,
+              backgroundColor: filled ? colors.ink : 'transparent',
             }}
           />
         );
@@ -201,7 +201,7 @@ export function ActionBar({
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             {a.dot && <RedDot />}
-            <Text style={[styles.actionLabel, a.accent && { color: colors.red }]}>{a.label}</Text>
+            <Text style={[styles.actionLabel, a.accent && { color: colors.ink }]}>{a.label}</Text>
           </View>
         </Pressable>
       ))}

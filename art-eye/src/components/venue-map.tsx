@@ -68,7 +68,7 @@ export function VenueMap({
               <View
                 style={[
                   styles.dot,
-                  { backgroundColor: on ? colors.red : colors.ink },
+                  { backgroundColor: on ? colors.ink : colors.ink },
                   selected && styles.dotSelected,
                 ]}
               />
@@ -77,7 +77,7 @@ export function VenueMap({
         })}
       </View>
       <View style={styles.legend}>
-        <View style={[styles.legendDot, { backgroundColor: colors.red }]} />
+        <View style={[styles.legendDot, { backgroundColor: colors.ink }]} />
         <Text style={styles.legendText}>ON NOW</Text>
         <View style={[styles.legendDot, { backgroundColor: colors.ink, marginLeft: 14 }]} />
         <Text style={styles.legendText}>VENUE</Text>

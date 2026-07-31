@@ -234,7 +234,7 @@ export default function VenueEditor() {
           <MonoLink
             label={hidden ? 'HIDDEN FROM PUBLIC ·' : 'VISIBLE — TAP TO HIDE FROM PUBLIC'}
             active={hidden}
-            color={hidden ? colors.red : undefined}
+            color={hidden ? colors.ink : undefined}
             onPress={() => setHidden(!hidden)}
           />
         </View>
@@ -248,7 +248,7 @@ export default function VenueEditor() {
             <Hairline style={{ marginVertical: space.l }} />
             <MonoLink
               label="DELETE THIS VENUE"
-              color={colors.red}
+              color={colors.ink}
               onPress={confirmDelete}
               style={{ alignSelf: 'flex-start' }}
             />
@@ -282,5 +282,5 @@ const styles = StyleSheet.create({
     color: colors.ink,
     marginTop: space.m,
   },
-  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.red, marginBottom: space.m },
+  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.ink, marginBottom: space.m },
 });

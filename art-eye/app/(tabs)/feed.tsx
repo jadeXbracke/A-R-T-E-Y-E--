@@ -113,14 +113,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   you: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.2, color: colors.ink },
-  signIn: { fontFamily: fonts.monoMedium, fontSize: 12, letterSpacing: 1.6, color: colors.red },
+  signIn: { fontFamily: fonts.monoMedium, fontSize: 12, letterSpacing: 1.6, color: colors.ink },
   requests: {
     paddingHorizontal: space.page,
     paddingVertical: space.m,
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
   },
-  requestsText: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.2, color: colors.red },
+  requestsText: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.2, color: colors.ink },
   sectionHead: {
     paddingHorizontal: space.page,
     paddingTop: space.l,

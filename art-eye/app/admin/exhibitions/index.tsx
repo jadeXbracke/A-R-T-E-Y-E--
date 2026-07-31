@@ -140,7 +140,7 @@ export default function ManageExhibitions() {
                 label={e.is_fixture ? 'SHOW' : 'HIDE'}
                 onPress={() => toggleHidden(e)}
               />
-              <MonoLink label="DELETE" color={colors.red} onPress={() => confirmDelete(e)} />
+              <MonoLink label="DELETE" color={colors.ink} onPress={() => confirmDelete(e)} />
             </View>
             {busyId === e.id && <Text style={styles.saving}>SAVING…</Text>}
           </View>

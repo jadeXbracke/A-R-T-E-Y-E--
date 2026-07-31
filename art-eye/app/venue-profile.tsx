@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
     marginTop: space.m,
   },
-  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.red, marginBottom: space.m },
+  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.ink, marginBottom: space.m },
   saved: {
     fontFamily: fonts.monoMedium,
     fontSize: 10,

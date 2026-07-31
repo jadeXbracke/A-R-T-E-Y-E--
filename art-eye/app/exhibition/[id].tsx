@@ -40,7 +40,7 @@ function SpecRow({
   const row = (
     <View style={styles.specRow}>
       <Text style={styles.specLabel}>{label}</Text>
-      <Text style={[styles.specValue, accent && { color: colors.red }]}>{value}</Text>
+      <Text style={[styles.specValue, accent && { color: colors.ink }]}>{value}</Text>
     </View>
   );
   return (
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.red,
+    color: colors.ink,
     marginBottom: space.m,
   },
   specRow: {

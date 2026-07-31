@@ -149,7 +149,7 @@ export default function ProfileScreen() {
               </Text>
               <View style={{ flexDirection: 'row', gap: space.m }}>
                 <MonoLink label="ACCEPT" active onPress={() => respond(r.id, true)} />
-                <MonoLink label="DECLINE" color={colors.red} onPress={() => respond(r.id, false)} />
+                <MonoLink label="DECLINE" color={colors.ink} onPress={() => respond(r.id, false)} />
               </View>
             </View>
           ))}

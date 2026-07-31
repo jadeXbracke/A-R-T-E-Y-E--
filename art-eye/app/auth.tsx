@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: fonts.mono,
     fontSize: 11,
-    color: colors.red,
+    color: colors.ink,
     marginBottom: space.m,
   },
   demoNote: {
