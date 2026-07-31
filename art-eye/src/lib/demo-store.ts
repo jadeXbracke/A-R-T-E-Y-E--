@@ -34,14 +34,6 @@ const SEED_CURATED: CuratedList[] = [
     intro: 'The week distilled — the rooms worth crossing the city for right now.',
     exhibition_ids: ['e-black-myth', 'e-archibald', 'e-salon-des-refuses', 'e-tamara-dean', 'e-primavera'],
   },
-  {
-    id: 'g-gallerist',
-    title: 'A gallerist is watching',
-    curator_name: 'Roslyn Oxley9 (demo account)',
-    curator_role: 'gallerist',
-    intro: 'What the trade goes to see after closing time — sharp painting and one big survey.',
-    exhibition_ids: ['e-mitch-cairns', 'e-bartley', 'e-armanious', 'e-nsw-fellowship'],
-  },
 ];
 import { todayStr } from './dates';
 import { mapsSearchUrl } from './maps';
@@ -64,7 +56,7 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v17';
+const KEY = 'arteye.demo.v18';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -96,103 +88,16 @@ function seedState(): DemoState {
         display_name: 'Roslyn Oxley9',
         city: 'Sydney',
       },
-      {
-        id: 'u-curator',
-        email: 'curator@arteye.demo',
-        password: 'arteye',
-        role: 'user',
-        profile_type: 'enthusiast',
-        display_name: 'Sam Curator',
-        city: 'Sydney',
-        is_private: false,
-      },
-      {
-        id: 'u-mara',
-        email: 'mara@arteye.demo',
-        password: 'arteye',
-        role: 'user',
-        profile_type: 'collector',
-        display_name: 'Mara Ellison',
-        city: 'Sydney',
-        is_private: false,
-      },
-      {
-        id: 'u-theo',
-        email: 'theo@arteye.demo',
-        password: 'arteye',
-        role: 'user',
-        profile_type: 'artist',
-        display_name: 'Theo Nguyen',
-        city: 'Sydney',
-        is_private: true,
-      },
     ],
     venues,
     exhibitions: SEED_EXHIBITIONS.map((e) => ({ ...e })),
-    watchlist: [
-      { user_id: 'u-curator', exhibition_id: 'e-crothers', created_at: new Date().toISOString() },
-    ],
-    visits: [
-      {
-        user_id: 'u-curator',
-        exhibition_id: 'e-murakami',
-        rating: 5,
-        reflection: 'The silver room — I stood there until the guard moved me on.',
-        visit_date: '2026-07-04',
-      },
-      {
-        user_id: 'u-curator',
-        exhibition_id: 'e-gabori-ledgerwood',
-        rating: 4,
-        reflection: 'Gabori’s blue holds the whole wall. Ledgerwood hums beside it.',
-        visit_date: '2026-07-10',
-      },
-      {
-        user_id: 'u-mara',
-        exhibition_id: 'e-archibald',
-        rating: 4,
-        reflection: 'Went in for one portrait, stayed two hours.',
-        visit_date: '2026-07-18',
-      },
-      {
-        user_id: 'u-mara',
-        exhibition_id: 'e-primavera',
-        rating: 5,
-        reflection: 'The most alive room in the city right now.',
-        visit_date: '2026-07-20',
-      },
-      {
-        user_id: 'u-theo',
-        exhibition_id: 'e-murakami',
-        rating: 5,
-        reflection: 'Studied the surface for the varnish. Immaculate.',
-        visit_date: '2026-07-15',
-      },
-    ],
-    // Follow graph: the admin (Jade) follows Sam and Mara; a pending request
-    // sits against Theo's private profile. Sam and Mara follow each other.
-    follows: [
-      { follower_id: 'u-admin', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-05T00:00:00.000Z' },
-      { follower_id: 'u-admin', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-06T00:00:00.000Z' },
-      { follower_id: 'u-admin', followee_id: 'u-theo', status: 'pending', created_at: '2026-07-19T00:00:00.000Z' },
-      { follower_id: 'u-curator', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-07T00:00:00.000Z' },
-      { follower_id: 'u-mara', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-08T00:00:00.000Z' },
-    ],
-    likes: [
-      { user_id: 'u-mara', post_user_id: 'u-curator', exhibition_id: 'e-murakami', created_at: '2026-07-16T00:00:00.000Z' },
-      { user_id: 'u-curator', post_user_id: 'u-mara', exhibition_id: 'e-primavera', created_at: '2026-07-21T00:00:00.000Z' },
-    ],
-    comments: [
-      {
-        id: 'c-seed-1',
-        post_user_id: 'u-curator',
-        exhibition_id: 'e-murakami',
-        author_id: 'u-mara',
-        author_name: 'Mara Ellison',
-        text: 'That silver room is unreal. Did you make it upstairs too?',
-        created_at: '2026-07-16T09:30:00.000Z',
-      },
-    ],
+    // No seeded social activity — the feed fills as real users sign up, follow
+    // each other and log visits. Nothing here is invented.
+    watchlist: [],
+    visits: [],
+    follows: [],
+    likes: [],
+    comments: [],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
