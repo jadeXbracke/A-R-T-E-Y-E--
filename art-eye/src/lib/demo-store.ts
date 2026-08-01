@@ -23,8 +23,8 @@ import {
   WatchlistEntry,
 } from './types';
 
-// Demo curated lists — the demo personas' picks over real current shows.
-// In live mode these come from the public guides tables (migration 0007).
+// Editors' pick list over real current shows. In live mode these come from the
+// public guides tables (migration 0007).
 const SEED_CURATED: CuratedList[] = [
   {
     id: 'g-editors',
@@ -56,7 +56,7 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v18';
+const KEY = 'arteye.demo.v19';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];

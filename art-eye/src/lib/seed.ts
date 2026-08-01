@@ -1131,4 +1131,20 @@ export const SEED_EXHIBITIONS: Exhibition[] = [
     city: 'Sydney',
   },
 
+  {
+    id: 'e-tony-albert-souvenir',
+    venue_id: 'v-mca',
+    title: 'Tony Albert: Not a Souvenir',
+    artists: 'Tony Albert',
+    start_date: '2026-05-21',
+    end_date: '2026-10-19',
+    opening_datetime: null,
+    description:
+      'A major survey across sculpture, photography, installation and painting — Albert turns The Rocks\' souvenir culture back on itself, confronting the commodification of Aboriginal people while celebrating survival and pride. Guest curated by Bruce Johnson McLean.',
+    image_url: null,
+    status: 'approved',
+    rejection_reason: null,
+    is_featured: false,
+    city: 'Sydney',
+  },
 ];
