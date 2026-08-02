@@ -1,18 +1,31 @@
 # Exhibitions pipeline — deploy & run
 
-Pulls **real, current exhibitions** from each venue's own website (plus Art Guide
-Australia / Ocula) using Claude `web_search`, into a review queue. Nothing goes
-live until you approve it. "Propose, never apply."
+Pulls **real, current exhibitions** from each venue's own website — for **free**,
+with **no AI and no API key**. It reads the structured data venues already
+publish (`schema.org/Event` in `<script type="application/ld+json">`), so the
+data is exact by construction. Nothing goes live until you approve it.
+"Propose, never apply."
 
 Pieces:
 - `supabase/migrations/0015_exhibition_pipeline.sql` — `exhibition_review_queue`
   table + `approve_exhibition_proposal(qid)` RPC (admin-only).
-- `supabase/functions/discover-exhibitions/` — the Edge Function.
+- `supabase/functions/discover-exhibitions/` — the Edge Function (JSON-LD reader).
+
+## Why free
+No model is called. The function fetches each venue's "what's on" page and
+parses the JSON-LD event data the site already ships. That means:
+- **€0 per run** — no Anthropic/Gemini key, no per-call cost, no rate limit.
+- **Exact** — it copies the venue's own published title/dates, it doesn't guess.
+
+Trade-off: it only finds shows on sites that publish JSON-LD (most museums and
+larger galleries do; some small galleries don't). For venues without it, use the
+admin screen to add shows by hand, or keep the old AI variant in git history.
 
 ## Prerequisites (yours — I can't do these from the build session)
 1. A Supabase project (free tier is fine).
 2. Supabase CLI: `npm i -g supabase` then `supabase login`.
-3. An Anthropic API key (console.anthropic.com) — the pipeline uses Claude.
+
+That's it — no API key needed for this function.
 
 ## One-time setup
 ```bash
@@ -22,12 +35,9 @@ supabase link --project-ref <YOUR_PROJECT_REF>
 # 1. apply the database schema (all migrations, incl. 0015)
 supabase db push
 
-# 2. give the functions their secrets
-supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-# SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically.
-
-# 3. deploy the discovery function
+# 2. deploy the discovery function
 supabase functions deploy discover-exhibitions
+# SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically.
 ```
 
 Then point the app at this project by setting, in the app's env:
@@ -39,14 +49,21 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon key>
 
 ## Run it
 ```bash
-# dry run first — finds shows, changes nothing, prints a report + cost estimate
+# dry run first — finds shows, changes nothing, prints a report
 curl "https://<ref>.functions.supabase.co/discover-exhibitions?dry_run=1&limit=20"
 
 # for real — writes to the review queue (still not live)
 curl "https://<ref>.functions.supabase.co/discover-exhibitions?limit=60"
 ```
-`limit` caps how many venues are scanned per run; the run is also hard-capped at
-30 Claude calls (~8 venues per call) so cost stays bounded.
+`limit` caps how many venues are scanned per run. Each venue costs one HTTP
+fetch (a few more only if the first page has no events).
+
+The response reports, per venue, whether structured data was found:
+```json
+{ "venue": "Museum of Contemporary Art", "title": "…", "outcome": "queued" }
+{ "venue": "Some small gallery", "outcome": "no structured data (JSON-LD) found" }
+```
+Venues with `no structured data` are the ones to fill in by hand.
 
 ## Review & approve
 Queued rows land in `exhibition_review_queue` (status `pending`). Inspect them:
@@ -72,7 +89,7 @@ select cron.schedule('discover-exhibitions-weekly', '0 6 * * 1', $$
   select net.http_get('https://<ref>.functions.supabase.co/discover-exhibitions?limit=60');
 $$);
 ```
+Because runs are free, you can even schedule this daily.
 
 ## Cost
-Bounded per run by the 30-Claude-call cap. The dry run prints
-`cost_estimate_usd`; check it before scaling `limit` up.
+**€0.** No model is called.
