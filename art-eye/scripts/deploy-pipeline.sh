@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Deploy the ART EYE exhibitions pipeline to your Supabase project.
-# Usage: ./scripts/deploy-pipeline.sh <PROJECT_REF>
-# The exhibitions discovery function is FREE (no AI, no API key). The optional
-# venue/enrichment functions use Claude — set ANTHROPIC_API_KEY to deploy those.
+# Usage: [GEMINI_API_KEY=...] ./scripts/deploy-pipeline.sh <PROJECT_REF>
+# discover-exhibitions reads free JSON-LD first and falls back to Google Gemini
+# for venues without it — set GEMINI_API_KEY to enable that fallback.
+# The optional venue/enrichment functions use Claude — set ANTHROPIC_API_KEY too.
 # Prereqs: `npm i -g supabase` and `supabase login` done once.
 set -euo pipefail
 
-REF="${1:?Usage: ./scripts/deploy-pipeline.sh <PROJECT_REF>}"
+REF="${1:?Usage: [GEMINI_API_KEY=...] ./scripts/deploy-pipeline.sh <PROJECT_REF>}"
 
 echo "→ Linking project $REF"
 supabase link --project-ref "$REF"
@@ -14,7 +15,15 @@ supabase link --project-ref "$REF"
 echo "→ Applying migrations (schema + exhibition pipeline)"
 supabase db push
 
-echo "→ Deploying the free exhibitions discovery function (JSON-LD, no key needed)"
+if [ -n "${GEMINI_API_KEY:-}" ]; then
+  echo "→ Setting the Gemini secret (AI fallback for venues without JSON-LD)"
+  supabase secrets set "GEMINI_API_KEY=$GEMINI_API_KEY"
+  [ -n "${GEMINI_MODEL:-}" ] && supabase secrets set "GEMINI_MODEL=$GEMINI_MODEL"
+else
+  echo "→ No GEMINI_API_KEY set — JSON-LD only (AI fallback disabled)"
+fi
+
+echo "→ Deploying the exhibitions discovery function"
 supabase functions deploy discover-exhibitions
 
 # The functions below use Claude. Only deploy them if you've supplied a key.

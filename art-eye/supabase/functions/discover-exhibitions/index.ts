@@ -1,10 +1,18 @@
-// discover-exhibitions — FREE, no-AI variant.
-// Reads each venue's own website and extracts CURRENT/UPCOMING shows from the
-// structured data the site already publishes: schema.org "Event" objects in
-// <script type="application/ld+json"> blocks. No API key, no model, no rate
-// limit, no per-call cost. It only reads the venue's own published data, so it
-// is exact by construction. Files proposals into exhibition_review_queue — an
-// admin still approves each one. "Propose, never apply."
+// discover-exhibitions — hybrid: free structured data first, Google Gemini as
+// the fallback for pages that don't publish it.
+//
+// For each venue we fetch its "what's on" page and:
+//   1. read schema.org/Event data from JSON-LD if present  → free, exact
+//   2. otherwise hand the page text to Google Gemini        → covers the rest
+//
+// Gemini is only called when step 1 finds nothing, so most venues cost €0 and
+// the number of model calls stays tiny (well within Gemini's free tier).
+// Everything lands in exhibition_review_queue — an admin approves each row.
+// "Propose, never apply."
+//
+// Secret required for the Gemini fallback:
+//   supabase secrets set GEMINI_API_KEY=...   (from Google AI Studio, free)
+// Optional: GEMINI_MODEL (default "gemini-2.0-flash").
 //
 // Trigger manually with ?dry_run=1 (writes nothing) and ?limit=N (cap venues).
 import { isDryRun, jsonResponse, supabaseAdmin } from "../_shared/pipeline.ts";
@@ -25,9 +33,16 @@ const EVENT_TYPES = new Set([
 // Pages to try on each venue site, in order. We stop at the first that yields
 // events, so most venues cost a single fetch.
 const CANDIDATE_PATHS = ["", "whats-on", "exhibitions", "current-exhibitions", "whats-on/exhibitions"];
+// Paths that are exhibition listings — best text to feed Gemini if no JSON-LD.
+const LISTING_PATHS = new Set(["whats-on", "exhibitions", "current-exhibitions", "whats-on/exhibitions"]);
 
 const FETCH_TIMEOUT_MS = 9000;
 const MAX_DESC = 600;
+const MAX_GEMINI_CHARS = 16000; // page text sent to Gemini, truncated
+const MAX_GEMINI_CALLS = 40; // per-run guardrail (free tier is ~1000/day)
+
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.0-flash";
+const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 
@@ -38,6 +53,7 @@ interface Found {
   end_date: string | null;
   description: string;
   source_url: string;
+  via: "json-ld" | "gemini";
 }
 
 function toISODate(v: unknown): string | null {
@@ -61,6 +77,21 @@ function str(v: unknown): string {
 
 function stripHtml(s: string): string {
   return s.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
+
+// Full-page HTML → readable text (drops scripts/styles/markup), for Gemini.
+function htmlToText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;|&rsquo;|&lsquo;/g, "'")
+    .replace(/&quot;|&ldquo;|&rdquo;/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // Pull performer / author names to use as "artists" when present.
@@ -118,7 +149,6 @@ async function fetchPage(url: string): Promise<string | null> {
       redirect: "follow",
       signal: ctrl.signal,
       headers: {
-        // Look like a normal browser so sites return their full markup.
         "User-Agent":
           "Mozilla/5.0 (compatible; ArtEyeBot/1.0; +https://arteye.app) AppleWebKit/537.36",
         "Accept": "text/html,application/xhtml+xml",
@@ -143,39 +173,155 @@ function pageUrl(website: string, path: string): string | null {
   }
 }
 
-// Read one venue's site and return the events found (deduped by title).
-async function scanVenue(website: string, today: string): Promise<Found[]> {
+function jsonLdRows(html: string, url: string, today: string): Found[] {
+  const events: Record<string, unknown>[] = [];
+  for (const block of extractJsonLd(html)) collectEvents(block, events);
+  const byTitle = new Map<string, Found>();
+  for (const ev of events) {
+    const title = str(ev.name).trim();
+    if (!title) continue;
+    const end = toISODate(ev.endDate);
+    if (end && end < today) continue; // past show
+    const src = str(ev.url).trim();
+    byTitle.set(norm(title), {
+      title,
+      artists: artistsOf(ev),
+      start_date: toISODate(ev.startDate),
+      end_date: end,
+      description: stripHtml(str(ev.description)).slice(0, MAX_DESC),
+      source_url: src ? (pageUrl(url, src) ?? url) : url,
+      via: "json-ld",
+    });
+  }
+  return [...byTitle.values()];
+}
+
+// Gemini structured-output schema (OpenAPI subset; types are UPPERCASE).
+const GEMINI_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    exhibitions: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          title: { type: "STRING" },
+          artists: { type: "STRING" },
+          start_date: { type: "STRING", description: "YYYY-MM-DD or empty" },
+          end_date: { type: "STRING", description: "YYYY-MM-DD or empty" },
+          description: { type: "STRING" },
+        },
+        required: ["title"],
+      },
+    },
+  },
+  required: ["exhibitions"],
+};
+
+interface GeminiResult {
+  items: Found[];
+  rateLimited?: boolean;
+  error?: string;
+}
+
+async function geminiExtract(
+  venueName: string,
+  pageText: string,
+  sourceUrl: string,
+  today: string,
+): Promise<GeminiResult> {
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
+  const prompt =
+    `Today is ${today}. Below is the text of the "${venueName}" art venue's "what's on" page. ` +
+    `Extract every exhibition that is CURRENTLY ON or UPCOMING (end date on or after today). ` +
+    `For each: exact title, artists (comma-separated, empty if none named), start_date and end_date ` +
+    `as YYYY-MM-DD (empty string if the page doesn't state it), and a one-line description. ` +
+    `Only include real exhibitions actually described in the text — never invent one. ` +
+    `Return an empty list if there are none.\n\n---\n${pageText}`;
+
+  const body = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0,
+      responseMimeType: "application/json",
+      responseSchema: GEMINI_SCHEMA,
+    },
+  };
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS + 6000);
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      signal: ctrl.signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.status === 429) return { items: [], rateLimited: true };
+    if (!res.ok) return { items: [], error: `gemini ${res.status}` };
+    const data = await res.json();
+    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
+    if (!txt) return { items: [] };
+    let parsed: { exhibitions?: unknown };
+    try {
+      parsed = JSON.parse(txt);
+    } catch {
+      return { items: [], error: "gemini: unparseable json" };
+    }
+    const raw = Array.isArray(parsed.exhibitions) ? parsed.exhibitions : [];
+    const byTitle = new Map<string, Found>();
+    for (const r of raw as Record<string, unknown>[]) {
+      const title = str(r.title).trim();
+      if (!title) continue;
+      const end = toISODate(r.end_date);
+      if (end && end < today) continue;
+      byTitle.set(norm(title), {
+        title,
+        artists: str(r.artists).trim(),
+        start_date: toISODate(r.start_date),
+        end_date: end,
+        description: stripHtml(str(r.description)).slice(0, MAX_DESC),
+        source_url: sourceUrl,
+        via: "gemini",
+      });
+    }
+    return { items: [...byTitle.values()] };
+  } catch (err) {
+    return { items: [], error: err instanceof Error ? err.message : String(err) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+interface ScanResult {
+  found: Found[];
+  // page text kept for the Gemini fallback when no JSON-LD was found
+  fallback?: { text: string; url: string };
+}
+
+// Fetch the venue's pages: return JSON-LD events if any, else the best page
+// text (a listing page if we hit one, otherwise the first page) for Gemini.
+async function scanVenue(website: string, today: string): Promise<ScanResult> {
+  let firstPage: { text: string; url: string } | undefined;
+  let listingPage: { text: string; url: string } | undefined;
+
   for (const path of CANDIDATE_PATHS) {
     const url = pageUrl(website, path);
     if (!url) continue;
     const html = await fetchPage(url);
     if (!html) continue;
 
-    const events: Record<string, unknown>[] = [];
-    for (const block of extractJsonLd(html)) collectEvents(block, events);
-    if (!events.length) continue;
+    const rows = jsonLdRows(html, url, today);
+    if (rows.length) return { found: rows };
 
-    const byTitle = new Map<string, Found>();
-    for (const ev of events) {
-      const title = str(ev.name).trim();
-      if (!title) continue;
-      const end = toISODate(ev.endDate);
-      // Keep current/upcoming only (no end date → assume ongoing, keep it).
-      if (end && end < today) continue;
-      const src = str(ev.url).trim();
-      const found: Found = {
-        title,
-        artists: artistsOf(ev),
-        start_date: toISODate(ev.startDate),
-        end_date: end,
-        description: stripHtml(str(ev.description)).slice(0, MAX_DESC),
-        source_url: src ? (pageUrl(url, src) ?? url) : url,
-      };
-      byTitle.set(norm(title), found);
+    const text = htmlToText(html).slice(0, MAX_GEMINI_CHARS);
+    if (text.length > 200) {
+      if (!firstPage) firstPage = { text, url };
+      if (!listingPage && LISTING_PATHS.has(path)) listingPage = { text, url };
     }
-    if (byTitle.size) return [...byTitle.values()];
   }
-  return [];
+  return { found: [], fallback: listingPage ?? firstPage };
 }
 
 Deno.serve(async (req) => {
@@ -188,9 +334,10 @@ Deno.serve(async (req) => {
   let venuesScanned = 0;
   let showsFound = 0;
   let proposalsCreated = 0;
+  let geminiCalls = 0;
+  let rateLimited = false;
 
   try {
-    // Real venues that have a website to read.
     const { data: venues } = await sb
       .from("venues")
       .select("id, name, website")
@@ -211,15 +358,35 @@ Deno.serve(async (req) => {
 
     for (const v of venues ?? []) {
       venuesScanned += 1;
-      let found: Found[] = [];
+      let scan: ScanResult;
       try {
-        found = await scanVenue(v.website as string, today);
+        scan = await scanVenue(v.website as string, today);
       } catch (err) {
         errors.push({ venue: v.name, message: err instanceof Error ? err.message : String(err) });
         continue;
       }
+
+      let found = scan.found;
+      // Gemini fallback: only when JSON-LD found nothing and we have page text.
+      if (!found.length && scan.fallback && GEMINI_KEY && geminiCalls < MAX_GEMINI_CALLS && !rateLimited) {
+        geminiCalls += 1;
+        const g = await geminiExtract(v.name as string, scan.fallback.text, scan.fallback.url, today);
+        if (g.rateLimited) {
+          rateLimited = true;
+          report.push({ venue: v.name, outcome: "gemini rate-limited (stopping AI fallback this run)" });
+        } else if (g.error) {
+          errors.push({ venue: v.name, where: "gemini", message: g.error });
+        }
+        found = g.items;
+      }
+
       if (!found.length) {
-        report.push({ venue: v.name, outcome: "no structured data (JSON-LD) found" });
+        const why = !scan.fallback
+          ? "no page reachable"
+          : GEMINI_KEY
+          ? "nothing found (JSON-LD + Gemini)"
+          : "no JSON-LD (set GEMINI_API_KEY to use the AI fallback)";
+        report.push({ venue: v.name, outcome: why });
         continue;
       }
 
@@ -234,7 +401,7 @@ Deno.serve(async (req) => {
 
         if (dryRun) {
           proposalsCreated += 1;
-          report.push({ venue: v.name, title: ex.title, outcome: "would queue" });
+          report.push({ venue: v.name, title: ex.title, via: ex.via, outcome: "would queue" });
           continue;
         }
         const { error } = await sb.from("exhibition_review_queue").insert({
@@ -245,15 +412,15 @@ Deno.serve(async (req) => {
           end_date: ex.end_date,
           description: ex.description,
           source_url: ex.source_url,
-          // Structured data straight from the venue — high confidence.
-          confidence: 0.9,
+          // JSON-LD is exact; Gemini is interpreted, so give it a lower prior.
+          confidence: ex.via === "json-ld" ? 0.9 : 0.65,
         });
         if (error) {
           errors.push({ where: "insert", title: ex.title, message: error.message });
           continue;
         }
         proposalsCreated += 1;
-        report.push({ venue: v.name, title: ex.title, outcome: "queued" });
+        report.push({ venue: v.name, title: ex.title, via: ex.via, outcome: "queued" });
       }
     }
   } catch (err) {
@@ -262,11 +429,15 @@ Deno.serve(async (req) => {
 
   return jsonResponse({
     ok: true,
-    method: "json-ld",
+    method: "json-ld + gemini",
+    gemini_model: GEMINI_MODEL,
+    gemini_enabled: !!GEMINI_KEY,
     dry_run: dryRun,
     venues_scanned: venuesScanned,
     shows_found: showsFound,
     proposals_created: proposalsCreated,
+    gemini_calls: geminiCalls,
+    rate_limited: rateLimited,
     cost_estimate_usd: 0,
     errors,
     report,
