@@ -65,12 +65,13 @@ const CANDIDATE_PATHS = ["", "whats-on", "exhibitions", "current-exhibitions", "
 // Paths that are exhibition listings — best text to feed Gemini if no JSON-LD.
 const LISTING_PATHS = new Set(["whats-on", "exhibitions", "current-exhibitions", "whats-on/exhibitions"]);
 
-const FETCH_TIMEOUT_MS = 9000;
+const FETCH_TIMEOUT_MS = 6000;
 const MAX_DESC = 600;
 const MAX_GEMINI_CHARS = 16000; // page text sent to Gemini, truncated
 const MAX_GEMINI_CALLS = 40; // per-run guardrail (free tier is ~1000/day)
+const BATCH = 6; // venues scanned concurrently (keeps runs fast but polite)
 
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.0-flash";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -355,7 +356,9 @@ async function scanVenue(website: string, today: string): Promise<ScanResult> {
 
 Deno.serve(async (req) => {
   const dryRun = await isDryRun(req);
-  const limit = Number(new URL(req.url).searchParams.get("limit") ?? "60");
+  const params = new URL(req.url).searchParams;
+  const limit = Number(params.get("limit") ?? "15");
+  const offset = Number(params.get("offset") ?? "0");
   const sb = supabaseAdmin();
   const today = new Date().toISOString().slice(0, 10);
   const report: unknown[] = [];
@@ -367,13 +370,15 @@ Deno.serve(async (req) => {
   let rateLimited = false;
 
   try {
+    // offset+limit let a browser run the register in small, fast slices
+    // (e.g. ?limit=15&offset=0, then offset=15, 30, …).
     const { data: venues } = await sb
       .from("venues")
       .select("id, name, website")
       .eq("is_fixture", false)
       .not("website", "is", null)
       .order("name")
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
     // What we already have, to skip duplicates (venue + normalised title).
     const [{ data: exist }, { data: queued }] = await Promise.all([
@@ -385,21 +390,23 @@ Deno.serve(async (req) => {
       seen.add(`${e.venue_id}:${norm(e.title as string)}`);
     }
 
-    for (const v of venues ?? []) {
+    // Scan venues in small concurrent batches so a browser request finishes
+    // quickly (sequential scanning of dozens of sites times Safari out).
+    const handleVenue = async (v: { id: string; name: string; website: string }) => {
       venuesScanned += 1;
       let scan: ScanResult;
       try {
-        scan = await scanVenue(v.website as string, today);
+        scan = await scanVenue(v.website, today);
       } catch (err) {
         errors.push({ venue: v.name, message: err instanceof Error ? err.message : String(err) });
-        continue;
+        return;
       }
 
       let found = scan.found;
       // Gemini fallback: only when JSON-LD found nothing and we have page text.
       if (!found.length && scan.fallback && GEMINI_KEY && geminiCalls < MAX_GEMINI_CALLS && !rateLimited) {
         geminiCalls += 1;
-        const g = await geminiExtract(v.name as string, scan.fallback.text, scan.fallback.url, today);
+        const g = await geminiExtract(v.name, scan.fallback.text, scan.fallback.url, today);
         if (g.rateLimited) {
           rateLimited = true;
           report.push({ venue: v.name, outcome: "gemini rate-limited (stopping AI fallback this run)" });
@@ -416,7 +423,7 @@ Deno.serve(async (req) => {
           ? "nothing found (JSON-LD + Gemini)"
           : "no JSON-LD (set GEMINI_API_KEY to use the AI fallback)";
         report.push({ venue: v.name, outcome: why });
-        continue;
+        return;
       }
 
       for (const ex of found) {
@@ -451,6 +458,11 @@ Deno.serve(async (req) => {
         proposalsCreated += 1;
         report.push({ venue: v.name, title: ex.title, via: ex.via, outcome: "queued" });
       }
+    };
+
+    const list = (venues ?? []) as { id: string; name: string; website: string }[];
+    for (let i = 0; i < list.length; i += BATCH) {
+      await Promise.all(list.slice(i, i + BATCH).map(handleVenue));
     }
   } catch (err) {
     errors.push({ where: "discover-exhibitions", message: err instanceof Error ? err.message : String(err) });
@@ -462,6 +474,8 @@ Deno.serve(async (req) => {
     gemini_model: GEMINI_MODEL,
     gemini_enabled: !!GEMINI_KEY,
     dry_run: dryRun,
+    offset,
+    next_offset: venuesScanned === limit ? offset + limit : null, // null = done
     venues_scanned: venuesScanned,
     shows_found: showsFound,
     proposals_created: proposalsCreated,
