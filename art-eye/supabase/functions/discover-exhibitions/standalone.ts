@@ -80,10 +80,14 @@ const MAX_GEMINI_CHARS = 16000; // page text sent to Gemini, truncated
 const MAX_GEMINI_CALLS = 40; // per-run guardrail (free tier is ~1000/day)
 const BATCH = 4; // venues scanned concurrently (site fetches, not model calls)
 
-// Gemini free tier is limited per MINUTE, so model calls are serialised with a
-// gap between them and retried on 429 instead of aborting the whole run.
+// Gemini's free tier allows ~20 requests per MINUTE, so model calls are
+// serialised with a gap between them and retried on 429 instead of aborting
+// the whole run. A 429 body carries Google's own "retry in Ns" hint, which is
+// honoured within these bounds — retrying earlier just burns more quota.
 const GEMINI_GAP_MS = 6500;
 const GEMINI_RETRIES = 2;
+const GEMINI_RETRY_FLOOR_MS = 30_000;
+const GEMINI_RETRY_CAP_MS = 65_000;
 // Return before the browser gives up; the caller resumes at next_offset.
 const RUN_DEADLINE_MS = 45_000;
 const startedAt = () => Date.now();
@@ -295,6 +299,7 @@ async function geminiExtract(
   pageText: string,
   sourceUrl: string,
   today: string,
+  deadline: number,
 ): Promise<GeminiResult> {
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
@@ -332,15 +337,25 @@ async function geminiExtract(
 
   try {
     let res = await throttled(call);
-    // 429 = quota. Wait it out and retry rather than ending the run — but a
-    // per-DAY quota will never recover, so surface Google's own message.
+    let detail = "";
+    // 429 = quota exhausted. Google states how long to wait ("Please retry in
+    // 26.9s"); honour that, because retrying early only burns more quota.
     for (let attempt = 0; res.status === 429 && attempt < GEMINI_RETRIES; attempt++) {
-      await sleep(GEMINI_GAP_MS * (attempt + 2));
+      detail = await res.text().catch(() => "");
+      const hint = detail.match(/retry in ([\d.]+)s/i);
+      const waitMs = Math.min(
+        Math.max(hint ? Math.ceil(Number(hint[1]) * 1000) + 1500 : GEMINI_RETRY_FLOOR_MS, GEMINI_RETRY_FLOOR_MS),
+        GEMINI_RETRY_CAP_MS,
+      );
+      // Only wait if this run still has the time; otherwise leave the venue for
+      // the next slice rather than blowing past the deadline.
+      if (Date.now() + waitMs > deadline) break;
+      await sleep(waitMs);
       res = await throttled(call);
     }
     if (res.status === 429) {
-      const detail = await res.text().catch(() => "");
-      return { items: [], rateLimited: true, error: `gemini 429: ${detail.slice(0, 500)}` };
+      detail = await res.text().catch(() => detail);
+      return { items: [], rateLimited: true, error: `gemini 429: ${detail.slice(0, 400)}` };
     }
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
@@ -475,7 +490,7 @@ Deno.serve(async (req) => {
       }
       if (!found.length && scan.fallback && GEMINI_KEY && geminiCalls < MAX_GEMINI_CALLS && !rateLimited) {
         geminiCalls += 1;
-        const g = await geminiExtract(v.name, scan.fallback.text, scan.fallback.url, today);
+        const g = await geminiExtract(v.name, scan.fallback.text, scan.fallback.url, today, deadline);
         if (g.rateLimited) {
           rateLimited = true;
           report.push({ venue: v.name, outcome: "gemini rate-limited (stopping AI fallback this run)" });
@@ -554,7 +569,8 @@ Deno.serve(async (req) => {
     // Fire-and-forget: give the request time to land, then stop waiting so
     // this invocation can end while the next one runs on its own.
     const handoff = (async () => {
-      await sleep(rateLimited ? 45_000 : 20_000);
+      // After a 429, let the per-minute window reset fully before the next slice.
+      await sleep(rateLimited ? 65_000 : 20_000);
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 2000);
       await fetch(next.toString(), { signal: ctrl.signal }).catch(() => {});
