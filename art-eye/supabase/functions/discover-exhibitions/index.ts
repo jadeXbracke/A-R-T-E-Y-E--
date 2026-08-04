@@ -347,6 +347,36 @@ interface ScanResult {
   fallback?: { text: string; url: string };
 }
 
+// Fetch the venue's candidate pages concurrently: return JSON-LD events if any
+// page has them, else the best page text (a listing page if we hit one,
+// otherwise the homepage) for Gemini. Candidate order decides the winner.
+async function scanVenue(website: string, today: string): Promise<ScanResult> {
+  const pages = await Promise.all(
+    CANDIDATE_PATHS.map(async (path) => {
+      const url = pageUrl(website, path);
+      if (!url) return null;
+      const html = await fetchPage(url);
+      return html ? { path, url, html } : null;
+    }),
+  );
+
+  let firstPage: { text: string; url: string } | undefined;
+  let listingPage: { text: string; url: string } | undefined;
+
+  for (const page of pages) {
+    if (!page) continue;
+    const rows = jsonLdRows(page.html, page.url, today);
+    if (rows.length) return { found: rows };
+
+    const text = htmlToText(page.html).slice(0, MAX_GEMINI_CHARS);
+    if (text.length > 200) {
+      if (!firstPage) firstPage = { text, url: page.url };
+      if (!listingPage && LISTING_PATHS.has(page.path)) listingPage = { text, url: page.url };
+    }
+  }
+  return { found: [], fallback: listingPage ?? firstPage };
+}
+
 Deno.serve(async (req) => {
   const reqUrl = new URL(req.url);
   const params = reqUrl.searchParams;
