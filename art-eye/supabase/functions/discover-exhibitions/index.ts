@@ -352,7 +352,7 @@ interface ScanResult {
 function runnerPage(path: string): Response {
   const html = `<!doctype html><html lang="nl"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>ART EYE — Ophalen</title>
+<meta name="robots" content="noindex"><title>ART EYE - Ophalen</title>
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; }
@@ -393,13 +393,13 @@ function runnerPage(path: string): Response {
   async function run() {
     let offset = 0;
     while (running) {
-      $('status').textContent = 'bezig bij venue ' + (offset + 1) + '…';
+      $('status').textContent = 'bezig bij venue ' + (offset + 1) + '...';
       let data;
       try {
         const res = await fetch(location.pathname + '?limit=10&offset=' + offset);
         data = await res.json();
       } catch (e) {
-        $('status').textContent = 'even geen verbinding, opnieuw proberen…';
+        $('status').textContent = 'even geen verbinding, opnieuw proberen...';
         await sleep(5000);
         continue;
       }
@@ -413,7 +413,7 @@ function runnerPage(path: string): Response {
       $('found').textContent = found;
 
       if (data.next_offset === null || data.next_offset === undefined) {
-        $('status').textContent = 'klaar — alle venues bekeken';
+        $('status').textContent = 'klaar - alle venues bekeken';
         running = false; $('go').textContent = 'Opnieuw'; $('go').className = '';
         return;
       }
@@ -421,7 +421,7 @@ function runnerPage(path: string): Response {
       // Breather so Gemini's per-minute free tier keeps up.
       const pause = data.rate_limited ? 30 : 8;
       for (let s = pause; s > 0 && running; s--) {
-        $('status').textContent = 'even pauze (' + s + 's) — Gemini gratis-limiet';
+        $('status').textContent = 'even pauze (' + s + 's) - Gemini gratis-limiet';
         await sleep(1000);
       }
     }
@@ -436,7 +436,14 @@ function runnerPage(path: string): Response {
     }
   };
 </script></body></html>`;
-  return new Response(html, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+  return new Response(new TextEncoder().encode(html), {
+    status: 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+      "access-control-allow-origin": "*",
+    },
+  });
 }
 
 // Fetch the venue's candidate pages concurrently: return JSON-LD events if any
