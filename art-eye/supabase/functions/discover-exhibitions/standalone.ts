@@ -332,13 +332,20 @@ async function geminiExtract(
 
   try {
     let res = await throttled(call);
-    // 429 = per-minute quota. Wait it out and retry rather than ending the run.
+    // 429 = quota. Wait it out and retry rather than ending the run — but a
+    // per-DAY quota will never recover, so surface Google's own message.
     for (let attempt = 0; res.status === 429 && attempt < GEMINI_RETRIES; attempt++) {
       await sleep(GEMINI_GAP_MS * (attempt + 2));
       res = await throttled(call);
     }
-    if (res.status === 429) return { items: [], rateLimited: true };
-    if (!res.ok) return { items: [], error: `gemini ${res.status}` };
+    if (res.status === 429) {
+      const detail = await res.text().catch(() => "");
+      return { items: [], rateLimited: true, error: `gemini 429: ${detail.slice(0, 500)}` };
+    }
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      return { items: [], error: `gemini ${res.status}: ${detail.slice(0, 300)}` };
+    }
     const data = await res.json();
     const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
     if (!txt) return { items: [] };
@@ -472,6 +479,9 @@ Deno.serve(async (req) => {
         if (g.rateLimited) {
           rateLimited = true;
           report.push({ venue: v.name, outcome: "gemini rate-limited (stopping AI fallback this run)" });
+          // Google's own wording says whether this is a per-minute or per-day
+          // quota — the difference between "wait a bit" and "wait until tomorrow".
+          if (g.error) errors.push({ where: "gemini quota", message: g.error });
         } else if (g.error) {
           errors.push({ venue: v.name, where: "gemini", message: g.error });
         }
