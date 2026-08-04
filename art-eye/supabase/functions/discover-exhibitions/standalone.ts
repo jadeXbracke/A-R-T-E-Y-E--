@@ -5,14 +5,14 @@
 //   1. read schema.org/Event data from JSON-LD if present  → free, exact
 //   2. otherwise hand the page text to Google Gemini        → covers the rest
 //
-// Gemini is only called when step 1 finds nothing, so most venues cost €0 and
-// the number of model calls stays tiny (well within Gemini's free tier).
+// Gemini is only called when step 1 finds nothing, and then for several venues
+// per request, so the model call count stays far inside the free tier.
 // Everything lands in exhibition_review_queue — an admin approves each row.
 // "Propose, never apply."
 //
 // Secret required for the Gemini fallback:
 //   supabase secrets set GEMINI_API_KEY=...   (from Google AI Studio, free)
-// Optional: GEMINI_MODEL (default "gemini-2.0-flash").
+// Optional: GEMINI_MODEL (default "gemini-2.5-flash"; "gemini-flash-latest" also works).
 //
 // Trigger manually with ?dry_run=1 (writes nothing) and ?limit=N (cap venues).
 // Add &chain=1 to walk the whole register automatically: each slice hands off
@@ -75,16 +75,19 @@ const CANDIDATE_PATHS = [
 const LISTING_PATHS = new Set(CANDIDATE_PATHS.filter((p) => p !== ""));
 
 const FETCH_TIMEOUT_MS = 6000;
+const GEMINI_TIMEOUT_MS = 45_000; // batched prompts are large; give them room
 const MAX_DESC = 600;
-const MAX_GEMINI_CHARS = 16000; // page text sent to Gemini, truncated
-const MAX_GEMINI_CALLS = 40; // per-run guardrail (free tier is ~1000/day)
-const BATCH = 4; // venues scanned concurrently (site fetches, not model calls)
+const MAX_GEMINI_CHARS = 9000; // page text per venue, truncated
+const MAX_GEMINI_CALLS = 40; // per-run guardrail
+const BATCH = 6; // venues scanned concurrently (site fetches, not model calls)
 
-// Gemini's free tier allows ~20 requests per MINUTE, so model calls are
-// serialised with a gap between them and retried on 429 instead of aborting
-// the whole run. A 429 body carries Google's own "retry in Ns" hint, which is
-// honoured within these bounds — retrying earlier just burns more quota.
-const GEMINI_GAP_MS = 6500;
+// The free tier is billed per REQUEST, not per venue, so several venues go
+// into one prompt: ~137 venues become ~28 requests instead of 137.
+const GEMINI_BATCH = 5;
+// The free tier allows ~20 requests per minute. Pace at ~15/min (a 4s gap) so
+// there is headroom, and honour Google's own "retry in Ns" hint on a 429 —
+// retrying earlier just burns quota that is not there.
+const GEMINI_GAP_MS = 4000;
 const GEMINI_RETRIES = 2;
 const GEMINI_RETRY_FLOOR_MS = 30_000;
 const GEMINI_RETRY_CAP_MS = 65_000;
@@ -258,21 +261,30 @@ const GEMINI_SCHEMA = {
       items: {
         type: "OBJECT",
         properties: {
+          venue_number: { type: "INTEGER", description: "the VENUE n number this show belongs to" },
           title: { type: "STRING" },
           artists: { type: "STRING" },
           start_date: { type: "STRING", description: "YYYY-MM-DD or empty" },
           end_date: { type: "STRING", description: "YYYY-MM-DD or empty" },
           description: { type: "STRING" },
         },
-        required: ["title"],
+        required: ["venue_number", "title"],
       },
     },
   },
   required: ["exhibitions"],
 };
 
-interface GeminiResult {
-  items: Found[];
+// One venue's page, queued up for the model.
+interface GeminiJob {
+  name: string;
+  text: string;
+  url: string;
+}
+
+interface GeminiBatchResult {
+  // keyed by the job's index within the batch
+  byIndex: Map<number, Found[]>;
   rateLimited?: boolean;
   error?: string;
 }
@@ -294,22 +306,32 @@ function throttled<T>(fn: () => Promise<T>): Promise<T> {
   return run;
 }
 
-async function geminiExtract(
-  venueName: string,
-  pageText: string,
-  sourceUrl: string,
+// Ask the model about SEVERAL venues in one request. The free tier is capped
+// per request, not per venue, so batching is what makes a full sweep quick:
+// ~137 venues become ~28 requests instead of 137. Each page is numbered and
+// the model echoes the number back, so shows map to the right venue.
+async function geminiExtractBatch(
+  jobs: GeminiJob[],
   today: string,
   deadline: number,
-): Promise<GeminiResult> {
+): Promise<GeminiBatchResult> {
+  const empty = new Map<number, Found[]>();
+  if (!jobs.length) return { byIndex: empty };
+
   const url =
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
+  const pages = jobs
+    .map((j, i) => `=== VENUE ${i + 1}: ${j.name} ===\n${j.text}`)
+    .join("\n\n");
   const prompt =
-    `Today is ${today}. Below is the text of the "${venueName}" art venue's "what's on" page. ` +
+    `Today is ${today}. Below are the "what's on" pages of ${jobs.length} art venue(s), ` +
+    `each starting with a line "=== VENUE n: name ===".\n\n` +
     `Extract every exhibition that is CURRENTLY ON or UPCOMING (end date on or after today). ` +
-    `For each: exact title, artists (comma-separated, empty if none named), start_date and end_date ` +
-    `as YYYY-MM-DD (empty string if the page doesn't state it), and a one-line description. ` +
-    `Only include real exhibitions actually described in the text — never invent one. ` +
-    `Return an empty list if there are none.\n\n---\n${pageText}`;
+    `For each show give: venue_number (the n of the venue whose page it appeared on), the exact ` +
+    `title, artists (comma-separated, empty if none named), start_date and end_date as YYYY-MM-DD ` +
+    `(empty string if the page does not state it), and a one-line description. ` +
+    `Only include real exhibitions actually described in that venue's text - never invent one, and ` +
+    `never move a show to a different venue_number. Return an empty list if there are none.\n\n${pages}`;
 
   const body = {
     contents: [{ parts: [{ text: prompt }] }],
@@ -322,7 +344,7 @@ async function geminiExtract(
 
   const call = async () => {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS + 6000);
+    const timer = setTimeout(() => ctrl.abort(), GEMINI_TIMEOUT_MS);
     try {
       return await fetch(url, {
         method: "POST",
@@ -347,49 +369,63 @@ async function geminiExtract(
         Math.max(hint ? Math.ceil(Number(hint[1]) * 1000) + 1500 : GEMINI_RETRY_FLOOR_MS, GEMINI_RETRY_FLOOR_MS),
         GEMINI_RETRY_CAP_MS,
       );
-      // Only wait if this run still has the time; otherwise leave the venue for
-      // the next slice rather than blowing past the deadline.
+      // Only wait if this run still has the time; otherwise leave these venues
+      // for the next slice rather than blowing past the deadline.
       if (Date.now() + waitMs > deadline) break;
       await sleep(waitMs);
       res = await throttled(call);
     }
     if (res.status === 429) {
       detail = await res.text().catch(() => detail);
-      return { items: [], rateLimited: true, error: `gemini 429: ${detail.slice(0, 400)}` };
+      return { byIndex: empty, rateLimited: true, error: `gemini 429: ${detail.slice(0, 400)}` };
     }
     if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      return { items: [], error: `gemini ${res.status}: ${detail.slice(0, 300)}` };
+      const body = await res.text().catch(() => "");
+      return { byIndex: empty, error: `gemini ${res.status}: ${body.slice(0, 300)}` };
     }
     const data = await res.json();
     const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
-    if (!txt) return { items: [] };
+    if (!txt) return { byIndex: empty };
     let parsed: { exhibitions?: unknown };
     try {
       parsed = JSON.parse(txt);
     } catch {
-      return { items: [], error: "gemini: unparseable json" };
+      return { byIndex: empty, error: "gemini: unparseable json" };
     }
+
     const raw = Array.isArray(parsed.exhibitions) ? parsed.exhibitions : [];
-    const byTitle = new Map<string, Found>();
+    const byIndex = new Map<number, Found[]>();
+    const seenPerVenue = new Map<number, Set<string>>();
     for (const r of raw as Record<string, unknown>[]) {
       const title = str(r.title).trim();
       if (!title) continue;
+      // venue_number is 1-based and must point at a page we actually sent.
+      const idx = Math.trunc(Number(r.venue_number)) - 1;
+      if (!Number.isInteger(idx) || idx < 0 || idx >= jobs.length) continue;
       const end = toISODate(r.end_date);
       if (end && end < today) continue;
-      byTitle.set(norm(title), {
+
+      const dedup = seenPerVenue.get(idx) ?? new Set<string>();
+      const key = norm(title);
+      if (dedup.has(key)) continue;
+      dedup.add(key);
+      seenPerVenue.set(idx, dedup);
+
+      const list = byIndex.get(idx) ?? [];
+      list.push({
         title,
         artists: str(r.artists).trim(),
         start_date: toISODate(r.start_date),
         end_date: end,
         description: stripHtml(str(r.description)).slice(0, MAX_DESC),
-        source_url: sourceUrl,
+        source_url: jobs[idx].url,
         via: "gemini",
       });
+      byIndex.set(idx, list);
     }
-    return { items: [...byTitle.values()] };
+    return { byIndex };
   } catch (err) {
-    return { items: [], error: err instanceof Error ? err.message : String(err) };
+    return { byIndex: empty, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -434,7 +470,7 @@ Deno.serve(async (req) => {
   const params = reqUrl.searchParams;
   const dryRun = await isDryRun(req);
   const deadline = startedAt() + RUN_DEADLINE_MS;
-  const limit = Number(params.get("limit") ?? "10");
+  const limit = Number(params.get("limit") ?? "25");
   const offset = Number(params.get("offset") ?? "0");
   const chain = params.get("chain") === "1";
   const depth = Number(params.get("depth") ?? "0"); // runaway-chain guard
@@ -469,50 +505,11 @@ Deno.serve(async (req) => {
       seen.add(`${e.venue_id}:${norm(e.title as string)}`);
     }
 
-    // Scan venues in small concurrent batches so a browser request finishes
-    // quickly (sequential scanning of dozens of sites times Safari out).
-    const handleVenue = async (v: { id: string; name: string; website: string }) => {
-      venuesScanned += 1;
-      let scan: ScanResult;
-      try {
-        scan = await scanVenue(v.website, today);
-      } catch (err) {
-        errors.push({ venue: v.name, message: err instanceof Error ? err.message : String(err) });
-        return;
-      }
+    type Venue = { id: string; name: string; website: string };
+    const list = (venues ?? []) as Venue[];
 
-      let found = scan.found;
-      // Gemini fallback: only when JSON-LD found nothing and we have page text.
-      // Skipped once the deadline is near — the caller resumes at next_offset.
-      if (Date.now() > deadline && !found.length) {
-        report.push({ venue: v.name, outcome: "skipped (time budget reached)" });
-        return;
-      }
-      if (!found.length && scan.fallback && GEMINI_KEY && geminiCalls < MAX_GEMINI_CALLS && !rateLimited) {
-        geminiCalls += 1;
-        const g = await geminiExtract(v.name, scan.fallback.text, scan.fallback.url, today, deadline);
-        if (g.rateLimited) {
-          rateLimited = true;
-          report.push({ venue: v.name, outcome: "gemini rate-limited (stopping AI fallback this run)" });
-          // Google's own wording says whether this is a per-minute or per-day
-          // quota — the difference between "wait a bit" and "wait until tomorrow".
-          if (g.error) errors.push({ where: "gemini quota", message: g.error });
-        } else if (g.error) {
-          errors.push({ venue: v.name, where: "gemini", message: g.error });
-        }
-        found = g.items;
-      }
-
-      if (!found.length) {
-        const why = !scan.fallback
-          ? "no page reachable"
-          : GEMINI_KEY
-          ? "nothing found (JSON-LD + Gemini)"
-          : "no JSON-LD (set GEMINI_API_KEY to use the AI fallback)";
-        report.push({ venue: v.name, outcome: why });
-        return;
-      }
-
+    // Queue one venue's shows. Shared by the JSON-LD and the Gemini paths.
+    const queueShows = async (v: Venue, found: Found[]) => {
       for (const ex of found) {
         showsFound += 1;
         const key = `${v.id}:${norm(ex.title)}`;
@@ -547,9 +544,74 @@ Deno.serve(async (req) => {
       }
     };
 
-    const list = (venues ?? []) as { id: string; name: string; website: string }[];
+    // Phase 1 - read every venue's site (free, concurrent). Anything without
+    // JSON-LD is parked for the model.
+    const pending: { venue: Venue; job: GeminiJob }[] = [];
+    const readVenue = async (v: Venue) => {
+      venuesScanned += 1;
+      let scan: ScanResult;
+      try {
+        scan = await scanVenue(v.website, today);
+      } catch (err) {
+        errors.push({ venue: v.name, message: err instanceof Error ? err.message : String(err) });
+        return;
+      }
+      if (scan.found.length) {
+        await queueShows(v, scan.found);
+        return;
+      }
+      if (!scan.fallback) {
+        report.push({ venue: v.name, outcome: "no page reachable" });
+        return;
+      }
+      if (!GEMINI_KEY) {
+        report.push({ venue: v.name, outcome: "no JSON-LD (set GEMINI_API_KEY to use the AI fallback)" });
+        return;
+      }
+      pending.push({ venue: v, job: { name: v.name, text: scan.fallback.text, url: scan.fallback.url } });
+    };
+
     for (let i = 0; i < list.length; i += BATCH) {
-      await Promise.all(list.slice(i, i + BATCH).map(handleVenue));
+      await Promise.all(list.slice(i, i + BATCH).map(readVenue));
+    }
+
+    // Phase 2 - one model request per GEMINI_BATCH venues, not per venue. This
+    // is what keeps a full sweep inside the free tier's per-minute allowance.
+    let pendingHandled = 0;
+    for (let i = 0; i < pending.length; i += GEMINI_BATCH) {
+      if (rateLimited || geminiCalls >= MAX_GEMINI_CALLS) break;
+      const group = pending.slice(i, i + GEMINI_BATCH);
+      pendingHandled = i + group.length;
+      if (Date.now() > deadline) {
+        for (const { venue } of group) {
+          report.push({ venue: venue.name, outcome: "skipped (time budget reached)" });
+        }
+        continue;
+      }
+      geminiCalls += 1;
+      const g = await geminiExtractBatch(group.map((p) => p.job), today, deadline);
+      if (g.rateLimited) {
+        rateLimited = true;
+        // Google's own wording says whether this is a per-minute or per-day
+        // quota - the difference between "wait a bit" and "wait until tomorrow".
+        if (g.error) errors.push({ where: "gemini quota", message: g.error });
+      } else if (g.error) {
+        errors.push({ where: "gemini", message: g.error });
+      }
+      for (let j = 0; j < group.length; j++) {
+        const found = g.byIndex.get(j) ?? [];
+        if (found.length) await queueShows(group[j].venue, found);
+        else {
+          report.push({
+            venue: group[j].venue.name,
+            outcome: g.rateLimited ? "gemini rate-limited" : "nothing found (JSON-LD + Gemini)",
+          });
+        }
+      }
+    }
+    // Venues the model never got to (quota or call cap) are reported as such.
+    for (const { venue } of pending.slice(pendingHandled)) {
+      report.push({ venue: venue.name, outcome: "not reached this run (resumes next slice)" });
     }
   } catch (err) {
     errors.push({ where: "discover-exhibitions", message: err instanceof Error ? err.message : String(err) });
@@ -569,8 +631,9 @@ Deno.serve(async (req) => {
     // Fire-and-forget: give the request time to land, then stop waiting so
     // this invocation can end while the next one runs on its own.
     const handoff = (async () => {
-      // After a 429, let the per-minute window reset fully before the next slice.
-      await sleep(rateLimited ? 65_000 : 20_000);
+      // After a 429, let the per-minute window reset fully; otherwise hand off
+      // promptly - the per-request throttle already paces the model calls.
+      await sleep(rateLimited ? 65_000 : 3_000);
       const ctrl = new AbortController();
       setTimeout(() => ctrl.abort(), 2000);
       await fetch(next.toString(), { signal: ctrl.signal }).catch(() => {});
