@@ -30,17 +30,33 @@ const EVENT_TYPES = new Set([
   "theaterevent",
 ]);
 
-// Pages to try on each venue site, in order. We stop at the first that yields
-// events, so most venues cost a single fetch.
-const CANDIDATE_PATHS = ["", "whats-on", "exhibitions", "current-exhibitions", "whats-on/exhibitions"];
+// Pages to try on each venue site. Fetched concurrently; the first listing
+// page with JSON-LD events wins, otherwise the best page text goes to Gemini.
+const CANDIDATE_PATHS = [
+  "whats-on",
+  "exhibitions",
+  "current-exhibitions",
+  "whats-on/exhibitions",
+  "exhibitions/current",
+  "visit/whats-on",
+  "",
+];
 // Paths that are exhibition listings — best text to feed Gemini if no JSON-LD.
-const LISTING_PATHS = new Set(["whats-on", "exhibitions", "current-exhibitions", "whats-on/exhibitions"]);
+const LISTING_PATHS = new Set(CANDIDATE_PATHS.filter((p) => p !== ""));
 
 const FETCH_TIMEOUT_MS = 6000;
 const MAX_DESC = 600;
 const MAX_GEMINI_CHARS = 16000; // page text sent to Gemini, truncated
 const MAX_GEMINI_CALLS = 40; // per-run guardrail (free tier is ~1000/day)
-const BATCH = 6; // venues scanned concurrently (keeps runs fast but polite)
+const BATCH = 4; // venues scanned concurrently (site fetches, not model calls)
+
+// Gemini free tier is limited per MINUTE, so model calls are serialised with a
+// gap between them and retried on 429 instead of aborting the whole run.
+const GEMINI_GAP_MS = 6500;
+const GEMINI_RETRIES = 2;
+// Return before the browser gives up; the caller resumes at next_offset.
+const RUN_DEADLINE_MS = 45_000;
+const startedAt = () => Date.now();
 
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
@@ -225,6 +241,23 @@ interface GeminiResult {
   error?: string;
 }
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// Serialise model calls and keep GEMINI_GAP_MS between them, so concurrent
+// venue scanning never bursts through the free tier's per-minute limit.
+let geminiChain: Promise<unknown> = Promise.resolve();
+let lastGeminiAt = 0;
+function throttled<T>(fn: () => Promise<T>): Promise<T> {
+  const run = geminiChain.then(async () => {
+    const wait = lastGeminiAt + GEMINI_GAP_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    lastGeminiAt = Date.now();
+    return fn();
+  });
+  geminiChain = run.then(() => {}, () => {});
+  return run;
+}
+
 async function geminiExtract(
   venueName: string,
   pageText: string,
@@ -250,15 +283,28 @@ async function geminiExtract(
     },
   };
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS + 6000);
+  const call = async () => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS + 6000);
+    try {
+      return await fetch(url, {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      signal: ctrl.signal,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    let res = await throttled(call);
+    // 429 = per-minute quota. Wait it out and retry rather than ending the run.
+    for (let attempt = 0; res.status === 429 && attempt < GEMINI_RETRIES; attempt++) {
+      await sleep(GEMINI_GAP_MS * (attempt + 2));
+      res = await throttled(call);
+    }
     if (res.status === 429) return { items: [], rateLimited: true };
     if (!res.ok) return { items: [], error: `gemini ${res.status}` };
     const data = await res.json();
@@ -290,8 +336,6 @@ async function geminiExtract(
     return { items: [...byTitle.values()] };
   } catch (err) {
     return { items: [], error: err instanceof Error ? err.message : String(err) };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -301,34 +345,139 @@ interface ScanResult {
   fallback?: { text: string; url: string };
 }
 
-// Fetch the venue's pages: return JSON-LD events if any, else the best page
-// text (a listing page if we hit one, otherwise the first page) for Gemini.
+// A one-link runner: walks the whole venue register slice by slice from the
+// browser, so nobody has to open ?offset=0,15,30,… by hand. Each slice is a
+// short fetch, so it never hits the browser's page-load timeout, and it pauses
+// between slices to stay inside Gemini's per-minute free tier.
+function runnerPage(path: string): Response {
+  const html = `<!doctype html><html lang="nl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>ART EYE — Ophalen</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; background:#fff; color:#000;
+         max-width: 720px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 15px; letter-spacing: .35em; text-transform: uppercase; }
+  .sub { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; margin: 6px 0 20px; }
+  button { font: inherit; font-size: 13px; letter-spacing: .15em; text-transform: uppercase;
+           padding: 14px 20px; border: 1px solid #000; background:#000; color:#fff; width: 100%; }
+  button.stop { background:#fff; color:#000; }
+  .stat { border-top: 1px solid #000; margin-top: 20px; padding-top: 12px;
+          font-size: 13px; line-height: 1.7; }
+  .b { font-weight: 700; }
+  .log { margin-top: 16px; font-size: 13px; line-height: 1.6; }
+  .log div { padding: 5px 0; border-bottom: 1px solid #eee; }
+  .v { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+</style></head><body>
+<h1>ARTEYE</h1>
+<div class="sub">Expo's ophalen uit alle venues</div>
+<button id="go">Start</button>
+<div class="stat">
+  Venues bekeken: <span class="b" id="scanned">0</span><br>
+  Expo's gevonden: <span class="b" id="found">0</span><br>
+  Status: <span id="status">klaar om te starten</span>
+</div>
+<div class="log" id="log"></div>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let running = false, scanned = 0, found = 0;
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  function line(venue, title) {
+    const d = document.createElement('div');
+    d.innerHTML = '<span class="v">' + venue + '</span><br>' + title;
+    $('log').prepend(d);
+  }
+
+  async function run() {
+    let offset = 0;
+    while (running) {
+      $('status').textContent = 'bezig bij venue ' + (offset + 1) + '…';
+      let data;
+      try {
+        const res = await fetch(location.pathname + '?limit=10&offset=' + offset);
+        data = await res.json();
+      } catch (e) {
+        $('status').textContent = 'even geen verbinding, opnieuw proberen…';
+        await sleep(5000);
+        continue;
+      }
+      scanned += data.venues_scanned || 0;
+      $('scanned').textContent = scanned;
+      for (const r of (data.report || [])) {
+        if (r.outcome === 'queued' || r.outcome === 'would queue') {
+          found++; line(r.venue, r.title);
+        }
+      }
+      $('found').textContent = found;
+
+      if (data.next_offset === null || data.next_offset === undefined) {
+        $('status').textContent = 'klaar — alle venues bekeken';
+        running = false; $('go').textContent = 'Opnieuw'; $('go').className = '';
+        return;
+      }
+      offset = data.next_offset;
+      // Breather so Gemini's per-minute free tier keeps up.
+      const pause = data.rate_limited ? 30 : 8;
+      for (let s = pause; s > 0 && running; s--) {
+        $('status').textContent = 'even pauze (' + s + 's) — Gemini gratis-limiet';
+        await sleep(1000);
+      }
+    }
+    $('status').textContent = 'gestopt';
+  }
+
+  $('go').onclick = () => {
+    if (running) {
+      running = false; $('go').textContent = 'Start'; $('go').className = '';
+    } else {
+      running = true; $('go').textContent = 'Stop'; $('go').className = 'stop'; run();
+    }
+  };
+</script></body></html>`;
+  return new Response(html, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+// Fetch the venue's candidate pages concurrently: return JSON-LD events if any
+// page has them, else the best page text (a listing page if we hit one,
+// otherwise the homepage) for Gemini. Candidate order decides the winner.
 async function scanVenue(website: string, today: string): Promise<ScanResult> {
+  const pages = await Promise.all(
+    CANDIDATE_PATHS.map(async (path) => {
+      const url = pageUrl(website, path);
+      if (!url) return null;
+      const html = await fetchPage(url);
+      return html ? { path, url, html } : null;
+    }),
+  );
+
   let firstPage: { text: string; url: string } | undefined;
   let listingPage: { text: string; url: string } | undefined;
 
-  for (const path of CANDIDATE_PATHS) {
-    const url = pageUrl(website, path);
-    if (!url) continue;
-    const html = await fetchPage(url);
-    if (!html) continue;
-
-    const rows = jsonLdRows(html, url, today);
+  for (const page of pages) {
+    if (!page) continue;
+    const rows = jsonLdRows(page.html, page.url, today);
     if (rows.length) return { found: rows };
 
-    const text = htmlToText(html).slice(0, MAX_GEMINI_CHARS);
+    const text = htmlToText(page.html).slice(0, MAX_GEMINI_CHARS);
     if (text.length > 200) {
-      if (!firstPage) firstPage = { text, url };
-      if (!listingPage && LISTING_PATHS.has(path)) listingPage = { text, url };
+      if (!firstPage) firstPage = { text, url: page.url };
+      if (!listingPage && LISTING_PATHS.has(page.path)) listingPage = { text, url: page.url };
     }
   }
   return { found: [], fallback: listingPage ?? firstPage };
 }
 
 Deno.serve(async (req) => {
+  const reqUrl = new URL(req.url);
+  const params = reqUrl.searchParams;
+  // ?ui=1 serves a small page that walks the whole register by itself.
+  if (params.get("ui")) return runnerPage(reqUrl.pathname);
+
   const dryRun = await isDryRun(req);
-  const params = new URL(req.url).searchParams;
-  const limit = Number(params.get("limit") ?? "15");
+  const deadline = startedAt() + RUN_DEADLINE_MS;
+  const limit = Number(params.get("limit") ?? "10");
   const offset = Number(params.get("offset") ?? "0");
   const sb = supabaseAdmin();
   const today = new Date().toISOString().slice(0, 10);
@@ -375,6 +524,11 @@ Deno.serve(async (req) => {
 
       let found = scan.found;
       // Gemini fallback: only when JSON-LD found nothing and we have page text.
+      // Skipped once the deadline is near — the caller resumes at next_offset.
+      if (Date.now() > deadline && !found.length) {
+        report.push({ venue: v.name, outcome: "skipped (time budget reached)" });
+        return;
+      }
       if (!found.length && scan.fallback && GEMINI_KEY && geminiCalls < MAX_GEMINI_CALLS && !rateLimited) {
         geminiCalls += 1;
         const g = await geminiExtract(v.name, scan.fallback.text, scan.fallback.url, today);
