@@ -15,7 +15,8 @@
 // Optional: GEMINI_MODEL (default "gemini-2.0-flash").
 //
 // Trigger manually with ?dry_run=1 (writes nothing) and ?limit=N (cap venues).
-// Open ?ui=1 for a page that walks the whole register by itself.
+// Add &chain=1 to walk the whole register automatically: each slice hands off
+// to the next in the background, so a single request scans every venue.
 //
 // STANDALONE COPY: same as index.ts with the shared helpers inlined, so it
 // pastes as a single file into the Supabase dashboard Edge Function editor.
@@ -86,6 +87,8 @@ const GEMINI_RETRIES = 2;
 // Return before the browser gives up; the caller resumes at next_offset.
 const RUN_DEADLINE_MS = 45_000;
 const startedAt = () => Date.now();
+// Hard stop for ?chain=1 so a self-invoking run can never loop away.
+const MAX_CHAIN_DEPTH = 30;
 
 const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 const GEMINI_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
@@ -374,147 +377,15 @@ interface ScanResult {
   fallback?: { text: string; url: string };
 }
 
-// A one-link runner: walks the whole venue register slice by slice from the
-// browser, so nobody has to open ?offset=0,15,30,… by hand. Each slice is a
-// short fetch, so it never hits the browser's page-load timeout, and it pauses
-// between slices to stay inside Gemini's per-minute free tier.
-function runnerPage(path: string): Response {
-  const html = `<!doctype html><html lang="nl"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex"><title>ART EYE - Ophalen</title>
-<style>
-  :root { color-scheme: light; }
-  * { box-sizing: border-box; margin: 0; }
-  body { font-family: "Helvetica Neue", Arial, sans-serif; background:#fff; color:#000;
-         max-width: 720px; margin: 0 auto; padding: 24px 16px 60px; }
-  h1 { font-size: 15px; letter-spacing: .35em; text-transform: uppercase; }
-  .sub { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; margin: 6px 0 20px; }
-  button { font: inherit; font-size: 13px; letter-spacing: .15em; text-transform: uppercase;
-           padding: 14px 20px; border: 1px solid #000; background:#000; color:#fff; width: 100%; }
-  button.stop { background:#fff; color:#000; }
-  .stat { border-top: 1px solid #000; margin-top: 20px; padding-top: 12px;
-          font-size: 13px; line-height: 1.7; }
-  .b { font-weight: 700; }
-  .log { margin-top: 16px; font-size: 13px; line-height: 1.6; }
-  .log div { padding: 5px 0; border-bottom: 1px solid #eee; }
-  .v { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
-</style></head><body>
-<h1>ARTEYE</h1>
-<div class="sub">Expo's ophalen uit alle venues</div>
-<button id="go">Start</button>
-<div class="stat">
-  Venues bekeken: <span class="b" id="scanned">0</span><br>
-  Expo's gevonden: <span class="b" id="found">0</span><br>
-  Status: <span id="status">klaar om te starten</span>
-</div>
-<div class="log" id="log"></div>
-<script>
-  const $ = (id) => document.getElementById(id);
-  let running = false, scanned = 0, found = 0;
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-  function line(venue, title) {
-    const d = document.createElement('div');
-    d.innerHTML = '<span class="v">' + venue + '</span><br>' + title;
-    $('log').prepend(d);
-  }
-
-  async function run() {
-    let offset = 0;
-    while (running) {
-      $('status').textContent = 'bezig bij venue ' + (offset + 1) + '...';
-      let data;
-      try {
-        const res = await fetch(location.pathname + '?limit=10&offset=' + offset);
-        data = await res.json();
-      } catch (e) {
-        $('status').textContent = 'even geen verbinding, opnieuw proberen...';
-        await sleep(5000);
-        continue;
-      }
-      scanned += data.venues_scanned || 0;
-      $('scanned').textContent = scanned;
-      for (const r of (data.report || [])) {
-        if (r.outcome === 'queued' || r.outcome === 'would queue') {
-          found++; line(r.venue, r.title);
-        }
-      }
-      $('found').textContent = found;
-
-      if (data.next_offset === null || data.next_offset === undefined) {
-        $('status').textContent = 'klaar - alle venues bekeken';
-        running = false; $('go').textContent = 'Opnieuw'; $('go').className = '';
-        return;
-      }
-      offset = data.next_offset;
-      // Breather so Gemini's per-minute free tier keeps up.
-      const pause = data.rate_limited ? 30 : 8;
-      for (let s = pause; s > 0 && running; s--) {
-        $('status').textContent = 'even pauze (' + s + 's) - Gemini gratis-limiet';
-        await sleep(1000);
-      }
-    }
-    $('status').textContent = 'gestopt';
-  }
-
-  $('go').onclick = () => {
-    if (running) {
-      running = false; $('go').textContent = 'Start'; $('go').className = '';
-    } else {
-      running = true; $('go').textContent = 'Stop'; $('go').className = 'stop'; run();
-    }
-  };
-</script></body></html>`;
-  return new Response(new TextEncoder().encode(html), {
-    status: 200,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-      "cache-control": "no-store",
-      "access-control-allow-origin": "*",
-    },
-  });
-}
-
-// Fetch the venue's candidate pages concurrently: return JSON-LD events if any
-// page has them, else the best page text (a listing page if we hit one,
-// otherwise the homepage) for Gemini. Candidate order decides the winner.
-async function scanVenue(website: string, today: string): Promise<ScanResult> {
-  const pages = await Promise.all(
-    CANDIDATE_PATHS.map(async (path) => {
-      const url = pageUrl(website, path);
-      if (!url) return null;
-      const html = await fetchPage(url);
-      return html ? { path, url, html } : null;
-    }),
-  );
-
-  let firstPage: { text: string; url: string } | undefined;
-  let listingPage: { text: string; url: string } | undefined;
-
-  for (const page of pages) {
-    if (!page) continue;
-    const rows = jsonLdRows(page.html, page.url, today);
-    if (rows.length) return { found: rows };
-
-    const text = htmlToText(page.html).slice(0, MAX_GEMINI_CHARS);
-    if (text.length > 200) {
-      if (!firstPage) firstPage = { text, url: page.url };
-      if (!listingPage && LISTING_PATHS.has(page.path)) listingPage = { text, url: page.url };
-    }
-  }
-  return { found: [], fallback: listingPage ?? firstPage };
-}
-
 Deno.serve(async (req) => {
   const reqUrl = new URL(req.url);
   const params = reqUrl.searchParams;
-  // ?ui=1 serves a small page that walks the whole register by itself.
-  if (params.get("ui")) return runnerPage(reqUrl.pathname);
-
   const dryRun = await isDryRun(req);
   const deadline = startedAt() + RUN_DEADLINE_MS;
   const limit = Number(params.get("limit") ?? "10");
   const offset = Number(params.get("offset") ?? "0");
+  const chain = params.get("chain") === "1";
+  const depth = Number(params.get("depth") ?? "0"); // runaway-chain guard
   const sb = supabaseAdmin();
   const today = new Date().toISOString().slice(0, 10);
   const report: unknown[] = [];
@@ -629,6 +500,30 @@ Deno.serve(async (req) => {
     errors.push({ where: "discover-exhibitions", message: err instanceof Error ? err.message : String(err) });
   }
 
+  const nextOffset = venuesScanned === limit ? offset + limit : null; // null = done
+
+  // ?chain=1 walks the whole register on its own: each run hands off to the
+  // next slice in the background, so one link scans every venue. The pause
+  // between hand-offs keeps Gemini inside its per-minute free tier.
+  let chained = false;
+  if (chain && nextOffset !== null && depth < MAX_CHAIN_DEPTH) {
+    const next = new URL(req.url);
+    next.searchParams.set("offset", String(nextOffset));
+    next.searchParams.set("depth", String(depth + 1));
+    chained = true;
+    // Fire-and-forget: give the request time to land, then stop waiting so
+    // this invocation can end while the next one runs on its own.
+    const handoff = (async () => {
+      await sleep(rateLimited ? 45_000 : 20_000);
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 2000);
+      await fetch(next.toString(), { signal: ctrl.signal }).catch(() => {});
+    })();
+    const runtime = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+    if (runtime?.waitUntil) runtime.waitUntil(handoff);
+    else await handoff;
+  }
+
   return jsonResponse({
     ok: true,
     method: "json-ld + gemini",
@@ -636,7 +531,12 @@ Deno.serve(async (req) => {
     gemini_enabled: !!GEMINI_KEY,
     dry_run: dryRun,
     offset,
-    next_offset: venuesScanned === limit ? offset + limit : null, // null = done
+    next_offset: nextOffset,
+    chaining: chained
+      ? `yes - slice ${depth + 1}/${MAX_CHAIN_DEPTH}, continuing at offset ${nextOffset} in the background`
+      : chain
+      ? "no - finished"
+      : "off (add &chain=1 to walk every venue automatically)",
     venues_scanned: venuesScanned,
     shows_found: showsFound,
     proposals_created: proposalsCreated,
