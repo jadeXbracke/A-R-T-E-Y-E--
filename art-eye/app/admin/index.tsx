@@ -35,6 +35,7 @@ export default function HostDesk() {
     venues: number;
     shows: number;
     inbox: number;
+    discovered: number;
   } | null>(null);
 
   useFocusEffect(
@@ -46,10 +47,17 @@ export default function HostDesk() {
           api.listVenues(),
           api.listAllExhibitions(),
           api.listProposals(),
+          api.listExhibitionProposals().catch(() => []),
         ]).then(
-          ([p, v, e, q]) =>
+          ([p, v, e, q, d]) =>
             alive &&
-            setCounts({ pending: p.length, venues: v.length, shows: e.length, inbox: q.length })
+            setCounts({
+              pending: p.length,
+              venues: v.length,
+              shows: e.length,
+              inbox: q.length,
+              discovered: d.length,
+            })
         );
       }
       return () => {
@@ -119,6 +127,11 @@ export default function HostDesk() {
         label="OWNER INBOX — PIPELINE PROPOSALS"
         meta={counts ? (counts.inbox > 0 ? `${counts.inbox} WAITING` : 'CLEAR') : '…'}
         onPress={() => router.push('/admin/inbox')}
+      />
+      <DeskRow
+        label="SHOWS INBOX — DISCOVERED EXHIBITIONS"
+        meta={counts ? (counts.discovered > 0 ? `${counts.discovered} WAITING` : 'CLEAR') : '…'}
+        onPress={() => router.push('/admin/shows-inbox')}
       />
     </ScrollView>
   );

@@ -1,4 +1,4 @@
-import { Comment, CuratedList, Exhibition, ExhibitionDraft, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { Comment, CuratedList, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -56,6 +56,14 @@ export interface Api {
   listProposals(): Promise<VenueProposal[]>;
   approveProposal(proposal: VenueProposal, payload: Record<string, unknown>): Promise<void>;
   rejectProposal(id: string, note: string): Promise<void>;
+
+  // shows inbox — exhibitions the discovery pipeline found. Owner-only, same
+  // double guard: the UI hides it for everyone but the admin, and the
+  // database (RLS + the is_admin() check inside the approval RPC) refuses
+  // any other account regardless of what the client asks.
+  listExhibitionProposals(): Promise<ExhibitionProposal[]>;
+  approveExhibitionProposal(id: string): Promise<void>;
+  rejectExhibitionProposal(id: string): Promise<void>;
 
   // social layer — follow graph, privacy and the friends activity feed
   getPublicProfile(userId: string, viewerId: string | null): Promise<PublicProfile>;

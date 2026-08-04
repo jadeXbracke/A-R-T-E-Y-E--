@@ -255,6 +255,24 @@ export interface VenueProposal {
   created_at: string;
 }
 
+// A show the discovery pipeline found on a venue's own website. Waits in
+// exhibition_review_queue until the owner approves it — approval is what
+// creates the real exhibition.
+export interface ExhibitionProposal {
+  id: string;
+  venue_id: string;
+  venue_name: string;
+  title: string;
+  artists: string;
+  start_date: string | null;
+  end_date: string | null;
+  description: string;
+  source_url: string | null;
+  confidence: number; // 0.9 = venue's own structured data, 0.65 = AI-read
+  status: ProposalStatus;
+  created_at: string;
+}
+
 export type AgendaFilter =
   | 'all'
   | 'opening_soon'

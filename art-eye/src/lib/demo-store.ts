@@ -696,6 +696,18 @@ export const demoApi: Api = {
     await persist();
   },
 
+  // The discovery pipeline only exists in live mode (it runs on Supabase), so
+  // the demo shows an empty shows inbox rather than pretending.
+  async listExhibitionProposals() {
+    return [];
+  },
+  async approveExhibitionProposal() {
+    throw new Error('The shows inbox needs the live database.');
+  },
+  async rejectExhibitionProposal() {
+    throw new Error('The shows inbox needs the live database.');
+  },
+
   async uploadImage(localUri) {
     return localUri; // demo mode keeps the local file uri
   },

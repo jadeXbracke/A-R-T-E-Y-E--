@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Comment, CuratedList, CuratorRole, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { Comment, CuratedList, CuratorRole, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, Follow, FollowState, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 
 let client: SupabaseClient | null = null;
@@ -460,6 +460,37 @@ export const supabaseApi: Api = {
         snooze_until: snooze.toISOString().slice(0, 10),
         reviewed_at: new Date().toISOString(),
       })
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  // ---- shows inbox --------------------------------------------------------
+  // Everything here runs as the signed-in user, so RLS on
+  // exhibition_review_queue ("admin all") decides — any non-admin account
+  // gets empty lists and refused writes no matter what the client requests.
+  async listExhibitionProposals() {
+    const { data, error } = await supabase()
+      .from('exhibition_review_queue')
+      .select('*, venues(name)')
+      .eq('status', 'pending')
+      .order('confidence', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row) => {
+      const { venues, ...rest } = row as Record<string, unknown> & { venues: { name: string } | null };
+      return { ...rest, venue_name: venues?.name ?? 'Unknown venue' } as ExhibitionProposal;
+    });
+  },
+
+  async approveExhibitionProposal(id) {
+    // The RPC re-checks is_admin() server-side before inserting the show.
+    const { error } = await supabase().rpc('approve_exhibition_proposal', { qid: id });
+    if (error) throw new Error(error.message);
+  },
+
+  async rejectExhibitionProposal(id) {
+    const { error } = await supabase().from('exhibition_review_queue')
+      .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
       .eq('id', id);
     if (error) throw new Error(error.message);
   },
