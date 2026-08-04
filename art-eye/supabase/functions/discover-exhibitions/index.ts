@@ -61,8 +61,11 @@ const GEMINI_GAP_MS = 4000;
 const GEMINI_RETRIES = 2;
 const GEMINI_RETRY_FLOOR_MS = 30_000;
 const GEMINI_RETRY_CAP_MS = 65_000;
-// Return before the browser gives up; the caller resumes at next_offset.
+// The first request has a browser waiting, so it must answer quickly. Chained
+// slices run in the background with nobody watching, so they get far longer and
+// can afford to sit out a 429 instead of skipping venues.
 const RUN_DEADLINE_MS = 45_000;
+const BACKGROUND_DEADLINE_MS = 150_000;
 const startedAt = () => Date.now();
 // Hard stop for ?chain=1 so a self-invoking run can never loop away.
 const MAX_CHAIN_DEPTH = 30;
@@ -347,7 +350,7 @@ async function geminiExtractBatch(
     }
     if (res.status === 429) {
       detail = await res.text().catch(() => detail);
-      return { byIndex: empty, rateLimited: true, error: `gemini 429: ${detail.slice(0, 400)}` };
+      return { byIndex: empty, rateLimited: true, error: `gemini 429: ${detail.slice(0, 900)}` };
     }
     if (!res.ok) {
       const body = await res.text().catch(() => "");
@@ -439,11 +442,12 @@ Deno.serve(async (req) => {
   const reqUrl = new URL(req.url);
   const params = reqUrl.searchParams;
   const dryRun = await isDryRun(req);
-  const deadline = startedAt() + RUN_DEADLINE_MS;
   const limit = Number(params.get("limit") ?? "25");
   const offset = Number(params.get("offset") ?? "0");
   const chain = params.get("chain") === "1";
   const depth = Number(params.get("depth") ?? "0"); // runaway-chain guard
+  // depth > 0 means nobody is waiting on this response, so it can take its time.
+  const deadline = startedAt() + (depth > 0 ? BACKGROUND_DEADLINE_MS : RUN_DEADLINE_MS);
   const sb = supabaseAdmin();
   const today = new Date().toISOString().slice(0, 10);
   const report: unknown[] = [];
