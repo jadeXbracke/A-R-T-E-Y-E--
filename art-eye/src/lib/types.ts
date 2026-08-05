@@ -255,6 +255,14 @@ export interface VenueProposal {
   created_at: string;
 }
 
+// A photograph found on a venue's own page, offered for the owner to pick.
+export interface ImageCandidate {
+  url: string;
+  alt: string;
+  from: string; // the page it was found on
+  featured: boolean; // the page's own sharing image
+}
+
 // A show the discovery pipeline found on a venue's own website. Waits in
 // exhibition_review_queue until the owner approves it — approval is what
 // creates the real exhibition.

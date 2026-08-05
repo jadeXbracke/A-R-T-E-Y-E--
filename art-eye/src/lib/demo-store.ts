@@ -707,6 +707,17 @@ export const demoApi: Api = {
   async rejectExhibitionProposal() {
     throw new Error('The shows inbox needs the live database.');
   },
+  async listImageCandidates() {
+    return []; // reading venue sites needs the live backend
+  },
+  async setExhibitionImage(exhibitionId, imageUrl) {
+    const s = await load();
+    const e = s.exhibitions.find((x) => x.id === exhibitionId);
+    if (e) {
+      e.image_url = imageUrl;
+      await persist();
+    }
+  },
   async requestPasswordReset() {
     throw new Error('Password reset needs the live database.');
   },

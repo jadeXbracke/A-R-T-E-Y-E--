@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Comment, CuratedList, CuratorRole, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, Follow, FollowState, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { Comment, CuratedList, CuratorRole, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, Follow, FollowState, ImageCandidate, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 
 let client: SupabaseClient | null = null;
@@ -493,6 +493,33 @@ export const supabaseApi: Api = {
     const { error } = await supabase().from('exhibition_review_queue')
       .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
       .eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  async listImageCandidates(exhibitionId) {
+    // functions.invoke has no query-string support, so call the function URL.
+    const base = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+    const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+    const url = `${base}/functions/v1/image-candidates?exhibition_id=${encodeURIComponent(exhibitionId)}`;
+    const res = await fetch(url, { headers: { apikey: key } });
+    if (!res.ok) {
+      throw new Error(
+        res.status === 404
+          ? 'The image-candidates function is not deployed yet.'
+          : `Could not read the venue site (${res.status}).`
+      );
+    }
+    const body = (await res.json()) as { ok?: boolean; error?: string; candidates?: ImageCandidate[] };
+    if (body?.ok === false) throw new Error(body.error ?? 'Could not read the venue site.');
+    return body?.candidates ?? [];
+  },
+
+  async setExhibitionImage(exhibitionId, imageUrl) {
+    // Plain admin update — RLS decides whether this account may do it.
+    const { error } = await supabase()
+      .from('exhibitions')
+      .update({ image_url: imageUrl })
+      .eq('id', exhibitionId);
     if (error) throw new Error(error.message);
   },
 

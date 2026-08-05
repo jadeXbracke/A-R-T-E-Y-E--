@@ -129,6 +129,11 @@ export default function HostDesk() {
         onPress={() => router.push('/admin/inbox')}
       />
       <DeskRow
+        label="PHOTOS — PICK EACH SHOW'S PICTURE"
+        meta={counts ? `${counts.shows} SHOWS` : '…'}
+        onPress={() => router.push('/admin/photos')}
+      />
+      <DeskRow
         label="SHOWS INBOX — DISCOVERED EXHIBITIONS"
         meta={counts ? (counts.discovered > 0 ? `${counts.discovered} WAITING` : 'CLEAR') : '…'}
         onPress={() => router.push('/admin/shows-inbox')}

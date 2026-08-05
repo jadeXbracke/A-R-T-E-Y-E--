@@ -1,4 +1,4 @@
-import { Comment, CuratedList, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { Comment, CuratedList, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, FollowState, ImageCandidate, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -64,6 +64,12 @@ export interface Api {
   listExhibitionProposals(): Promise<ExhibitionProposal[]>;
   approveExhibitionProposal(id: string): Promise<void>;
   rejectExhibitionProposal(id: string): Promise<void>;
+
+  // photo picking: read candidate photographs off the venue's own pages so
+  // the owner chooses the image (setImage is a normal admin write, still
+  // guarded by RLS).
+  listImageCandidates(exhibitionId: string): Promise<ImageCandidate[]>;
+  setExhibitionImage(exhibitionId: string, imageUrl: string | null): Promise<void>;
 
   // password recovery (live mode only): Supabase mails a sign-in link that
   // returns to the app, after which updatePassword sets the new one.
