@@ -142,6 +142,9 @@ export default function ExhibitionDetail() {
         <View style={styles.caption}>
           <Text style={styles.captionTitle}>{e.title}</Text>
           <Text style={styles.captionArtist}>{e.artists.toUpperCase()}</Text>
+          {((e.image_url && /^https?:/.test(e.image_url)) || e.venue?.image_url) && e.venue?.name ? (
+            <Text style={styles.courtesy}>COURTESY {e.venue.name.toUpperCase()}</Text>
+          ) : null}
         </View>
 
         <View style={{ paddingHorizontal: space.page, paddingTop: space.l }}>
@@ -257,6 +260,14 @@ const styles = StyleSheet.create({
   },
   caption: { paddingHorizontal: space.page, paddingTop: space.l },
   captionTitle: { ...type.serifHeading, fontSize: 23, lineHeight: 35, marginBottom: space.s },
+  courtesy: {
+    fontFamily: fonts.mono,
+    fontSize: 8,
+    letterSpacing: 1.4,
+    color: colors.ink,
+    opacity: 0.6,
+    marginTop: 6,
+  },
   captionArtist: {
     fontFamily: fonts.sans,
     fontSize: 11,
