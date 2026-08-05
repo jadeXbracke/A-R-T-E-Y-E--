@@ -82,7 +82,11 @@ export default function FeedScreen() {
           )}
 
           {feed.length === 0 ? (
-            <EmptyState>No activity yet. Follow a few people below to fill your feed.</EmptyState>
+            <EmptyState>
+              Your feed is quiet because your friends aren't here yet. Share the app —
+              anyone can make an account — then follow each other and every visit, save
+              and comment lands here.
+            </EmptyState>
           ) : (
             feed.map((item) => <ActivityRow key={item.id} item={item} />)
           )}

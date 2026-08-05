@@ -21,7 +21,8 @@ export function supabase(): SupabaseClient {
           storage: AsyncStorage,
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: false,
+          // Web only: lets the emailed password-recovery link sign in.
+          detectSessionInUrl: typeof window !== 'undefined',
         },
       }
     );
@@ -492,6 +493,19 @@ export const supabaseApi: Api = {
     const { error } = await supabase().from('exhibition_review_queue')
       .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
       .eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  async requestPasswordReset(email) {
+    const redirectTo = typeof location !== 'undefined'
+      ? location.origin + location.pathname
+      : undefined;
+    const { error } = await supabase().auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    if (error) throw new Error(error.message);
+  },
+
+  async updatePassword(password) {
+    const { error } = await supabase().auth.updateUser({ password });
     if (error) throw new Error(error.message);
   },
 

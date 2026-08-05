@@ -9,12 +9,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ExhibitionRow } from '../src/components/exhibition';
-import { Hairline, Kicker, Lift } from '../src/components/ui';
-import { api } from '../src/lib/api';
-import { areaForSuburb } from '../src/lib/areas';
-import { Exhibition, Venue } from '../src/lib/types';
-import { colors, fonts, space, type } from '../src/theme';
+import { ExhibitionRow } from '../../src/components/exhibition';
+import { Hairline, Kicker, Lift } from '../../src/components/ui';
+import { api } from '../../src/lib/api';
+import { areaForSuburb } from '../../src/lib/areas';
+import { Exhibition, Venue } from '../../src/lib/types';
+import { colors, fonts, space, type } from '../../src/theme';
 
 function norm(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');

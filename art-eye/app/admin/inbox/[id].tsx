@@ -122,7 +122,7 @@ export default function ProposalDetail() {
       {p.evidence.map((e, i) => (
         <Pressable key={i} style={styles.evidence} onPress={() => WebBrowser.openBrowserAsync(e.url)}>
           <Text style={styles.evidenceUrl} numberOfLines={1}>
-            {e.url} ↗
+            {e.url} ●
           </Text>
           <Text style={styles.evidenceSnippet}>{e.snippet}</Text>
         </Pressable>

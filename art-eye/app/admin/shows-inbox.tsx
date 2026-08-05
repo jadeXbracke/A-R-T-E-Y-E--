@@ -45,7 +45,7 @@ function ProposalCard({
         </Text>
         {p.source_url ? (
           <Pressable onPress={() => Linking.openURL(p.source_url!).catch(() => {})} hitSlop={8}>
-            <Text style={styles.source}>SOURCE ↗</Text>
+            <Text style={styles.source}>SOURCE ●</Text>
           </Pressable>
         ) : null}
       </View>
@@ -141,6 +141,33 @@ export default function ShowsInbox() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
+      {(() => {
+        const sure = (proposals ?? []).filter((p) => p.confidence >= 0.9);
+        if (sure.length < 2) return null;
+        return (
+          <Pressable
+            style={[styles.bulk, busyId === 'bulk' && styles.disabled]}
+            disabled={busyId !== null}
+            onPress={async () => {
+              setBusyId('bulk');
+              setError(null);
+              try {
+                for (const p of sure) await api.approveExhibitionProposal(p.id);
+                setProposals((cur) => (cur ?? []).filter((x) => x.confidence < 0.9));
+              } catch (e) {
+                setError(e instanceof Error ? e.message : String(e));
+              } finally {
+                setBusyId(null);
+              }
+            }}
+          >
+            <Text style={styles.bulkText}>
+              ✓ APPROVE ALL FROM VENUE DATA ({sure.length})
+            </Text>
+          </Pressable>
+        );
+      })()}
+
       {proposals === null && !error ? (
         <Loading />
       ) : (proposals ?? []).length === 0 ? (
@@ -228,6 +255,14 @@ const styles = StyleSheet.create({
     color: colors.ink,
     textDecorationLine: 'underline',
   },
+  bulk: {
+    marginHorizontal: space.page,
+    marginTop: space.m,
+    backgroundColor: colors.ink,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  bulkText: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.5, color: colors.bg },
   actions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   button: {
     flex: 1,

@@ -38,11 +38,15 @@ export function ArtImage({
   uri,
   venueUri,
   fallbackId,
+  onAllFailed,
   ...props
 }: Omit<ImageProps, 'source'> & {
   uri?: string | null;
   venueUri?: string | null;
   fallbackId: string;
+  // Fires once every remote candidate has errored, so a caller can hide the
+  // whole image area instead of showing a meaningless placeholder block.
+  onAllFailed?: () => void;
 }) {
   const [failed, setFailed] = useState<Set<string>>(new Set());
   const fallback = fallbackFor(fallbackId, uri);
@@ -54,7 +58,11 @@ export function ArtImage({
     <Image
       source={remote ? { uri: remote } : fallback}
       placeholder={remote ? fallback : undefined}
-      onError={() => remote && setFailed((prev) => new Set(prev).add(remote))}
+      onError={() => {
+        if (!remote) return;
+        setFailed((prev) => new Set(prev).add(remote));
+        if (candidates.length <= 1) onAllFailed?.();
+      }}
       transition={200}
       {...props}
     />
@@ -62,15 +70,22 @@ export function ArtImage({
 }
 
 /** Editorial agenda card: full-width image, then date, bold title, artist, venue. */
+// A card's image: the show's own press photo, else the venue's photograph —
+// real photography only, never a synthetic placeholder.
+function cardArt(e: Exhibition): string | null {
+  const v = e.venue?.image_url;
+  return photo(e) ?? (v && /^https?:\/\//i.test(v) ? v : null);
+}
+
 export function ExhibitionRow({ exhibition, seen }: { exhibition: Exhibition; seen?: boolean }) {
   return (
     <Lift
       style={styles.row}
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
-      {photo(exhibition) && (
+      {cardArt(exhibition) && (
         <View>
-          <Image source={{ uri: photo(exhibition)! }} style={styles.cover} contentFit="cover" transition={200} />
+          <Image source={{ uri: cardArt(exhibition)! }} style={styles.cover} contentFit="cover" transition={200} />
           {seen && <RedDot size={9} style={styles.seenDot} />}
         </View>
       )}
@@ -95,9 +110,9 @@ export function ExhibitionGridItem({ exhibition, seen }: { exhibition: Exhibitio
       style={styles.gridItem}
       onPress={() => router.push(`/exhibition/${exhibition.id}`)}
     >
-      {photo(exhibition) && (
+      {cardArt(exhibition) && (
         <View>
-          <Image source={{ uri: photo(exhibition)! }} style={styles.gridImage} contentFit="cover" transition={200} />
+          <Image source={{ uri: cardArt(exhibition)! }} style={styles.gridImage} contentFit="cover" transition={200} />
           {seen && <RedDot size={9} style={styles.seenDot} />}
         </View>
       )}

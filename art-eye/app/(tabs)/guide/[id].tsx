@@ -2,11 +2,11 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ExhibitionRow } from '../../src/components/exhibition';
-import { Hairline, Kicker, Loading } from '../../src/components/ui';
-import { api } from '../../src/lib/api';
-import { CuratedList, Exhibition } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+import { ExhibitionRow } from '../../../src/components/exhibition';
+import { Hairline, Kicker, Loading } from '../../../src/components/ui';
+import { api } from '../../../src/lib/api';
+import { CuratedList, Exhibition } from '../../../src/lib/types';
+import { colors, fonts, space, type } from '../../../src/theme';
 
 const ROLE_LABEL = { artist: 'ARTIST', gallerist: 'GALLERY OWNER', curator: 'EDITORS' } as const;
 

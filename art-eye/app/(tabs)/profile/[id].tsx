@@ -2,13 +2,13 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
-import { ActivityRow, PersonRow } from '../../src/components/social';
-import { PROFILE_TYPES } from '../../src/lib/types';
-import { api } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth';
-import { FeedItem, Profile, PublicProfile } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+import { Hairline, Kicker, Loading, MonoLink } from '../../../src/components/ui';
+import { ActivityRow, PersonRow } from '../../../src/components/social';
+import { PROFILE_TYPES } from '../../../src/lib/types';
+import { api } from '../../../src/lib/api';
+import { useAuth } from '../../../src/lib/auth';
+import { FeedItem, Profile, PublicProfile } from '../../../src/lib/types';
+import { colors, fonts, space, type } from '../../../src/theme';
 
 function typeLabel(pt: Profile['profile_type']): string {
   return PROFILE_TYPES.find((t) => t.value === pt)?.label ?? pt.toUpperCase();

@@ -15,8 +15,7 @@
 // Optional: GEMINI_MODEL (default "gemini-2.5-flash"; "gemini-flash-latest" also works).
 //
 // Trigger manually with ?dry_run=1 (writes nothing) and ?limit=N (cap venues).
-// Add &chain=1 to walk the whole register automatically: each slice hands off
-// to the next in the background, so a single request scans every venue.
+// Add &chain=1 to walk the whole register automatically.
 //
 // STANDALONE COPY: same as index.ts with the shared helpers inlined, so it
 // pastes as a single file into the Supabase dashboard Edge Function editor.
@@ -68,7 +67,10 @@ const CANDIDATE_PATHS = [
   "current-exhibitions",
   "whats-on/exhibitions",
   "exhibitions/current",
+  "exhibitions/current-exhibitions",
+  "current",
   "visit/whats-on",
+  "news-events",
   "",
 ];
 // Paths that are exhibition listings — best text to feed Gemini if no JSON-LD.

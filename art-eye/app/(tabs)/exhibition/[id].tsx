@@ -2,16 +2,16 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArtImage } from '../../src/components/exhibition';
-import { LiveArt } from '../../src/components/live-art';
-import { ActionBar, Hairline, Kicker, Loading, MonoLink, RedDot } from '../../src/components/ui';
-import { api } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth';
-import { fmtOpening, fmtRange } from '../../src/lib/dates';
-import { directionsUrl } from '../../src/lib/maps';
-import { ReelLink } from '../../src/components/reel-link';
-import { Exhibition, Visit } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+import { ArtImage } from '../../../src/components/exhibition';
+import { LiveArt } from '../../../src/components/live-art';
+import { ActionBar, Hairline, Kicker, Loading, MonoLink, RedDot } from '../../../src/components/ui';
+import { api } from '../../../src/lib/api';
+import { useAuth } from '../../../src/lib/auth';
+import { fmtOpening, fmtRange } from '../../../src/lib/dates';
+import { directionsUrl } from '../../../src/lib/maps';
+import { ReelLink } from '../../../src/components/reel-link';
+import { Exhibition, Visit } from '../../../src/lib/types';
+import { colors, fonts, space, type } from '../../../src/theme';
 
 function openLink(url: string) {
   Linking.openURL(url).catch(() => {});
@@ -195,14 +195,14 @@ export default function ExhibitionDetail() {
                 />
                 {e.venue.website && (
                   <MonoLink
-                    label="WEBSITE ↗"
+                    label="WEBSITE ●"
                     active
                     onPress={() => openLink(webUrl(e.venue!.website!))}
                   />
                 )}
                 {e.venue.instagram && (
                   <MonoLink
-                    label="INSTAGRAM ↗"
+                    label="INSTAGRAM ●"
                     active
                     onPress={() => openLink(instaUrl(e.venue!.instagram!))}
                   />

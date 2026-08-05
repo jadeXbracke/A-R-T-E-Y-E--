@@ -98,6 +98,7 @@ export function LiveArt({
   active = true,
   style,
   aspectRatio,
+  onImageError,
 }: {
   videoUrl?: string | null;
   uri?: string | null;
@@ -106,6 +107,7 @@ export function LiveArt({
   active?: boolean;
   style?: StyleProp<ViewStyle>;
   aspectRatio?: number;
+  onImageError?: () => void;
 }) {
   const frame: StyleProp<ViewStyle> = [style, aspectRatio ? { aspectRatio } : null];
   if (videoUrl && active) {
@@ -121,6 +123,7 @@ export function LiveArt({
         uri={uri}
         venueUri={venueUri}
         fallbackId={fallbackId}
+        onAllFailed={onImageError}
         style={{ width: '100%', height: '100%' }}
         contentFit="cover"
       />

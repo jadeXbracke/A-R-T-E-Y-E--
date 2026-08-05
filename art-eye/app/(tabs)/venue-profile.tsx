@@ -2,12 +2,12 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PhotoPicker } from '../src/components/image-upload';
-import { Field, Hairline, InkBar, Kicker } from '../src/components/ui';
-import { api } from '../src/lib/api';
-import { useAuth } from '../src/lib/auth';
-import { Venue } from '../src/lib/types';
-import { colors, fonts, space, type } from '../src/theme';
+import { PhotoPicker } from '../../src/components/image-upload';
+import { Field, Hairline, InkBar, Kicker } from '../../src/components/ui';
+import { api } from '../../src/lib/api';
+import { useAuth } from '../../src/lib/auth';
+import { Venue } from '../../src/lib/types';
+import { colors, fonts, space, type } from '../../src/theme';
 
 export default function VenueProfile() {
   const insets = useSafeAreaInsets();

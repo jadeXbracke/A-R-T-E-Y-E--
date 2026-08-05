@@ -38,7 +38,10 @@ const CANDIDATE_PATHS = [
   "current-exhibitions",
   "whats-on/exhibitions",
   "exhibitions/current",
+  "exhibitions/current-exhibitions",
+  "current",
   "visit/whats-on",
+  "news-events",
   "",
 ];
 // Paths that are exhibition listings — best text to feed Gemini if no JSON-LD.

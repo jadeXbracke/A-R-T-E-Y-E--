@@ -7,12 +7,12 @@ import {
   ExhibitionForm,
   ExhibitionFormValues,
   validate,
-} from '../../src/components/exhibition-form';
-import { Hairline, Kicker } from '../../src/components/ui';
-import { api } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth';
-import { Exhibition } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+} from '../../../src/components/exhibition-form';
+import { Hairline, Kicker } from '../../../src/components/ui';
+import { api } from '../../../src/lib/api';
+import { useAuth } from '../../../src/lib/auth';
+import { Exhibition } from '../../../src/lib/types';
+import { colors, fonts, space, type } from '../../../src/theme';
 
 export function valuesFromExhibition(e: Exhibition): ExhibitionFormValues {
   const opening = e.opening_datetime ? new Date(e.opening_datetime) : null;

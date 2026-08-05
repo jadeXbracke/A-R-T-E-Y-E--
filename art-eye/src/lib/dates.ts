@@ -11,9 +11,13 @@ export function fmtDay(d: string, withYear = false): string {
   return withYear ? `${base} ${date.getFullYear()}` : base;
 }
 
-/** "6 JUN — 16 AUG 2026" */
-export function fmtRange(start: string, end: string): string {
-  return `${fmtDay(start)} — ${fmtDay(end, true)}`;
+/** "6 JUN — 16 AUG 2026". Discovered shows may miss a date — say so honestly
+ * ("FROM …", "UNTIL …", "DATES TBA") instead of inventing one. */
+export function fmtRange(start: string | null, end: string | null): string {
+  if (start && end) return `${fmtDay(start)} — ${fmtDay(end, true)}`;
+  if (start) return `FROM ${fmtDay(start, true)}`;
+  if (end) return `UNTIL ${fmtDay(end, true)}`;
+  return 'DATES TBA';
 }
 
 /** "22 JUL, 6 PM" from an ISO datetime */
@@ -46,7 +50,8 @@ export function daysUntil(d: string): number {
   return Math.round((parseDay(d).getTime() - parseDay(todayStr()).getTime()) / 86400000);
 }
 
-export function isOnNow(start: string, end: string): boolean {
+export function isOnNow(start: string | null, end: string | null): boolean {
   const t = todayStr();
-  return start <= t && t <= end;
+  // Missing start = assume already open; missing end = assume still running.
+  return (start ?? '0000') <= t && t <= (end ?? '9999');
 }

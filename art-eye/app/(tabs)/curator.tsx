@@ -166,6 +166,12 @@ export default function CuratorScreen() {
       )}
 
       <View style={styles.footerLinks}>
+        <MonoLink
+          label="SUBMIT A SHOW"
+          active
+          onPress={() => router.push('/submit')}
+          style={{ alignSelf: 'flex-start' }}
+        />
         {profile.role === 'admin' && (
           <MonoLink
             label="HOST CONTROL — MANAGE THE APP"

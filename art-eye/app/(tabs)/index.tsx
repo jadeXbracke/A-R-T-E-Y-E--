@@ -85,6 +85,7 @@ export default function AgendaScreen() {
     >
       <View style={styles.header}>
         <Wordmark size={26} />
+        <MonoLink label="ART FAIRS" onPress={() => router.push('/fairs')} />
       </View>
       <Hairline style={{ marginBottom: space.l }} />
 
@@ -200,7 +201,9 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   header: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: space.page,
     paddingBottom: space.m,
   },

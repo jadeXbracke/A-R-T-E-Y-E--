@@ -11,12 +11,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Hairline, Kicker, Loading, RatingDots } from '../../src/components/ui';
-import { api } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth';
-import { fmtDay } from '../../src/lib/dates';
-import { Comment, FeedItem } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+import { Hairline, Kicker, Loading, RatingDots } from '../../../src/components/ui';
+import { api } from '../../../src/lib/api';
+import { useAuth } from '../../../src/lib/auth';
+import { fmtDay } from '../../../src/lib/dates';
+import { Comment, FeedItem } from '../../../src/lib/types';
+import { colors, fonts, space, type } from '../../../src/theme';
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();

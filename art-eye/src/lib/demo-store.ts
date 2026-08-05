@@ -707,6 +707,12 @@ export const demoApi: Api = {
   async rejectExhibitionProposal() {
     throw new Error('The shows inbox needs the live database.');
   },
+  async requestPasswordReset() {
+    throw new Error('Password reset needs the live database.');
+  },
+  async updatePassword() {
+    throw new Error('Password reset needs the live database.');
+  },
 
   async uploadImage(localUri) {
     return localUri; // demo mode keeps the local file uri

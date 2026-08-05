@@ -65,6 +65,11 @@ export interface Api {
   approveExhibitionProposal(id: string): Promise<void>;
   rejectExhibitionProposal(id: string): Promise<void>;
 
+  // password recovery (live mode only): Supabase mails a sign-in link that
+  // returns to the app, after which updatePassword sets the new one.
+  requestPasswordReset(email: string): Promise<void>;
+  updatePassword(password: string): Promise<void>;
+
   // social layer — follow graph, privacy and the friends activity feed
   getPublicProfile(userId: string, viewerId: string | null): Promise<PublicProfile>;
   followUser(viewerId: string, targetId: string): Promise<FollowState>;

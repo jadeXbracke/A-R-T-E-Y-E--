@@ -18,7 +18,7 @@ export function ReelLink({ url, style }: { url: string; style?: StyleProp<ViewSt
       hitSlop={6}
     >
       <Text style={styles.glyph}>▶</Text>
-      <Text style={styles.label}>{platformLabel(url)} ↗</Text>
+      <Text style={styles.label}>{platformLabel(url)} ●</Text>
     </Pressable>
   );
 }
