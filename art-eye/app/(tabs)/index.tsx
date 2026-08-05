@@ -55,16 +55,17 @@ export default function AgendaScreen() {
 
   const agenda = useMemo(() => {
     const t = todayStr();
-    const all = (exhibitions ?? []).filter((e) => e.end_date >= t);
+    // Missing end date = still running (dates TBA), so it stays in the agenda.
+    const all = (exhibitions ?? []).filter((e) => (e.end_date ?? '9999') >= t);
     switch (filter) {
       case 'opening_soon':
         return all
-          .filter((e) => e.start_date > t)
-          .sort((a, b) => (a.start_date < b.start_date ? -1 : 1));
+          .filter((e) => (e.start_date ?? '') > t)
+          .sort((a, b) => ((a.start_date ?? '') < (b.start_date ?? '') ? -1 : 1));
       case 'closing_soon':
         return all
-          .filter((e) => isOnNow(e.start_date, e.end_date) && daysUntil(e.end_date) <= 21)
-          .sort((a, b) => (a.end_date < b.end_date ? -1 : 1));
+          .filter((e) => isOnNow(e.start_date, e.end_date) && e.end_date && daysUntil(e.end_date) <= 21)
+          .sort((a, b) => ((a.end_date ?? '9999') < (b.end_date ?? '9999') ? -1 : 1));
       case 'museums':
         return all.filter((e) => e.venue?.type === 'museum');
       case 'galleries':
@@ -72,7 +73,7 @@ export default function AgendaScreen() {
       case 'aris':
         return all.filter((e) => e.venue?.type === 'ari');
       default:
-        return all.sort((a, b) => (a.end_date < b.end_date ? -1 : 1));
+        return all.sort((a, b) => ((a.end_date ?? '9999') < (b.end_date ?? '9999') ? -1 : 1));
     }
   }, [exhibitions, filter]);
 

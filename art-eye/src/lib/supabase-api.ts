@@ -8,6 +8,7 @@ import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
 import { Comment, CuratedList, CuratorRole, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, Follow, FollowState, ImageCandidate, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
+import { todayStr } from './dates';
 
 let client: SupabaseClient | null = null;
 
@@ -136,11 +137,14 @@ export const supabaseApi: Api = {
   },
 
   async listApprovedExhibitions() {
+    // Only shows you can still go and see: finished shows drop out of the
+    // whole public app, shows without a known end date stay (dates TBA).
     const { data, error } = await supabase()
       .from('exhibitions')
       .select(EXHIBITION_SELECT)
       .eq('status', 'approved')
       .eq('is_fixture', false) // fixture venues are already filtered by RLS
+      .or(`end_date.gte.${todayStr()},end_date.is.null`)
       .order('start_date');
     if (error) throw new Error(error.message);
     return (data ?? []) as Exhibition[];

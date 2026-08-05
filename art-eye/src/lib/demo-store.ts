@@ -231,8 +231,10 @@ export const demoApi: Api = {
   async listApprovedExhibitions() {
     const s = await load();
     const fixtureVenues = new Set(s.venues.filter((v) => v.is_fixture).map((v) => v.id));
+    const t = todayStr();
     return s.exhibitions
       .filter((e) => e.status === 'approved' && !e.is_fixture && !fixtureVenues.has(e.venue_id))
+      .filter((e) => (e.end_date ?? '9999') >= t) // finished shows drop out
       .map((e) => withVenue(e, s.venues));
   },
 
