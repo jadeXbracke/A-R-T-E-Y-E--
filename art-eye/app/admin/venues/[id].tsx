@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhotoPicker } from '../../../src/components/image-upload';
-import { Field, Hairline, InkBar, Kicker, MonoLink } from '../../../src/components/ui';
+import { confirmDialog, Field, Hairline, InkBar, Kicker, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth';
 import { VENUE_TYPES, VenueDraft, VenueType } from '../../../src/lib/types';
@@ -112,26 +112,19 @@ export default function VenueEditor() {
   };
 
   const confirmDelete = () => {
-    Alert.alert(
+    confirmDialog(
       'Delete this venue?',
       'This also removes every exhibition at this venue. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setBusy(true);
-            try {
-              await api.deleteVenue(id);
-              router.back();
-            } catch (err) {
-              setError(err instanceof Error ? err.message : 'Something went wrong.');
-              setBusy(false);
-            }
-          },
-        },
-      ]
+      async () => {
+        setBusy(true);
+        try {
+          await api.deleteVenue(id);
+          router.back();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Something went wrong.');
+          setBusy(false);
+        }
+      }
     );
   };
 

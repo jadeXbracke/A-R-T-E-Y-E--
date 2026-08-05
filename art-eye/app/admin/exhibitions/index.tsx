@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmptyState, Hairline, Kicker, Loading, MonoLink } from '../../../src/components/ui';
+import { confirmDialog, EmptyState, Hairline, Kicker, Loading, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth';
 import { fmtRange } from '../../../src/lib/dates';
@@ -68,14 +68,11 @@ export default function ManageExhibitions() {
     mutate(e.id, () => api.adminUpdateExhibition(e.id, { is_fixture: !e.is_fixture }));
 
   const confirmDelete = (e: Exhibition) =>
-    Alert.alert('Delete this exhibition?', `“${e.title}” will be removed. This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => mutate(e.id, () => api.deleteExhibition(e.id)),
-      },
-    ]);
+    confirmDialog(
+      'Delete this exhibition?',
+      `“${e.title}” will be removed. This cannot be undone.`,
+      () => mutate(e.id, () => api.deleteExhibition(e.id))
+    );
 
   return (
     <ScrollView

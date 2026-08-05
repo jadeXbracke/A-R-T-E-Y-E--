@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
-import {
-  ActivityIndicator,
+import {Platform, Alert, ActivityIndicator,
   Animated,
   Image,
   ImageStyle,
@@ -10,8 +9,7 @@ import {
   TextInput,
   TextInputProps,
   View,
-  ViewStyle,
-} from 'react-native';
+  ViewStyle,} from 'react-native';
 import { colors, fonts, space, type } from '../theme';
 
 /**
@@ -295,3 +293,17 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
 });
+
+// Alert.alert silently does nothing on web, so route confirmations through
+// window.confirm there — otherwise destructive buttons look dead in a browser.
+export function confirmDialog(title: string, message: string, onConfirm: () => void) {
+  if (Platform.OS === 'web') {
+    // eslint-disable-next-line no-alert
+    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete', style: 'destructive', onPress: onConfirm },
+  ]);
+}
