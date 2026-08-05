@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jade Bracke — Fotografie</title>
+  <meta name="description" content="Fotografieportfolio van Jade Bracke.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='white'/%3E%3Crect x='8' y='8' width='16' height='16' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E">
+</head>
+<body>
+
+  <header class="site-header">
+    <a class="wordmark" href="index.html"><span data-config="naam">Jade Bracke</span><span class="sub" data-config="ondertitel">Fotografie</span></a>
+    <nav class="site-nav">
+      <a href="index.html" class="is-active">Werk</a>
+      <a href="info.html">Informatie</a>
+    </nav>
+  </header>
+
+  <nav class="series-nav" aria-label="Series"></nav>
+
+  <main class="grid" aria-label="Fotoraster"></main>
+
+  <div class="lightbox" role="dialog" aria-modal="true">
+    <button class="lightbox-close" type="button" aria-label="Sluiten">Sluiten</button>
+    <div class="lightbox-stage">
+      <img src="" alt="">
+    </div>
+    <button class="lightbox-arrow prev" type="button" aria-label="Vorige"></button>
+    <button class="lightbox-arrow next" type="button" aria-label="Volgende"></button>
+    <div class="lightbox-bar">
+      <span class="lightbox-caption"></span>
+      <span class="lightbox-counter"></span>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span data-config="copyright">© Jade Bracke</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

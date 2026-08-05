@@ -1,0 +1,59 @@
+{
+  "generated": "2026-08-05T08:29:29.492Z",
+  "series": [
+    {
+      "slug": "01-serie-voorbeeld",
+      "title": "Serie voorbeeld",
+      "photos": [
+        {
+          "src": "photos/01-serie-voorbeeld/01-duinlandschap_x.svg",
+          "caption": "",
+          "width": 1200,
+          "height": 800
+        },
+        {
+          "src": "photos/01-serie-voorbeeld/02-portret_x.svg",
+          "caption": "",
+          "width": 900,
+          "height": 1200
+        },
+        {
+          "src": "photos/01-serie-voorbeeld/03-zee_x.svg",
+          "caption": "",
+          "width": 1200,
+          "height": 900
+        },
+        {
+          "src": "photos/01-serie-voorbeeld/04-detail_x.svg",
+          "caption": "",
+          "width": 1000,
+          "height": 1000
+        }
+      ]
+    },
+    {
+      "slug": "02-tweede-serie",
+      "title": "Tweede serie",
+      "photos": [
+        {
+          "src": "photos/02-tweede-serie/01-stad_x.svg",
+          "caption": "",
+          "width": 900,
+          "height": 1200
+        },
+        {
+          "src": "photos/02-tweede-serie/02-avondlicht_x.svg",
+          "caption": "",
+          "width": 1200,
+          "height": 800
+        },
+        {
+          "src": "photos/02-tweede-serie/03-schaduw_x.svg",
+          "caption": "",
+          "width": 1200,
+          "height": 960
+        }
+      ]
+    }
+  ]
+}

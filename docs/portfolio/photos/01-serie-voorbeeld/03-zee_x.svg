@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0.7" y2="1">
+    <stop offset="0" stop-color="#c4c4c4"/><stop offset="1" stop-color="#9a9a9a"/>
+  </linearGradient></defs>
+  <rect width="1200" height="900" fill="url(#g)"/>
+  <text x="600" y="450" fill="#ffffff" fill-opacity="0.55" font-family="Helvetica, Arial, sans-serif" font-size="35" letter-spacing="11" text-anchor="middle">VOORBEELDFOTO</text>
+</svg>

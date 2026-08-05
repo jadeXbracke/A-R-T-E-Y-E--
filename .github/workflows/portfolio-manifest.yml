@@ -1,0 +1,43 @@
+name: Portfolio bijwerken
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/portfolio/photos/**'
+      - 'scripts/build-portfolio-manifest.js'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portfolio-manifest
+  cancel-in-progress: false
+
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Manifest genereren
+        run: node scripts/build-portfolio-manifest.js
+
+      - name: Wijzigingen committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/portfolio/manifest.json
+          if git diff --cached --quiet; then
+            echo "Geen wijzigingen in manifest."
+          else
+            git commit -m "Portfolio-manifest bijgewerkt"
+            git push
+          fi

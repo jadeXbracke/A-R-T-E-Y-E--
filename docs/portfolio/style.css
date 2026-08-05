@@ -1,0 +1,327 @@
+/* ------------------------------------------------------------------
+   JADE BRACKE — FOTOGRAFIE PORTFOLIO
+   Minimalistische agency-stijl: wit, kleine kapitalen, veel witruimte
+------------------------------------------------------------------- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --ink: #111111;
+  --ink-soft: #888888;
+  --paper: #ffffff;
+  --hairline: #e6e6e6;
+  --gutter: 28px;
+  --track: 0.14em;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 12px;
+  letter-spacing: var(--track);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------- header ---------- */
+
+.site-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 26px 34px 18px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(6px);
+}
+
+.wordmark {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.wordmark .sub {
+  color: var(--ink-soft);
+  margin-left: 0.9em;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+}
+
+.site-nav {
+  display: flex;
+  gap: 30px;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.site-nav a {
+  padding-bottom: 3px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.site-nav a:hover {
+  color: var(--ink-soft);
+}
+
+.site-nav a.is-active {
+  border-color: var(--ink);
+}
+
+/* ---------- serie-filters ---------- */
+
+.series-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 26px;
+  padding: 108px 34px 8px;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.series-nav:empty {
+  padding-bottom: 0;
+}
+
+.series-nav button {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  border-bottom: 1px solid transparent;
+  padding: 0 0 3px;
+  cursor: pointer;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.series-nav button:hover {
+  color: var(--ink);
+}
+
+.series-nav button.is-active {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+/* ---------- fotoraster ---------- */
+
+.grid {
+  columns: 3;
+  column-gap: var(--gutter);
+  padding: 34px;
+}
+
+.series-nav + .grid {
+  padding-top: 26px;
+}
+
+.grid figure {
+  break-inside: avoid;
+  margin: 0 0 var(--gutter);
+  cursor: pointer;
+}
+
+.grid .frame {
+  background: #f4f4f4;
+}
+
+.grid img {
+  width: 100%;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.grid img.is-loaded {
+  opacity: 1;
+}
+
+.grid figure:hover img.is-loaded {
+  opacity: 0.85;
+  transition: opacity 0.25s ease;
+}
+
+.grid figcaption {
+  margin-top: 9px;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ---------- lege staat ---------- */
+
+.empty-state {
+  padding: 160px 34px;
+  max-width: 560px;
+  text-transform: uppercase;
+  font-size: 11px;
+  line-height: 2.2;
+  color: var(--ink-soft);
+}
+
+/* ---------- lightbox ---------- */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  flex-direction: column;
+  background: var(--paper);
+}
+
+.lightbox.is-open {
+  display: flex;
+}
+
+.lightbox-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 72px 90px 64px;
+  min-height: 0;
+}
+
+.lightbox-stage img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.lightbox-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 34px 26px;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 22px;
+  right: 28px;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  background: none;
+  border: none;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 6px;
+}
+
+.lightbox-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.lightbox-arrow.prev { left: 0; cursor: w-resize; }
+.lightbox-arrow.next { right: 0; cursor: e-resize; }
+
+/* ---------- informatie-pagina ---------- */
+
+.info {
+  padding: 150px 34px 90px;
+  max-width: 620px;
+}
+
+.info h1 {
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: uppercase;
+  margin-bottom: 42px;
+}
+
+.info p {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  line-height: 2;
+  margin-bottom: 26px;
+  color: #333;
+}
+
+.info .contact {
+  margin-top: 56px;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: var(--track);
+  line-height: 2.6;
+}
+
+.info .contact a {
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 2px;
+  transition: border-color 0.25s ease;
+}
+
+.info .contact a:hover {
+  border-color: var(--ink);
+}
+
+/* ---------- footer ---------- */
+
+.site-footer {
+  padding: 40px 34px 46px;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+
+/* ---------- responsief ---------- */
+
+@media (max-width: 1000px) {
+  .grid { columns: 2; }
+}
+
+@media (max-width: 640px) {
+  :root { --gutter: 18px; }
+
+  .site-header {
+    padding: 20px 20px 14px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .series-nav { padding: 116px 20px 4px; }
+  .grid { columns: 1; padding: 26px 20px; }
+  .info { padding: 140px 20px 70px; }
+  .site-footer { padding: 30px 20px 36px; }
+  .lightbox-stage { padding: 70px 24px 56px; }
+}
