@@ -15,7 +15,7 @@ import { colors } from '../src/theme';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Archivo_400Regular,
     Archivo_500Medium,
     Archivo_600SemiBold,
@@ -23,10 +23,12 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded]);
+    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded) return null;
+  // A failed font download must not blank the whole app — fall back to the
+  // system face and render (the standard Expo pattern).
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <AuthProvider>
