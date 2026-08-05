@@ -98,7 +98,7 @@ interface Candidate {
 function collectImages(html: string, base: string, out: Map<string, Candidate>) {
   const add = (raw: string | null, alt: string, featured = false) => {
     if (!raw) return;
-    const u = abs(base, raw.trim());
+    const u = abs(base, raw.trim().replace(/&amp;/g, "&"));
     if (!u) return;
     if (/\.svg($|\?)/i.test(u)) return;
     if (JUNK.test(u)) return;
@@ -115,15 +115,25 @@ function collectImages(html: string, base: string, out: Map<string, Candidate>) 
     /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/gi,
     /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/gi,
     /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/gi,
+    /<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/gi,
   ]) {
     let m: RegExpExecArray | null;
     while ((m = re.exec(html))) add(m[1], "", true);
   }
 
-  // Then every <img> on the page, including lazy-loaded and responsive ones.
+  // JS-heavy sites (Squarespace and friends) put real <img> tags inside
+  // <noscript> fallbacks — surface that hidden markup before scanning.
+  const scannable = html.replace(/<noscript[^>]*>([\s\S]*?)<\/noscript>/gi, " $1 ");
+
+  // "image": "..." in JSON-LD / embedded page data.
+  const jsonImgRe = /"image"\s*:\s*"(https?:[^"]+?\.(?:jpe?g|png|webp|gif)[^"]*)"/gi;
+  let jm: RegExpExecArray | null;
+  while ((jm = jsonImgRe.exec(scannable))) add(jm[1], "");
+
+  // Every <img>, including every known lazy-load attribute.
   const imgRe = /<img\b([^>]*)>/gi;
   let m: RegExpExecArray | null;
-  while ((m = imgRe.exec(html))) {
+  while ((m = imgRe.exec(scannable))) {
     const tag = m[1];
     const attr = (name: string) =>
       tag.match(new RegExp(name + '=["\']([^"\']+)["\']', "i"))?.[1] ?? null;
@@ -134,10 +144,28 @@ function collectImages(html: string, base: string, out: Map<string, Candidate>) 
     const alt = attr("alt") ?? "";
     const srcset = attr("srcset") ?? attr("data-srcset");
     add(
-      srcset ? widestFromSrcset(srcset) : attr("src") ?? attr("data-src") ?? attr("data-lazy-src"),
+      srcset
+        ? widestFromSrcset(srcset)
+        : attr("src") ??
+            attr("data-src") ??
+            attr("data-lazy-src") ??
+            attr("data-original") ??
+            attr("data-image") ??
+            attr("data-bg"),
       alt,
     );
   }
+
+  // <source srcset> inside <picture>.
+  const srcRe = /<source\b([^>]*)>/gi;
+  while ((m = srcRe.exec(scannable))) {
+    const ss = m[1].match(/srcset=["']([^"']+)["']/i)?.[1];
+    if (ss) add(widestFromSrcset(ss), "");
+  }
+
+  // CSS hero backgrounds: style="background-image:url(...)".
+  const bgRe = /background(?:-image)?\s*:\s*url\((['"]?)([^'")]+)\1\)/gi;
+  while ((m = bgRe.exec(scannable))) add(m[2], "");
 }
 
 // The link on a listing page whose text matches this show's title.
@@ -191,28 +219,37 @@ Deno.serve(async (req) => {
     const found = new Map<string, Candidate>();
     const pagesRead: string[] = [];
 
-    // 1. The listing page, and the show's own page when we can find it.
-    let listing: { html: string; url: string } | null = null;
-    for (const path of LISTING_PATHS) {
-      const u = abs(venue.website as string, path);
-      if (!u) continue;
-      const html = await fetchPage(u);
-      if (html) {
-        listing = { html, url: u };
-        break;
-      }
-    }
-    if (listing) {
-      const own = title ? linkForTitle(listing.html, listing.url, title) : null;
-      if (own) {
-        const ownHtml = await fetchPage(own);
-        if (ownHtml) {
-          collectImages(ownHtml, own, found); // the show's own page first
-          pagesRead.push(own);
+    // Fetch every candidate page concurrently and merge their images — one
+    // image-less navigation page must not end the search.
+    const urls = LISTING_PATHS.map((p) => abs(venue.website as string, p)).filter(
+      (u): u is string => !!u,
+    );
+    const pages = (
+      await Promise.all(
+        urls.map(async (u) => {
+          const html = await fetchPage(u);
+          return html ? { html, url: u } : null;
+        }),
+      )
+    ).filter((p): p is { html: string; url: string } => !!p);
+
+    // The show's own page first, so its images lead the grid.
+    if (title) {
+      for (const page of pages) {
+        const own = linkForTitle(page.html, page.url, title);
+        if (own && !pagesRead.includes(own)) {
+          const ownHtml = await fetchPage(own);
+          if (ownHtml) {
+            collectImages(ownHtml, own, found);
+            pagesRead.push(own);
+            break;
+          }
         }
       }
-      collectImages(listing.html, listing.url, found);
-      pagesRead.push(listing.url);
+    }
+    for (const page of pages) {
+      collectImages(page.html, page.url, found);
+      pagesRead.push(page.url);
     }
 
     // Sharing images and show-page images sort to the front.
