@@ -86,7 +86,7 @@ interface Found {
   description: string;
   source_url: string;
   image_url: string | null;
-  via: "json-ld" | "gemini";
+  via: "json-ld" | "squarespace" | "gemini";
 }
 
 function toISODate(v: unknown): string | null {
@@ -174,28 +174,43 @@ function collectEvents(node: unknown, acc: Record<string, unknown>[], depth = 0)
   if (o.event) collectEvents(o.event, acc, depth + 1);
 }
 
-async function fetchPage(url: string): Promise<string | null> {
+// Sites behind bot protection answer 403 to anything calling itself a bot,
+// so identify as the same Safari the owner herself browses these sites with.
+const BROWSER_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "en-AU,en;q=0.9",
+};
+
+interface FetchInfo {
+  status: number;
+  contentType: string;
+  html: string | null;
+}
+
+async function fetchRaw(url: string): Promise<FetchInfo | null> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(url, {
       redirect: "follow",
       signal: ctrl.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; ArtEyeBot/1.0; +https://arteye.app) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml",
-      },
+      headers: BROWSER_HEADERS,
     });
-    if (!res.ok) return null;
-    const ct = res.headers.get("content-type") ?? "";
-    if (!ct.includes("html")) return null;
-    return await res.text();
+    const contentType = res.headers.get("content-type") ?? "";
+    const html = res.ok && contentType.includes("html") ? await res.text() : null;
+    if (!html) res.body?.cancel().catch(() => {});
+    return { status: res.status, contentType, html };
   } catch {
     return null;
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function fetchPage(url: string): Promise<string | null> {
+  return (await fetchRaw(url))?.html ?? null;
 }
 
 // The venue's own press image for a page: og:image is what every CMS emits
@@ -432,6 +447,57 @@ async function geminiExtractBatch(
   }
 }
 
+// Squarespace (which many gallery sites run on) serves any collection page as
+// structured JSON when ?format=json is appended: exact titles, dates and the
+// press image, straight from the venue's own CMS — no model needed. Only items
+// carrying both a start and an end date are taken (those are real event
+// entries; undated items could be news posts, and we never guess dates).
+async function squarespaceRows(listingUrl: string, today: string): Promise<Found[]> {
+  const u = listingUrl + (listingUrl.includes("?") ? "&" : "?") + "format=json";
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(u, {
+      redirect: "follow",
+      signal: ctrl.signal,
+      headers: { ...BROWSER_HEADERS, "Accept": "application/json" },
+    });
+    if (!res.ok) return [];
+    if (!(res.headers.get("content-type") ?? "").includes("json")) return [];
+    const data = await res.json();
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const epochDay = (v: unknown) =>
+      typeof v === "number" && v > 0 ? new Date(v).toISOString().slice(0, 10) : null;
+    const out: Found[] = [];
+    for (const it of items as Record<string, unknown>[]) {
+      const title = typeof it.title === "string" ? it.title.trim() : "";
+      if (!title) continue;
+      const start = epochDay(it.startDate);
+      const end = epochDay(it.endDate);
+      if (!start || !end) continue;
+      if (end < today) continue;
+      const src = typeof it.fullUrl === "string" ? pageUrl(listingUrl, it.fullUrl) : null;
+      const img =
+        typeof it.assetUrl === "string" && /^https?:\/\//i.test(it.assetUrl) ? it.assetUrl : null;
+      out.push({
+        title,
+        artists: "",
+        start_date: start,
+        end_date: end,
+        description: stripHtml(str(it.excerpt)).slice(0, MAX_DESC),
+        source_url: src ?? listingUrl,
+        image_url: img,
+        via: "squarespace",
+      });
+    }
+    return out;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 interface ScanResult {
   found: Found[];
   // page text (and its press image) kept for the Gemini fallback
@@ -458,6 +524,10 @@ async function scanVenue(website: string, today: string): Promise<ScanResult> {
     if (!page) continue;
     const rows = jsonLdRows(page.html, page.url, today);
     if (rows.length) return { found: rows };
+    if (LISTING_PATHS.has(page.path)) {
+      const sq = await squarespaceRows(page.url, today);
+      if (sq.length) return { found: sq };
+    }
 
     const text = htmlToText(page.html).slice(0, MAX_GEMINI_CHARS);
     if (text.length > 200) {
@@ -483,6 +553,73 @@ Deno.serve(async (req) => {
   const deadline = startedAt() + (depth > 0 ? BACKGROUND_DEADLINE_MS : RUN_DEADLINE_MS);
   const sb = supabaseAdmin();
   const today = new Date().toISOString().slice(0, 10);
+
+  // ?probe=<venue name> — diagnostic mode: show exactly what the scanner sees
+  // on one venue's site (per-page HTTP status, JSON-LD, Squarespace data,
+  // usable text) and what a real scan would conclude. Writes nothing.
+  const probeName = params.get("probe");
+  if (probeName) {
+    const { data: pv } = await sb
+      .from("venues")
+      .select("id, name, website")
+      .eq("is_fixture", false)
+      .ilike("name", `%${probeName}%`)
+      .limit(3);
+    const probed: unknown[] = [];
+    for (const v of (pv ?? []) as { name: string; website: string | null }[]) {
+      if (!v.website) {
+        probed.push({ venue: v.name, note: "no website on file" });
+        continue;
+      }
+      const checks: unknown[] = [];
+      for (const path of CANDIDATE_PATHS) {
+        const url = pageUrl(v.website, path);
+        if (!url) continue;
+        const info = await fetchRaw(url);
+        if (!info) {
+          checks.push({ url, result: "no response (timeout or connection refused)" });
+          continue;
+        }
+        if (!info.html) {
+          checks.push({ url, status: info.status, content_type: info.contentType });
+          continue;
+        }
+        const events: Record<string, unknown>[] = [];
+        for (const b of extractJsonLd(info.html)) collectEvents(b, events);
+        const sq = LISTING_PATHS.has(path) ? await squarespaceRows(url, today) : [];
+        checks.push({
+          url,
+          status: info.status,
+          bytes: info.html.length,
+          json_ld_events: events.length,
+          squarespace_shows: sq.length,
+          text_chars: htmlToText(info.html).length,
+          og_image: pageImage(info.html, url) ? "yes" : "no",
+        });
+      }
+      const scan = await scanVenue(v.website, today).catch((err) => ({
+        found: [] as Found[],
+        error: err instanceof Error ? err.message : String(err),
+      }));
+      probed.push({
+        venue: v.name,
+        website: v.website,
+        checks,
+        scan_result: {
+          shows_found_without_gemini: scan.found.map((f) => ({
+            title: f.title,
+            dates: `${f.start_date ?? "?"} – ${f.end_date ?? "?"}`,
+            via: f.via,
+          })),
+          would_go_to_gemini: "fallback" in scan && scan.fallback
+            ? `yes — ${scan.fallback.text.length} chars of page text from ${scan.fallback.url}`
+            : "no page text usable",
+        },
+      });
+    }
+    return jsonResponse({ ok: true, probe: probeName, today, venues: probed });
+  }
+
   const report: unknown[] = [];
   const errors: unknown[] = [];
   let venuesScanned = 0;
@@ -540,8 +677,9 @@ Deno.serve(async (req) => {
           description: ex.description,
           source_url: ex.source_url,
           image_url: ex.image_url,
-          // JSON-LD is exact; Gemini is interpreted, so give it a lower prior.
-          confidence: ex.via === "json-ld" ? 0.9 : 0.65,
+          // Structured data (JSON-LD / Squarespace) is exact; Gemini is
+          // interpreted, so give it a lower prior.
+          confidence: ex.via === "gemini" ? 0.65 : 0.9,
         });
         if (error) {
           errors.push({ where: "insert", title: ex.title, message: error.message });

@@ -56,10 +56,13 @@ async function fetchPage(url: string): Promise<string | null> {
     const res = await fetch(url, {
       redirect: "follow",
       signal: ctrl.signal,
+      // A real browser identity — sites behind bot protection 403 anything
+      // that calls itself a bot.
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; ArtEyeBot/1.0; +https://arteye.app) AppleWebKit/537.36",
-        "Accept": "text/html,application/xhtml+xml",
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-AU,en;q=0.9",
       },
     });
     if (!res.ok) return null;
