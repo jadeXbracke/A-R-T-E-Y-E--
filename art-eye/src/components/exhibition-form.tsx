@@ -246,9 +246,9 @@ export function ExhibitionForm({
 
 const styles = StyleSheet.create({
   description: {
-    fontFamily: fonts.serif,
-    fontSize: 18,
-    lineHeight: 26,
+    fontFamily: fonts.serif, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
+    lineHeight: 22,
     color: colors.ink,
     minHeight: 100,
     textAlignVertical: 'top',
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   preview: {
     width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: colors.hairline,
+    backgroundColor: colors.dim,
     marginBottom: space.m,
   },
   error: {
@@ -270,9 +270,9 @@ const styles = StyleSheet.create({
     marginBottom: space.m,
   },
   reviewNote: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 15,
-    lineHeight: 22,
+    fontFamily: fonts.serifItalic, letterSpacing: 1.7, textTransform: 'uppercase',
+    fontSize: 12,
+    lineHeight: 19,
     color: colors.ink,
     marginTop: space.m,
   },

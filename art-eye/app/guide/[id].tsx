@@ -102,9 +102,9 @@ const styles = StyleSheet.create({
   },
   intro: { ...type.serifBody, color: colors.ink, marginBottom: space.l },
   empty: {
-    fontFamily: fonts.serif,
-    fontSize: 18,
-    lineHeight: 26,
+    fontFamily: fonts.serif, letterSpacing: 2, textTransform: 'uppercase',
+    fontSize: 14,
+    lineHeight: 22,
     color: colors.ink,
     padding: space.page,
   },

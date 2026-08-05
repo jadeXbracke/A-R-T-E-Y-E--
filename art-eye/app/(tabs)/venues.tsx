@@ -269,12 +269,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
   },
-  rowName: { ...type.serifTitle, fontSize: 20 },
+  rowName: { ...type.serifTitle, fontSize: 15, letterSpacing: 2.2 },
   rowMeta: {
     fontFamily: fonts.mono,
     fontSize: 10,
     letterSpacing: 0.8,
-    color: colors.ink,
+    color: colors.grey,
     marginTop: 4,
   },
   onNow: {
@@ -305,8 +305,8 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   mapHint: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 16,
+    fontFamily: fonts.serifItalic, letterSpacing: 1.8, textTransform: 'uppercase',
+    fontSize: 13,
     color: colors.ink,
     marginTop: space.s,
   },

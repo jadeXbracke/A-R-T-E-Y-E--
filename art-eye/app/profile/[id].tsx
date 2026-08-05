@@ -128,7 +128,7 @@ export default function ProfileScreen() {
             <Switch
               value={!!profile.is_private}
               onValueChange={setPrivacy}
-              trackColor={{ true: colors.ink, false: colors.hairline }}
+              trackColor={{ true: colors.ink, false: colors.dim }}
               thumbColor={colors.white}
             />
           </View>
@@ -218,9 +218,9 @@ const styles = StyleSheet.create({
   },
   requestName: { ...type.serifTitle, fontSize: 18, flex: 1 },
   private: {
-    fontFamily: fonts.serif,
-    fontSize: 16,
-    lineHeight: 24,
+    fontFamily: fonts.serif, letterSpacing: 1.8, textTransform: 'uppercase',
+    fontSize: 13,
+    lineHeight: 20,
     color: colors.ink,
     paddingHorizontal: space.page,
     paddingBottom: space.l,

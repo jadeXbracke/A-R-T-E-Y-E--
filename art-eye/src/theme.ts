@@ -5,6 +5,7 @@
 export const colors = {
   bg: '#FFFFFF',
   ink: '#131211', // the single text colour — all type is black
+  dim: '#131211', // merged-in screens use this for secondary text; house rule says black
   grey: '#7B766D', // retained for input placeholders + graphic borders only
   hairline: '#E4E1DB',
   red: '#C22F1E', // graphic accent: active underline, dots, bars

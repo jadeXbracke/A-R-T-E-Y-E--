@@ -99,7 +99,7 @@ export default function EditSubmission() {
       <View style={styles.head}>
         <View>
           <Kicker style={{ marginBottom: 10 }}>EDIT SUBMISSION</Kicker>
-          <Text style={[type.serifHeading, { fontSize: 28 }]} numberOfLines={1}>
+          <Text style={[type.serifHeading, { fontSize: 20, letterSpacing: 2.8 }]} numberOfLines={1}>
             {values?.title || '…'}
           </Text>
         </View>
@@ -145,9 +145,9 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   note: {
-    fontFamily: fonts.serifItalic,
-    fontSize: 15,
-    lineHeight: 22,
+    fontFamily: fonts.serifItalic, letterSpacing: 1.7, textTransform: 'uppercase',
+    fontSize: 12,
+    lineHeight: 19,
     color: colors.ink,
     marginBottom: space.l,
   },
