@@ -718,6 +718,17 @@ export const demoApi: Api = {
       await persist();
     }
   },
+  async listVenueImageCandidates() {
+    return []; // reading venue sites needs the live backend
+  },
+  async setVenueImage(venueId, imageUrl) {
+    const s = await load();
+    const v = s.venues.find((x) => x.id === venueId);
+    if (v) {
+      v.image_url = imageUrl;
+      await persist();
+    }
+  },
   async requestPasswordReset() {
     throw new Error('Password reset needs the live database.');
   },

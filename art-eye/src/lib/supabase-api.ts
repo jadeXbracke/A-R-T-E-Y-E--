@@ -523,6 +523,31 @@ export const supabaseApi: Api = {
     if (error) throw new Error(error.message);
   },
 
+  async listVenueImageCandidates(venueId) {
+    const base = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+    const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+    const url = `${base}/functions/v1/image-candidates?venue_id=${encodeURIComponent(venueId)}`;
+    const res = await fetch(url, { headers: { apikey: key } });
+    if (!res.ok) {
+      throw new Error(
+        res.status === 404
+          ? 'The image-candidates function is not deployed yet.'
+          : `Could not read the venue site (${res.status}).`
+      );
+    }
+    const body = (await res.json()) as { ok?: boolean; error?: string; candidates?: ImageCandidate[] };
+    if (body?.ok === false) throw new Error(body.error ?? 'Could not read the venue site.');
+    return body?.candidates ?? [];
+  },
+
+  async setVenueImage(venueId, imageUrl) {
+    const { error } = await supabase()
+      .from('venues')
+      .update({ image_url: imageUrl })
+      .eq('id', venueId);
+    if (error) throw new Error(error.message);
+  },
+
   async requestPasswordReset(email) {
     const redirectTo = typeof location !== 'undefined'
       ? location.origin + location.pathname

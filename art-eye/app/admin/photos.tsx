@@ -8,18 +8,22 @@ import { Image } from 'expo-image';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmptyState, Hairline, Kicker, Loading } from '../../src/components/ui';
+import { EmptyState, Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
-import { Exhibition, ImageCandidate } from '../../src/lib/types';
+import { Exhibition, ImageCandidate, Venue } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
 export default function Photos() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { profile } = useAuth();
+  const [mode, setMode] = useState<'shows' | 'venues'>('shows');
   const [shows, setShows] = useState<Exhibition[] | null>(null);
-  const [open, setOpen] = useState<Exhibition | null>(null);
+  const [venues, setVenues] = useState<Venue[] | null>(null);
+  const [open, setOpen] = useState<
+    { kind: 'show'; show: Exhibition } | { kind: 'venue'; venue: Venue } | null
+  >(null);
   const [candidates, setCandidates] = useState<ImageCandidate[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +33,7 @@ export default function Photos() {
       let alive = true;
       if (profile?.role === 'admin') {
         api.listAllExhibitions().then((all) => alive && setShows(all));
+        api.listVenues().then((all) => alive && setVenues(all));
       }
       return () => {
         alive = false;
@@ -46,12 +51,31 @@ export default function Photos() {
 
   const missing = ordered.filter((e) => !hasPhoto(e)).length;
 
+  const hasVenuePhoto = (v: Venue) => !!v.image_url && /^https?:\/\//i.test(v.image_url);
+  const orderedVenues = useMemo(
+    () => [...(venues ?? [])].sort((a, b) => Number(hasVenuePhoto(a)) - Number(hasVenuePhoto(b))),
+    [venues]
+  );
+  const missingVenues = orderedVenues.filter((v) => !hasVenuePhoto(v)).length;
+
   const openShow = async (e: Exhibition) => {
-    setOpen(e);
+    setOpen({ kind: 'show', show: e });
     setCandidates(null);
     setError(null);
     try {
       setCandidates(await api.listImageCandidates(e.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setCandidates([]);
+    }
+  };
+
+  const openVenue = async (v: Venue) => {
+    setOpen({ kind: 'venue', venue: v });
+    setCandidates(null);
+    setError(null);
+    try {
+      setCandidates(await api.listVenueImageCandidates(v.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setCandidates([]);
@@ -63,8 +87,17 @@ export default function Photos() {
     setBusy(true);
     setError(null);
     try {
-      await api.setExhibitionImage(open.id, url);
-      setShows((cur) => (cur ?? []).map((e) => (e.id === open.id ? { ...e, image_url: url } : e)));
+      if (open.kind === 'show') {
+        await api.setExhibitionImage(open.show.id, url);
+        setShows((cur) =>
+          (cur ?? []).map((e) => (e.id === open.show.id ? { ...e, image_url: url } : e))
+        );
+      } else {
+        await api.setVenueImage(open.venue.id, url);
+        setVenues((cur) =>
+          (cur ?? []).map((v) => (v.id === open.venue.id ? { ...v, image_url: url } : v))
+        );
+      }
       setOpen(null);
       setCandidates(null);
     } catch (err) {
@@ -98,9 +131,13 @@ export default function Photos() {
           <View style={{ flex: 1, paddingRight: space.m }}>
             <Kicker style={{ marginBottom: 8 }}>CHOOSE A PHOTOGRAPH</Kicker>
             <Text style={styles.showTitle} numberOfLines={2}>
-              {open.title}
+              {open.kind === 'show' ? open.show.title : open.venue.name}
             </Text>
-            <Text style={styles.showVenue}>{open.venue?.name?.toUpperCase()}</Text>
+            <Text style={styles.showVenue}>
+              {open.kind === 'show'
+                ? open.show.venue?.name?.toUpperCase()
+                : 'VENUE PORTRAIT — SHOWN ON THE VENUE PAGE'}
+            </Text>
           </View>
           <Pressable onPress={() => setOpen(null)} hitSlop={12}>
             <Text style={styles.back}>← BACK</Text>
@@ -113,7 +150,9 @@ export default function Photos() {
         {candidates === null ? (
           <>
             <Loading />
-            <Text style={styles.reading}>Reading {open.venue?.name ?? 'the venue site'}…</Text>
+            <Text style={styles.reading}>
+              Reading {(open.kind === 'show' ? open.show.venue?.name : open.venue.name) ?? 'the venue site'}…
+            </Text>
           </>
         ) : candidates.length === 0 ? (
           <EmptyState>
@@ -123,7 +162,8 @@ export default function Photos() {
         ) : (
           <View style={styles.grid}>
             {candidates.map((c) => {
-              const current = open.image_url === c.url;
+              const currentUrl = open.kind === 'show' ? open.show.image_url : open.venue.image_url;
+              const current = currentUrl === c.url;
               return (
                 <Pressable
                   key={c.url}
@@ -146,7 +186,7 @@ export default function Photos() {
           </View>
         )}
 
-        {open.image_url ? (
+        {(open.kind === 'show' ? open.show.image_url : open.venue.image_url) ? (
           <Pressable style={styles.clear} disabled={busy} onPress={() => choose(null)}>
             <Text style={styles.clearText}>REMOVE THE CURRENT PHOTO</Text>
           </Pressable>
@@ -170,21 +210,59 @@ export default function Photos() {
           <Text style={styles.back}>← BACK</Text>
         </Pressable>
       </View>
+      <View style={styles.toggle}>
+        <MonoLink label="SHOWS" active={mode === 'shows'} onPress={() => setMode('shows')} />
+        <MonoLink label="VENUES" active={mode === 'venues'} onPress={() => setMode('venues')} />
+      </View>
       <Text style={styles.intro}>
-        Tap a show to see every photograph on its venue&apos;s pages, then choose the one you want.
-        {missing > 0 ? ` ${missing} without a photo, listed first.` : ' Every show has a photo.'}
+        {mode === 'shows'
+          ? `Tap a show to see every photograph on its venue's pages, then choose the one you want.${
+              missing > 0 ? ` ${missing} without a photo, listed first.` : ' Every show has a photo.'
+            }`
+          : `Pick each venue's portrait — the photograph on its page in the app.${
+              missingVenues > 0
+                ? ` ${missingVenues} without a photo, listed first.`
+                : ' Every venue has a photo.'
+            }`}
       </Text>
       <Hairline />
 
-      {shows === null ? (
+      {mode === 'shows' ? (
+        shows === null ? (
+          <Loading />
+        ) : ordered.length === 0 ? (
+          <EmptyState>No published shows yet.</EmptyState>
+        ) : (
+          ordered.map((e) => (
+            <Pressable key={e.id} style={styles.row} onPress={() => openShow(e)}>
+              {hasPhoto(e) ? (
+                <Image source={{ uri: e.image_url! }} style={styles.thumb} contentFit="cover" />
+              ) : (
+                <View style={[styles.thumb, styles.thumbEmpty]}>
+                  <Text style={styles.thumbEmptyText}>NONE</Text>
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle} numberOfLines={2}>
+                  {e.title}
+                </Text>
+                <Text style={styles.rowMeta} numberOfLines={1}>
+                  {e.venue?.name?.toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.arrow}>→</Text>
+            </Pressable>
+          ))
+        )
+      ) : venues === null ? (
         <Loading />
-      ) : ordered.length === 0 ? (
-        <EmptyState>No published shows yet.</EmptyState>
+      ) : orderedVenues.length === 0 ? (
+        <EmptyState>No venues in the register yet.</EmptyState>
       ) : (
-        ordered.map((e) => (
-          <Pressable key={e.id} style={styles.row} onPress={() => openShow(e)}>
-            {hasPhoto(e) ? (
-              <Image source={{ uri: e.image_url! }} style={styles.thumb} contentFit="cover" />
+        orderedVenues.map((v) => (
+          <Pressable key={v.id} style={styles.row} onPress={() => openVenue(v)}>
+            {hasVenuePhoto(v) ? (
+              <Image source={{ uri: v.image_url! }} style={styles.thumb} contentFit="cover" />
             ) : (
               <View style={[styles.thumb, styles.thumbEmpty]}>
                 <Text style={styles.thumbEmptyText}>NONE</Text>
@@ -192,10 +270,11 @@ export default function Photos() {
             )}
             <View style={{ flex: 1 }}>
               <Text style={styles.rowTitle} numberOfLines={2}>
-                {e.title}
+                {v.name}
               </Text>
               <Text style={styles.rowMeta} numberOfLines={1}>
-                {e.venue?.name?.toUpperCase()}
+                {v.type.toUpperCase()}
+                {v.suburb ? ` · ${v.suburb.toUpperCase()}` : ''}
               </Text>
             </View>
             <Text style={styles.arrow}>→</Text>
@@ -216,6 +295,12 @@ const styles = StyleSheet.create({
     paddingBottom: space.m,
   },
   back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.5, color: colors.ink },
+  toggle: {
+    flexDirection: 'row',
+    gap: space.m,
+    paddingHorizontal: space.page,
+    paddingBottom: space.m,
+  },
   intro: {
     fontFamily: fonts.sans,
     fontSize: 15,

@@ -70,6 +70,8 @@ export interface Api {
   // guarded by RLS).
   listImageCandidates(exhibitionId: string): Promise<ImageCandidate[]>;
   setExhibitionImage(exhibitionId: string, imageUrl: string | null): Promise<void>;
+  listVenueImageCandidates(venueId: string): Promise<ImageCandidate[]>;
+  setVenueImage(venueId: string, imageUrl: string | null): Promise<void>;
 
   // password recovery (live mode only): Supabase mails a sign-in link that
   // returns to the app, after which updatePassword sets the new one.
