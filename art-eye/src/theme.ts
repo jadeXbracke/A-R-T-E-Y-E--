@@ -19,7 +19,8 @@ export const colors = {
 // labels, black on white, thin rules. Every former role (sans / serif / mono)
 // resolves to an Archivo weight. No italics anywhere.
 export const fonts = {
-  sansLight: 'Archivo_400Regular',
+  sansLight: 'Archivo_300Light',
+  display: 'Archivo_300Light', // headings: light, wide, uppercase
   sans: 'Archivo_400Regular',
   sansMedium: 'Archivo_500Medium',
   sansSemi: 'Archivo_600SemiBold',
@@ -50,9 +51,9 @@ export const type = {
   artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.2, color: colors.ink, textTransform: 'uppercase' },
   artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3, color: colors.white, textTransform: 'uppercase' },
   // exhibition/venue titles and page headings: Archivo Bold, UPPERCASE
-  serifTitle: { fontFamily: fonts.serifMedium, fontSize: 20, letterSpacing: 0.6, lineHeight: 24, color: colors.ink, textTransform: 'uppercase' },
-  serifHeading: { fontFamily: fonts.serifMedium, fontSize: 28, letterSpacing: 0.6, lineHeight: 32, color: colors.ink, textTransform: 'uppercase' },
-  serifHero: { fontFamily: fonts.serifMedium, fontSize: 28, letterSpacing: 0.6, lineHeight: 32, color: colors.white, textTransform: 'uppercase' },
+  serifTitle: { fontFamily: fonts.display, fontSize: 20, letterSpacing: 1.6, lineHeight: 26, color: colors.ink, textTransform: 'uppercase' },
+  serifHeading: { fontFamily: fonts.display, fontSize: 27, letterSpacing: 3, lineHeight: 34, color: colors.ink, textTransform: 'uppercase' },
+  serifHero: { fontFamily: fonts.display, fontSize: 27, letterSpacing: 3, lineHeight: 34, color: colors.white, textTransform: 'uppercase' },
   // body / reflections: regular Archivo, sentence case for readability
   serifBody: { fontFamily: fonts.serif, fontSize: 16, lineHeight: 24, color: colors.ink },
   serifQuote: { fontFamily: fonts.serif, fontSize: 16, lineHeight: 24, color: colors.ink },

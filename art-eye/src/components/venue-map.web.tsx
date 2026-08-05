@@ -60,14 +60,45 @@ export function VenueMap({
           attributionControl: true,
           scrollWheelZoom: true,
         });
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-          className: 'arteye-tiles', // greyscale via the css filter below
-          attribution: '&copy; OpenStreetMap contributors',
-        }).addTo(mapRef.current);
-        // house style: monochrome ground
+        L.tileLayer(
+          'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+          {
+            maxZoom: 20,
+            subdomains: 'abcd',
+            className: 'arteye-tiles',
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+          }
+        ).addTo(mapRef.current);
         const style = document.createElement('style');
-        style.textContent = '.arteye-tiles { filter: grayscale(1) contrast(0.92); }';
+        style.textContent = `
+          .arteye-tiles { filter: grayscale(1) contrast(0.88) brightness(1.04); }
+          .leaflet-container { background: #FFFFFF; font-family: inherit; }
+          /* square, hairline controls instead of the default rounded blue */
+          .leaflet-bar, .leaflet-bar a {
+            border-radius: 0 !important;
+            border-color: #131211 !important;
+            color: #131211 !important;
+            box-shadow: none !important;
+          }
+          .leaflet-bar a:hover { background: #F3F1EE !important; }
+          .leaflet-control-attribution {
+            background: rgba(255,255,255,.75) !important;
+            font-size: 9px !important;
+            letter-spacing: .04em;
+          }
+          .arteye-tip {
+            background: #131211 !important;
+            color: #FFFFFF !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            font-size: 9px !important;
+            letter-spacing: .16em !important;
+            padding: 3px 7px !important;
+            font-family: inherit !important;
+          }
+          .arteye-tip::before { border-top-color: #131211 !important; }
+        `;
         document.head.appendChild(style);
       }
       if (layerRef.current) layerRef.current.remove();
@@ -76,12 +107,12 @@ export function VenueMap({
         const onNow = onNowIds.has(v.id);
         const sel = v.id === selectedId;
         const marker = L.circleMarker([v.latitude!, v.longitude!], {
-          radius: sel ? 9 : onNow ? 7 : 5,
+          radius: sel ? 7 : onNow ? 5 : 3.5,
           color: '#131211',
-          weight: sel ? 3 : 1.5,
-          fillColor: '#131211',
-          // filled dot = work on view now; open dot = between shows
-          fillOpacity: onNow || sel ? 1 : 0.15,
+          weight: sel ? 2 : 1,
+          fillColor: onNow || sel ? '#131211' : '#FFFFFF',
+          // filled dot = work on view now; hollow dot = between shows
+          fillOpacity: 1,
         });
         marker.bindTooltip(v.name.toUpperCase(), {
           direction: 'top',
@@ -132,8 +163,8 @@ export function VenueMap({
 
 const styles = StyleSheet.create({
   frame: {
-    height: 440,
-    borderWidth: 1,
+    height: 460,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.ink,
     overflow: 'hidden',
   },

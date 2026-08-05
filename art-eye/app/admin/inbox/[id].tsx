@@ -9,6 +9,10 @@ import { useAuth } from '../../../src/lib/auth';
 import { Venue, VenueProposal } from '../../../src/lib/types';
 import { colors, fonts, space, type } from '../../../src/theme';
 
+// Review-only accent: the owner needs to see at a glance what a proposal
+// would alter. Nothing public uses colour.
+const CHANGE = colors.red;
+
 const ACTION_LABEL = { add: 'NEW VENUE SUGGESTION', archive: 'ARCHIVE CANDIDATE', update: 'PROPOSED UPDATE' } as const;
 
 export default function ProposalDetail() {
@@ -118,6 +122,11 @@ export default function ProposalDetail() {
       </Text>
       <Text style={styles.reason}>{p.reason}</Text>
 
+      <Text style={styles.legend}>
+        Values shown in <Text style={{ color: CHANGE }}>red</Text> are what this proposal wants to
+        change. Everything else stays as it is.
+      </Text>
+
       <Kicker style={{ marginBottom: 8 }}>EVIDENCE — CHECK THE SOURCES YOURSELF</Kicker>
       {p.evidence.map((e, i) => (
         <Pressable key={i} style={styles.evidence} onPress={() => WebBrowser.openBrowserAsync(e.url)}>
@@ -140,21 +149,33 @@ export default function ProposalDetail() {
           <Kicker style={{ marginBottom: space.m }}>
             {p.action_type === 'update' ? 'CURRENT → PROPOSED (EDIT BEFORE APPROVING)' : 'PROPOSED RECORD (EDIT BEFORE APPROVING)'}
           </Kicker>
-          {payloadKeys.map((k) => (
-            <View key={k}>
-              {p.action_type === 'update' && venue && (
-                <Text style={styles.currentValue}>
-                  {k.toUpperCase()} NOW: {String((venue as unknown as Record<string, unknown>)[k] ?? '—')}
-                </Text>
-              )}
-              <Field
-                label={k.toUpperCase()}
-                value={edits[k] ?? ''}
-                onChangeText={(t) => setEdits((prev) => ({ ...prev, [k]: t }))}
-                autoCapitalize="none"
-              />
-            </View>
-          ))}
+          {payloadKeys.map((k) => {
+            const current =
+              venue ? String((venue as unknown as Record<string, unknown>)[k] ?? '') : '';
+            const proposed = String(p.proposed_payload[k] ?? '');
+            const changed = p.action_type !== 'update' || current.trim() !== proposed.trim();
+            return (
+              <View key={k} style={changed ? styles.changedBlock : undefined}>
+                {p.action_type === 'update' && venue && (
+                  <Text style={styles.currentValue}>
+                    {k.toUpperCase()} NOW: {current || '—'}
+                  </Text>
+                )}
+                {changed && (
+                  <Text style={styles.changedFlag}>
+                    {p.action_type === 'update' ? 'CHANGES TO' : 'NEW'}
+                  </Text>
+                )}
+                <Field
+                  label={k.toUpperCase()}
+                  value={edits[k] ?? ''}
+                  onChangeText={(t) => setEdits((prev) => ({ ...prev, [k]: t }))}
+                  autoCapitalize="none"
+                  inputStyle={changed ? { color: CHANGE } : undefined}
+                />
+              </View>
+            );
+          })}
           {payloadKeys.length === 0 && (
             <Text style={styles.archiveNote}>
               No concrete field changes proposed — read the evidence, then update the venue yourself
@@ -193,6 +214,26 @@ const styles = StyleSheet.create({
   evidence: { borderWidth: 1, borderColor: colors.hairline, padding: space.m, marginBottom: space.s },
   evidenceUrl: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 0.6, color: colors.ink, marginBottom: 6 },
   evidenceSnippet: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 22, color: colors.ink },
+  legend: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.ink,
+    marginBottom: space.m,
+  },
+  changedBlock: {
+    borderLeftWidth: 2,
+    borderLeftColor: CHANGE,
+    paddingLeft: space.s,
+    marginBottom: space.s,
+  },
+  changedFlag: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    color: CHANGE,
+    marginTop: 4,
+  },
   currentValue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginBottom: 4 },
   archiveNote: { fontFamily: fonts.serifItalic, fontSize: 17, lineHeight: 25, color: colors.ink, marginBottom: space.l },
   error: { fontFamily: fonts.mono, fontSize: 11, color: colors.ink, marginBottom: space.m },

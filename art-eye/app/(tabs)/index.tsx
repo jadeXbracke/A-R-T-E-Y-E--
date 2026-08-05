@@ -18,7 +18,7 @@ const FILTERS: { value: AgendaFilter; label: string }[] = [
   { value: 'closing_soon', label: 'CLOSING SOON' },
   { value: 'museums', label: 'MUSEUMS' },
   { value: 'galleries', label: 'GALLERIES' },
-  { value: 'aris', label: 'ARIS' },
+  { value: 'aris', label: 'ARTIST-RUN' },
 ];
 
 export default function AgendaScreen() {
@@ -85,7 +85,7 @@ export default function AgendaScreen() {
     >
       <View style={styles.header}>
         <Wordmark size={26} />
-        <MonoLink label="ART FAIRS" onPress={() => router.push('/fairs')} />
+        <Text style={styles.city}>SYDNEY</Text>
       </View>
       <Hairline style={{ marginBottom: space.l }} />
 
@@ -116,6 +116,7 @@ export default function AgendaScreen() {
                 onPress={() => setFilter(f.value)}
               />
             ))}
+            <MonoLink label="ART FAIRS" onPress={() => router.push('/fairs')} />
           </ScrollView>
 
           {curated.length > 0 && (
@@ -201,11 +202,16 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: space.page,
     paddingBottom: space.m,
+  },
+  city: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 10,
+    letterSpacing: 4,
+    color: colors.ink,
+    marginTop: 8,
   },
   sectionHead: {
     flexDirection: 'row',

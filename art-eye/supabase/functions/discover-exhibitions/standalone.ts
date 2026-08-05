@@ -14,11 +14,7 @@
 //   supabase secrets set GEMINI_API_KEY=...   (from Google AI Studio, free)
 // Optional: GEMINI_MODEL (default "gemini-2.5-flash"; "gemini-flash-latest" also works).
 //
-// Trigger manually with ?dry_run=1 (writes nothing) and ?limit=N (cap venues).
-// Add &chain=1 to walk the whole register automatically.
-//
-// STANDALONE COPY: same as index.ts with the shared helpers inlined, so it
-// pastes as a single file into the Supabase dashboard Edge Function editor.
+// Trigger manually with ?dry_run=1 (writes nothing) and ?limit=N (cap venues).\n// Add &chain=1 to walk the whole register automatically.\n//\n// STANDALONE COPY: same as index.ts with the shared helpers inlined.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 // --- inlined helpers (so this whole function is one paste-able file) ---
@@ -114,6 +110,7 @@ interface Found {
   end_date: string | null;
   description: string;
   source_url: string;
+  image_url: string | null;
   via: "json-ld" | "gemini";
 }
 
@@ -226,6 +223,24 @@ async function fetchPage(url: string): Promise<string | null> {
   }
 }
 
+// The venue's own press image for a page: og:image is what every CMS emits
+// for sharing, so it is the show's real photograph, not a stock stand-in.
+function pageImage(html: string, base: string): string | null {
+  const metas = [
+    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i,
+    /<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i,
+  ];
+  for (const re of metas) {
+    const m = html.match(re);
+    if (m?.[1]) {
+      const abs = pageUrl(base, m[1].trim());
+      if (abs && /^https?:\/\//i.test(abs)) return abs;
+    }
+  }
+  return null;
+}
+
 function pageUrl(website: string, path: string): string | null {
   try {
     return new URL(path, website.endsWith("/") ? website : website + "/").toString();
@@ -235,6 +250,7 @@ function pageUrl(website: string, path: string): string | null {
 }
 
 function jsonLdRows(html: string, url: string, today: string): Found[] {
+  const pageImg = pageImage(html, url);
   const events: Record<string, unknown>[] = [];
   for (const block of extractJsonLd(html)) collectEvents(block, events);
   const byTitle = new Map<string, Found>();
@@ -251,6 +267,11 @@ function jsonLdRows(html: string, url: string, today: string): Found[] {
       end_date: end,
       description: stripHtml(str(ev.description)).slice(0, MAX_DESC),
       source_url: src ? (pageUrl(url, src) ?? url) : url,
+      image_url: (() => {
+        const img = str(ev.image).trim();
+        const abs = img ? pageUrl(url, img) : null;
+        return abs && /^https?:\/\//i.test(abs) ? abs : pageImg;
+      })(),
       via: "json-ld",
     });
   }
@@ -285,6 +306,7 @@ interface GeminiJob {
   name: string;
   text: string;
   url: string;
+  image: string | null;
 }
 
 interface GeminiBatchResult {
@@ -424,6 +446,7 @@ async function geminiExtractBatch(
         end_date: end,
         description: stripHtml(str(r.description)).slice(0, MAX_DESC),
         source_url: jobs[idx].url,
+        image_url: jobs[idx].image,
         via: "gemini",
       });
       byIndex.set(idx, list);
@@ -436,8 +459,8 @@ async function geminiExtractBatch(
 
 interface ScanResult {
   found: Found[];
-  // page text kept for the Gemini fallback when no JSON-LD was found
-  fallback?: { text: string; url: string };
+  // page text (and its press image) kept for the Gemini fallback
+  fallback?: { text: string; url: string; image: string | null };
 }
 
 // Fetch the venue's candidate pages concurrently: return JSON-LD events if any
@@ -453,8 +476,8 @@ async function scanVenue(website: string, today: string): Promise<ScanResult> {
     }),
   );
 
-  let firstPage: { text: string; url: string } | undefined;
-  let listingPage: { text: string; url: string } | undefined;
+  let firstPage: { text: string; url: string; image: string | null } | undefined;
+  let listingPage: { text: string; url: string; image: string | null } | undefined;
 
   for (const page of pages) {
     if (!page) continue;
@@ -463,8 +486,11 @@ async function scanVenue(website: string, today: string): Promise<ScanResult> {
 
     const text = htmlToText(page.html).slice(0, MAX_GEMINI_CHARS);
     if (text.length > 200) {
-      if (!firstPage) firstPage = { text, url: page.url };
-      if (!listingPage && LISTING_PATHS.has(page.path)) listingPage = { text, url: page.url };
+      const image = pageImage(page.html, page.url);
+      if (!firstPage) firstPage = { text, url: page.url, image };
+      if (!listingPage && LISTING_PATHS.has(page.path)) {
+        listingPage = { text, url: page.url, image };
+      }
     }
   }
   return { found: [], fallback: listingPage ?? firstPage };
@@ -538,6 +564,7 @@ Deno.serve(async (req) => {
           end_date: ex.end_date,
           description: ex.description,
           source_url: ex.source_url,
+          image_url: ex.image_url,
           // JSON-LD is exact; Gemini is interpreted, so give it a lower prior.
           confidence: ex.via === "json-ld" ? 0.9 : 0.65,
         });
@@ -574,7 +601,10 @@ Deno.serve(async (req) => {
         report.push({ venue: v.name, outcome: "no JSON-LD (set GEMINI_API_KEY to use the AI fallback)" });
         return;
       }
-      pending.push({ venue: v, job: { name: v.name, text: scan.fallback.text, url: scan.fallback.url } });
+      pending.push({
+        venue: v,
+        job: { name: v.name, text: scan.fallback.text, url: scan.fallback.url, image: scan.fallback.image },
+      });
     };
 
     for (let i = 0; i < list.length; i += BATCH) {
