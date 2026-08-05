@@ -5,6 +5,7 @@
 // that RLS refuses for any other account.
 import { router, useFocusEffect } from 'expo-router';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -82,6 +83,24 @@ export default function Photos() {
     }
   };
 
+  const uploadOwn = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const url = await api.uploadImage(result.assets[0].uri);
+      await choose(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const choose = async (url: string | null) => {
     if (!open) return;
     setBusy(true);
@@ -147,6 +166,14 @@ export default function Photos() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
+        <Pressable
+          style={[styles.upload, busy && styles.dim]}
+          disabled={busy}
+          onPress={uploadOwn}
+        >
+          <Text style={styles.uploadText}>⇪ UPLOAD FROM YOUR PHOTO LIBRARY</Text>
+        </Pressable>
+
         {candidates === null ? (
           <>
             <Loading />
@@ -156,8 +183,8 @@ export default function Photos() {
           </>
         ) : candidates.length === 0 ? (
           <EmptyState>
-            No photographs found on this venue&apos;s pages. You can still paste an image address on
-            the show&apos;s edit screen.
+            No photographs found on this venue&apos;s pages — upload one from your own library
+            above instead.
           </EmptyState>
         ) : (
           <View style={styles.grid}>
@@ -348,6 +375,15 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   dim: { opacity: 0.4 },
+  upload: {
+    marginHorizontal: space.page,
+    marginTop: space.m,
+    borderWidth: 1,
+    borderColor: colors.ink,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  uploadText: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.5, color: colors.ink },
   clear: {
     marginHorizontal: space.page,
     marginTop: space.l,

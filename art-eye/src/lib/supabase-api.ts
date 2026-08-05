@@ -776,6 +776,31 @@ export const supabaseApi: Api = {
   },
 
   async uploadImage(localUri) {
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    // Web: the picker hands back a blob:/data: uri — read it as a Blob.
+    if (localUri.startsWith('blob:') || localUri.startsWith('data:')) {
+      const blob = await (await fetch(localUri)).blob();
+      const mime = blob.type || 'image/jpeg';
+      const ext = mime.includes('png')
+        ? 'png'
+        : mime.includes('webp')
+          ? 'webp'
+          : mime.includes('mp4')
+            ? 'mp4'
+            : mime.includes('quicktime')
+              ? 'mov'
+              : 'jpg';
+      const path = `submissions/${stamp}.${ext}`;
+      const { error } = await supabase()
+        .storage.from('exhibition-images')
+        .upload(path, blob, { contentType: mime });
+      if (error) throw new Error(error.message);
+      const { data } = supabase().storage.from('exhibition-images').getPublicUrl(path);
+      return data.publicUrl;
+    }
+
+    // Native: read the file from disk as base64.
     const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
     const contentType =
       ext === 'png'
@@ -785,7 +810,7 @@ export const supabaseApi: Api = {
           : ext === 'mov'
             ? 'video/quicktime'
             : 'image/jpeg';
-    const path = `submissions/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const path = `submissions/${stamp}.${ext}`;
     const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
     const { error } = await supabase()
       .storage.from('exhibition-images')
