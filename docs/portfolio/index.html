@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='white'/%3E%3Crect x='8' y='8' width='16' height='16' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E">
 </head>
-<body>
+<body class="has-hero">
 
   <header class="site-header">
     <a class="wordmark" href="index.html"><span data-config="naam">Jade Bracke</span></a>
@@ -18,9 +18,31 @@
     </nav>
   </header>
 
-  <nav class="series-nav" aria-label="Series"></nav>
+  <section class="hero">
+    <h1 class="hero-title" aria-label="Jade Bracke">
+      <span class="hero-line first">Jade</span>
+      <span class="hero-line last">Bracke</span>
+    </h1>
+    <div class="hero-meta">
+      <span>Photography</span>
+      <span class="hero-time"></span>
+      <span class="hero-scroll">Scroll</span>
+    </div>
+  </section>
+
+  <div class="work-toolbar">
+    <nav class="series-nav" aria-label="Series"></nav>
+    <div class="view-toggle" role="group" aria-label="View">
+      <button type="button" data-view="grid" class="is-active">Grid</button>
+      <button type="button" data-view="index">Index</button>
+    </div>
+  </div>
 
   <main class="grid" aria-label="Photo grid"></main>
+  <main class="index" aria-label="Photo index" hidden></main>
+
+  <div class="index-preview" aria-hidden="true"><img src="" alt=""></div>
+  <div class="cursor" aria-hidden="true"><span>View</span></div>
 
   <div class="lightbox" role="dialog" aria-modal="true">
     <button class="lightbox-close" type="button" aria-label="Close">Close</button>
@@ -37,7 +59,14 @@
   </div>
 
   <footer class="site-footer">
-    <span data-config="copyright">© Jade Bracke</span>
+    <a class="footer-cta" data-cta href="mailto:">
+      <span class="footer-cta-small">For commissions, collaborations &amp; prints</span>
+      <span class="footer-cta-big">Get in touch</span>
+    </a>
+    <div class="footer-row">
+      <span data-config="copyright">© Jade Bracke</span>
+      <button class="footer-top" type="button">Back to top</button>
+    </div>
   </footer>
 
   <script src="app.js"></script>

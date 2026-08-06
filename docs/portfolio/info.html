@@ -18,8 +18,8 @@
   </header>
 
   <main class="info">
-    <h1>Information</h1>
-    <div data-config="over">
+    <h1 class="info-title">Infor<em>mation</em></h1>
+    <div class="info-body" data-config="over">
       <p>Welcome to my portfolio.</p>
     </div>
     <div class="contact">
@@ -28,8 +28,17 @@
     </div>
   </main>
 
+  <div class="cursor" aria-hidden="true"><span>View</span></div>
+
   <footer class="site-footer">
-    <span data-config="copyright">© Jade Bracke</span>
+    <a class="footer-cta" data-cta href="mailto:">
+      <span class="footer-cta-small">For commissions, collaborations &amp; prints</span>
+      <span class="footer-cta-big">Get in touch</span>
+    </a>
+    <div class="footer-row">
+      <span data-config="copyright">© Jade Bracke</span>
+      <button class="footer-top" type="button">Back to top</button>
+    </div>
   </footer>
 
   <script src="app.js"></script>

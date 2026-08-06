@@ -1,10 +1,12 @@
-/* Portfolio: laadt manifest.json + config.json en rendert raster, filters en lightbox. */
+/* Portfolio: laadt manifest.json + config.json en rendert raster, index,
+   filters en lightbox, plus de editorial extra's (hero, cursor, preview). */
 (function () {
   "use strict";
 
   var state = {
     series: [],
     activeSeries: "alles",
+    view: "grid",
     photos: [], // platte lijst van de zichtbare foto's, voor de lightbox
     lightboxIndex: -1,
     slideshowTimer: null,
@@ -12,15 +14,27 @@
   };
 
   var gridEl = document.querySelector(".grid");
+  var indexEl = document.querySelector(".index");
   var seriesNavEl = document.querySelector(".series-nav");
+  var viewToggleEl = document.querySelector(".view-toggle");
   var lightboxEl = document.querySelector(".lightbox");
   var headerEl = document.querySelector(".site-header");
+  var heroEl = document.querySelector(".hero");
+  var previewEl = document.querySelector(".index-preview");
+  var cursorEl = document.querySelector(".cursor");
+
+  var finePointer = window.matchMedia && window.matchMedia("(pointer: fine)").matches;
+  var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function fetchJson(url) {
     return fetch(url + "?t=" + Date.now()).then(function (res) {
       if (!res.ok) throw new Error(url + ": " + res.status);
       return res.json();
     });
+  }
+
+  function pad(n) {
+    return (n < 10 ? "0" : "") + n;
   }
 
   /* ---------- header: verdwijnt bij omlaag scrollen ---------- */
@@ -39,16 +53,100 @@
       } else if (y < lastY - 4) {
         headerEl.classList.remove("is-hidden");
       }
+      if (heroEl) {
+        var passed = y > heroEl.offsetHeight * 0.55;
+        headerEl.classList.toggle("past-hero", passed);
+      }
       lastY = y;
       ticking = false;
     }
 
+    onScroll();
     window.addEventListener("scroll", function () {
       if (!ticking) {
         ticking = true;
         window.requestAnimationFrame(onScroll);
       }
     }, { passive: true });
+  }
+
+  /* ---------- hero: naam + lokale tijd ---------- */
+
+  function bindHero(config) {
+    if (!heroEl) return;
+    if (config && config.naam) {
+      var parts = String(config.naam).trim().split(/\s+/);
+      var first = heroEl.querySelector(".hero-line.first");
+      var last = heroEl.querySelector(".hero-line.last");
+      if (parts.length > 1) {
+        first.textContent = parts[0];
+        last.textContent = parts.slice(1).join(" ");
+      } else {
+        first.textContent = parts[0];
+        last.textContent = "";
+      }
+    }
+    var timeEl = heroEl.querySelector(".hero-time");
+    if (timeEl) {
+      var tick = function () {
+        var now = new Date();
+        timeEl.textContent = "Local time " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+      };
+      tick();
+      window.setInterval(tick, 15000);
+    }
+  }
+
+  /* ---------- eigen cursor ---------- */
+
+  function bindCursor() {
+    if (!cursorEl || !finePointer) return;
+    document.body.classList.add("has-fine-pointer");
+    document.addEventListener("mousemove", function (e) {
+      cursorEl.style.left = e.clientX + "px";
+      cursorEl.style.top = e.clientY + "px";
+      var overTarget = e.target.closest &&
+        e.target.closest(".grid figure, .index-row");
+      cursorEl.classList.toggle("is-hover", !!overTarget);
+    }, { passive: true });
+  }
+
+  /* ---------- zwevende preview in de indexweergave ---------- */
+
+  var previewState = { x: 0, y: 0, tx: 0, ty: 0, raf: null };
+
+  function movePreview() {
+    previewState.x += (previewState.tx - previewState.x) * 0.16;
+    previewState.y += (previewState.ty - previewState.y) * 0.16;
+    previewEl.style.left = previewState.x + "px";
+    previewEl.style.top = previewState.y + "px";
+    previewState.raf = window.requestAnimationFrame(movePreview);
+  }
+
+  function bindPreview() {
+    if (!previewEl || !finePointer) return;
+    document.addEventListener("mousemove", function (e) {
+      previewState.tx = e.clientX;
+      previewState.ty = e.clientY;
+      if (reducedMotion) {
+        previewState.x = e.clientX;
+        previewState.y = e.clientY;
+        previewEl.style.left = previewState.x + "px";
+        previewEl.style.top = previewState.y + "px";
+      }
+    }, { passive: true });
+    if (!reducedMotion) movePreview();
+  }
+
+  function showPreview(src) {
+    if (!previewEl || !finePointer) return;
+    previewEl.querySelector("img").src = src;
+    previewEl.classList.add("is-visible");
+  }
+
+  function hidePreview() {
+    if (!previewEl) return;
+    previewEl.classList.remove("is-visible");
   }
 
   /* ---------- config (naam, contact) ---------- */
@@ -80,9 +178,15 @@
         el.textContent = config[key];
       }
     });
+    if (config.email) {
+      document.querySelectorAll("[data-cta]").forEach(function (el) {
+        el.setAttribute("href", "mailto:" + config.email);
+      });
+    }
     if (config.naam) {
       document.title = document.title.replace("Jade Bracke", config.naam);
     }
+    return config;
   }
 
   /* ---------- raster ---------- */
@@ -119,7 +223,7 @@
       }
     }
     renderSeriesNav();
-    renderGrid();
+    renderWork();
   }
 
   function seriesFromHash() {
@@ -147,10 +251,49 @@
     });
   }
 
-  function renderGrid() {
-    if (!gridEl) return;
-    gridEl.innerHTML = "";
+  /* ---------- weergave: grid of index ---------- */
+
+  function setView(view) {
+    state.view = view;
+    try { localStorage.setItem("portfolio-view", view); } catch (err) {}
+    if (viewToggleEl) {
+      viewToggleEl.querySelectorAll("button").forEach(function (btn) {
+        btn.classList.toggle("is-active", btn.getAttribute("data-view") === view);
+      });
+    }
+    renderWork();
+  }
+
+  function bindViewToggle() {
+    if (!viewToggleEl) return;
+    var saved = null;
+    try { saved = localStorage.getItem("portfolio-view"); } catch (err) {}
+    if (saved === "index" || saved === "grid") state.view = saved;
+    viewToggleEl.querySelectorAll("button").forEach(function (btn) {
+      btn.classList.toggle("is-active", btn.getAttribute("data-view") === state.view);
+      btn.addEventListener("click", function () {
+        setView(btn.getAttribute("data-view"));
+      });
+    });
+  }
+
+  function renderWork() {
     state.photos = visiblePhotos();
+    if (!gridEl || !indexEl) return;
+    hidePreview();
+    if (state.view === "index") {
+      gridEl.hidden = true;
+      indexEl.hidden = false;
+      renderIndex();
+    } else {
+      indexEl.hidden = true;
+      gridEl.hidden = false;
+      renderGrid();
+    }
+  }
+
+  function renderGrid() {
+    gridEl.innerHTML = "";
 
     if (!state.photos.length) {
       var empty = document.createElement("div");
@@ -182,11 +325,18 @@
       frame.appendChild(img);
       figure.appendChild(frame);
 
+      var cap = document.createElement("figcaption");
+      var num = document.createElement("span");
+      num.className = "cap-num";
+      num.textContent = pad(index + 1);
+      cap.appendChild(num);
       if (entry.photo.caption) {
-        var cap = document.createElement("figcaption");
-        cap.textContent = entry.photo.caption;
-        figure.appendChild(cap);
+        var text = document.createElement("span");
+        text.className = "cap-text";
+        text.textContent = entry.photo.caption;
+        cap.appendChild(text);
       }
+      figure.appendChild(cap);
 
       figure.addEventListener("click", function () {
         openLightbox(index);
@@ -197,6 +347,52 @@
         revealObserver.observe(figure);
       }
       gridEl.appendChild(figure);
+    });
+  }
+
+  function renderIndex() {
+    indexEl.innerHTML = "";
+
+    if (!state.photos.length) {
+      var empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent =
+        "No photos yet — add images in docs/portfolio/photos/ (see HANDLEIDING.md).";
+      indexEl.appendChild(empty);
+      return;
+    }
+
+    state.photos.forEach(function (entry, index) {
+      var row = document.createElement("button");
+      row.type = "button";
+      row.className = "index-row";
+
+      var num = document.createElement("span");
+      num.className = "index-num";
+      num.textContent = pad(index + 1);
+
+      var title = document.createElement("span");
+      title.className = "index-title";
+      title.textContent = entry.photo.caption || entry.serie.title;
+
+      var serie = document.createElement("span");
+      serie.className = "index-serie";
+      serie.textContent = entry.serie.title;
+
+      row.appendChild(num);
+      row.appendChild(title);
+      row.appendChild(serie);
+
+      row.addEventListener("mouseenter", function () {
+        showPreview(entry.photo.src);
+      });
+      row.addEventListener("mouseleave", hidePreview);
+      row.addEventListener("click", function () {
+        hidePreview();
+        openLightbox(index);
+      });
+
+      indexEl.appendChild(row);
     });
   }
 
@@ -238,7 +434,7 @@
     lightboxEl.querySelector(".lightbox-caption").textContent =
       entry.photo.caption || entry.serie.title;
     lightboxEl.querySelector(".lightbox-counter").textContent =
-      state.lightboxIndex + 1 + " / " + state.photos.length;
+      pad(state.lightboxIndex + 1) + " / " + pad(state.photos.length);
     preload(state.lightboxIndex + 1);
     preload(state.lightboxIndex - 1);
   }
@@ -318,15 +514,34 @@
     });
   }
 
+  /* ---------- terug naar boven ---------- */
+
+  function bindFooter() {
+    var topBtn = document.querySelector(".footer-top");
+    if (topBtn) {
+      topBtn.addEventListener("click", function () {
+        window.scrollTo({ top: 0, behavior: reducedMotion ? "auto" : "smooth" });
+      });
+    }
+  }
+
   /* ---------- init ---------- */
 
   bindHeaderScroll();
   bindProtection();
+  bindCursor();
+  bindFooter();
 
-  var configReady = fetchJson("config.json").then(applyConfig).catch(function () {});
+  var configReady = fetchJson("config.json")
+    .then(applyConfig)
+    .catch(function () { return {}; });
+
+  configReady.then(bindHero);
 
   if (gridEl) {
     bindLightbox();
+    bindViewToggle();
+    bindPreview();
     Promise.all([configReady, fetchJson("manifest.json")])
       .then(function (results) {
         var manifest = results[1];
@@ -335,13 +550,13 @@
         });
         state.activeSeries = seriesFromHash();
         renderSeriesNav();
-        renderGrid();
+        renderWork();
         window.addEventListener("hashchange", function () {
           setActiveSeries(seriesFromHash(), false);
         });
       })
       .catch(function () {
-        renderGrid();
+        renderWork();
       });
   }
 })();

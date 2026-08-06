@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------
-   JADE BRACKE — FOTOGRAFIE PORTFOLIO
-   Minimalistische agency-stijl: wit, kleine kapitalen, veel witruimte
+   JADE BRACKE — PHOTOGRAPHY PORTFOLIO
+   Editorial agency-stijl: groot typografisch, wit, verrassend ritme
 ------------------------------------------------------------------- */
 
 * {
@@ -13,10 +13,11 @@
   --ink: #0a0a0a;
   --ink-soft: #979797;
   --paper: #ffffff;
-  --hairline: #ebebeb;
+  --hairline: #e4e4e4;
   --gutter: 20px;
   --edge: 30px;
   --track: 0.12em;
+  --serif: Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -51,9 +52,13 @@ img {
   color: var(--paper);
 }
 
+[hidden] {
+  display: none !important;
+}
+
 /* ---------- header ----------
-   Vast bovenaan, geen achtergrond: via mix-blend-mode "versmelt" het
-   logo met de foto's die eronderdoor schuiven. Bij omlaag scrollen
+   Vast bovenaan, geen achtergrond: via mix-blend-mode "versmelt" de
+   tekst met de foto's die eronderdoor schuiven. Bij omlaag scrollen
    glijdt de balk weg; bij omhoog scrollen komt hij terug. */
 
 .site-header {
@@ -87,6 +92,14 @@ img {
   text-transform: uppercase;
   white-space: nowrap;
   text-align: center;
+  transition: opacity 0.4s ease;
+}
+
+/* op de werkpagina staat de naam levensgroot in de hero:
+   het kleine logo verschijnt pas zodra de hero uit beeld is */
+body.has-hero .site-header:not(.past-hero) .wordmark {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .site-nav {
@@ -114,23 +127,88 @@ img {
   border-color: currentColor;
 }
 
-/* ---------- serie-filters ---------- */
+/* ---------- hero ---------- */
+
+.hero {
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 var(--edge) 30px;
+}
+
+.hero-title {
+  display: flex;
+  flex-direction: column;
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: clamp(64px, 15.5vw, 240px);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  margin-bottom: 34px;
+}
+
+.hero-line.last {
+  align-self: flex-end;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--ink);
+  text-stroke: 1.5px var(--ink);
+}
+
+.hero-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 1px solid var(--ink);
+  padding-top: 14px;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--ink);
+}
+
+.hero-meta .hero-time {
+  font-family: var(--serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.hero-scroll {
+  animation: nudge 2.4s ease-in-out infinite;
+}
+
+@keyframes nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+}
+
+/* ---------- toolbar: seriefilters + weergave ---------- */
+
+.work-toolbar {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  padding: 34px var(--edge) 6px;
+}
+
+body:not(.has-hero) .work-toolbar {
+  padding-top: 96px;
+}
 
 .series-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 24px;
-  padding: 96px var(--edge) 6px;
   text-transform: uppercase;
   font-size: 10px;
   color: var(--ink-soft);
+  flex: 1;
 }
 
-.series-nav:empty {
-  padding-bottom: 0;
-}
-
-.series-nav button {
+.series-nav button,
+.view-toggle button {
   font: inherit;
   letter-spacing: inherit;
   text-transform: inherit;
@@ -143,34 +221,54 @@ img {
   transition: color 0.25s ease, border-color 0.25s ease;
 }
 
-.series-nav button:hover {
+.series-nav button:hover,
+.view-toggle button:hover {
   color: var(--ink);
 }
 
-.series-nav button.is-active {
+.series-nav button.is-active,
+.view-toggle button.is-active {
   color: var(--ink);
   border-color: var(--ink);
 }
 
-/* ---------- fotoraster ---------- */
+.view-toggle {
+  display: flex;
+  gap: 16px;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--ink-soft);
+}
+
+/* ---------- editorial fotoraster ----------
+   Geen nette kolommen maar een 12-koloms grid met een terugkerend
+   patroon van groot/klein en verspringende hoogtes. */
 
 .grid {
-  columns: 3;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
   column-gap: var(--gutter);
-  padding: 26px var(--edge) var(--edge);
+  padding: 26px var(--edge) 90px;
 }
 
 .grid figure {
-  break-inside: avoid;
-  margin: 0 0 var(--gutter);
-  cursor: pointer;
+  cursor: none;
+  margin-bottom: clamp(40px, 7vw, 110px);
+  align-self: start;
 }
+
+.grid figure:nth-child(6n + 1) { grid-column: 1 / span 7; }
+.grid figure:nth-child(6n + 2) { grid-column: 9 / span 4; margin-top: clamp(60px, 12vw, 190px); }
+.grid figure:nth-child(6n + 3) { grid-column: 3 / span 5; }
+.grid figure:nth-child(6n + 4) { grid-column: 9 / span 4; margin-top: clamp(40px, 8vw, 130px); }
+.grid figure:nth-child(6n + 5) { grid-column: 1 / span 5; }
+.grid figure:nth-child(6n + 6) { grid-column: 7 / span 6; margin-top: clamp(30px, 6vw, 100px); }
 
 /* zachte onthulling bij het scrollen */
 .grid figure.reveal {
   opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(22px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .grid figure.reveal.in-view {
@@ -186,7 +284,7 @@ img {
 .grid img {
   width: 100%;
   opacity: 0;
-  transition: opacity 0.55s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.55s ease, transform 1s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .grid img.is-loaded {
@@ -194,23 +292,157 @@ img {
 }
 
 .grid figure:hover img.is-loaded {
-  opacity: 0.88;
-  transform: scale(1.015);
-  transition: opacity 0.3s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: scale(1.02);
 }
 
 .grid figcaption {
-  margin-top: 7px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 9px;
+}
+
+.grid .cap-num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.grid .cap-text {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
 
+/* ---------- indexweergave ----------
+   Tekstlijst van al het werk; een zwevende foto volgt de cursor. */
+
+.index {
+  padding: 18px var(--edge) 90px;
+}
+
+.index-row {
+  display: flex;
+  align-items: baseline;
+  gap: 26px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--hairline);
+  padding: 18px 0 16px;
+  cursor: none;
+  font-family: inherit;
+  color: var(--ink);
+  transition: padding-left 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.index-row:last-child {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.index-row:hover {
+  padding-left: 18px;
+}
+
+.index-num {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-soft);
+  min-width: 34px;
+}
+
+.index-title {
+  font-size: clamp(20px, 3.4vw, 44px);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.1;
+  flex: 1;
+  transition: font-style 0.2s ease;
+}
+
+.index-row:hover .index-title {
+  font-family: var(--serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.index-serie {
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.index-preview {
+  position: fixed;
+  z-index: 15;
+  width: min(340px, 32vw);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.index-preview.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.index-preview img {
+  width: 100%;
+}
+
+/* ---------- eigen cursor (alleen fijne aanwijzers) ---------- */
+
+.cursor {
+  position: fixed;
+  z-index: 100;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  mix-blend-mode: difference;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: width 0.25s ease, height 0.25s ease;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.cursor span {
+  font-size: 8px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.cursor.is-hover {
+  width: 62px;
+  height: 62px;
+}
+
+.cursor.is-hover span {
+  opacity: 1;
+}
+
+body.has-fine-pointer .cursor {
+  display: flex;
+}
+
 /* ---------- lege staat ---------- */
 
 .empty-state {
-  padding: 150px var(--edge);
+  grid-column: 1 / -1;
+  padding: 60px 0 150px;
   max-width: 560px;
   text-transform: uppercase;
   font-size: 10px;
@@ -261,6 +493,13 @@ img {
 
 .lightbox-caption {
   flex: 1;
+}
+
+.lightbox-counter {
+  font-family: var(--serif);
+  font-style: italic;
+  text-transform: none;
+  font-size: 12px;
 }
 
 .lightbox-play {
@@ -316,22 +555,32 @@ img {
 /* ---------- informatie-pagina ---------- */
 
 .info {
-  padding: 140px var(--edge) 90px;
-  max-width: 600px;
+  padding: 130px var(--edge) 60px;
+  max-width: 860px;
 }
 
-.info h1 {
-  font-size: 11px;
+.info-title {
+  font-size: clamp(48px, 9vw, 140px);
   font-weight: 400;
   text-transform: uppercase;
-  margin-bottom: 40px;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  margin-bottom: 56px;
 }
 
-.info p {
-  font-size: 13px;
+.info-title em {
+  font-family: var(--serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.info-body p {
+  font-size: 14px;
   letter-spacing: 0.02em;
   line-height: 1.9;
   margin-bottom: 24px;
+  max-width: 600px;
   color: #2e2e2e;
 }
 
@@ -353,20 +602,89 @@ img {
   border-color: var(--ink);
 }
 
-/* ---------- footer ---------- */
+/* ---------- footer met grote afsluiter ---------- */
 
 .site-footer {
-  padding: 36px var(--edge) 42px;
+  padding: 40px 0 0;
+}
+
+.footer-cta {
+  display: block;
+  padding: 46px var(--edge) 52px;
+  border-top: 1px solid var(--ink);
+  transition: background 0.35s ease, color 0.35s ease;
+}
+
+.footer-cta-small {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 16px;
+  transition: color 0.35s ease;
+}
+
+.footer-cta-big {
+  display: block;
+  font-size: clamp(40px, 8.5vw, 130px);
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+.footer-cta:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.footer-cta:hover .footer-cta-small {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.footer-cta:hover .footer-cta-big {
+  font-family: var(--serif);
+  font-style: italic;
+  text-transform: none;
+}
+
+.footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 22px var(--edge) 26px;
   text-transform: uppercase;
   font-size: 9px;
   letter-spacing: 0.16em;
   color: var(--ink-soft);
 }
 
+.footer-top {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.footer-top:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
 /* ---------- responsief ---------- */
 
-@media (max-width: 1000px) {
-  .grid { columns: 2; }
+@media (max-width: 900px) {
+  .grid figure:nth-child(6n + 1),
+  .grid figure:nth-child(6n + 3),
+  .grid figure:nth-child(6n + 5) { grid-column: 1 / span 8; }
+  .grid figure:nth-child(6n + 2),
+  .grid figure:nth-child(6n + 4),
+  .grid figure:nth-child(6n + 6) { grid-column: 5 / span 8; }
 }
 
 @media (max-width: 640px) {
@@ -382,9 +700,32 @@ img {
   .wordmark { grid-column: 1; }
   .site-nav { grid-column: 1; justify-self: center; }
 
-  .series-nav { padding-top: 104px; }
-  .grid { columns: 1; }
-  .info { padding-top: 132px; padding-bottom: 70px; }
+  .hero { min-height: 82vh; }
+
+  .work-toolbar {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  body:not(.has-hero) .work-toolbar { padding-top: 104px; }
+
+  .grid figure,
+  .grid figure:nth-child(6n + 1),
+  .grid figure:nth-child(6n + 2),
+  .grid figure:nth-child(6n + 3),
+  .grid figure:nth-child(6n + 4),
+  .grid figure:nth-child(6n + 5),
+  .grid figure:nth-child(6n + 6) {
+    grid-column: 1 / -1;
+    margin-top: 0;
+    margin-bottom: 44px;
+  }
+
+  .index-row { gap: 14px; }
+  .index-serie { display: none; }
+  .index-preview { display: none; }
+
+  .info { padding-top: 120px; }
   .lightbox-stage { padding: 64px 20px 52px; }
   .lightbox-arrow { bottom: 60px; }
 }
@@ -394,4 +735,6 @@ img {
   .grid figure.reveal { opacity: 1; transform: none; transition: none; }
   .grid figure:hover img.is-loaded { transform: none; }
   .site-header { transition: none; }
+  .hero-scroll { animation: none; }
+  .index-preview { transition: opacity 0.2s ease; }
 }
