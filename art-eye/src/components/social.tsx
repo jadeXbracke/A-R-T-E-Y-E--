@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -93,14 +94,23 @@ export function PersonRow({
 }) {
   return (
     <View style={styles.personRow}>
-      <Lift style={{ flex: 1 }} onPress={() => router.push(`/profile/${person.id}`)}>
-        <Text style={styles.personName} numberOfLines={1}>
-          {person.display_name}
-        </Text>
-        <Text style={styles.personMeta} numberOfLines={1}>
-          {typeLabel(person.profile_type)}
-          {person.is_private ? '  ·  PRIVATE' : ''}
-        </Text>
+      <Lift style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.m }} onPress={() => router.push(`/profile/${person.id}`)}>
+        {person.avatar_url ? (
+          <Image source={{ uri: person.avatar_url }} style={styles.personAvatar} contentFit="cover" />
+        ) : (
+          <View style={styles.personAvatarFallback}>
+            <Text style={styles.personAvatarInitial}>{(person.display_name.trim()[0] ?? '?').toUpperCase()}</Text>
+          </View>
+        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.personName} numberOfLines={1}>
+            {person.display_name}
+          </Text>
+          <Text style={styles.personMeta} numberOfLines={1}>
+            {typeLabel(person.profile_type)}
+            {person.is_private ? '  ·  PRIVATE' : ''}
+          </Text>
+        </View>
       </Lift>
       {state === 'following' ? (
         <MonoLink label="FOLLOWING" active onPress={onUnfollow} />
@@ -147,4 +157,12 @@ const styles = StyleSheet.create({
   },
   personName: { ...type.serifTitle, fontSize: 18 },
   personMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginTop: 3 },
+  personAvatar: { width: 40, height: 40, borderRadius: 20 },
+  personAvatarFallback: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.dim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  personAvatarInitial: { fontFamily: fonts.serifMedium, fontSize: 15, color: colors.ink },
 });

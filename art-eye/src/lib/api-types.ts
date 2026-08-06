@@ -87,6 +87,7 @@ export interface Api {
   listFollowRequests(userId: string): Promise<Profile[]>; // pending requests to approve
   respondFollowRequest(userId: string, requesterId: string, accept: boolean): Promise<void>;
   setProfilePrivacy(userId: string, isPrivate: boolean): Promise<void>;
+  updateOwnProfile(userId: string, patch: { display_name?: string; bio?: string | null; avatar_url?: string | null }): Promise<void>;
   discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
   searchPeople(viewerId: string): Promise<Profile[]>; // everyone (except self), for name search
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows

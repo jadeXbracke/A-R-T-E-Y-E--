@@ -678,6 +678,11 @@ export const supabaseApi: Api = {
     if (error) throw new Error(error.message);
   },
 
+  async updateOwnProfile(userId, patch) {
+    const { error } = await supabase().from('profiles').update(patch).eq('id', userId);
+    if (error) throw new Error(error.message);
+  },
+
   async discoverPeople(viewerId) {
     const sb = supabase();
     const { data: mine } = await sb.from('follows').select('followee_id').eq('follower_id', viewerId);

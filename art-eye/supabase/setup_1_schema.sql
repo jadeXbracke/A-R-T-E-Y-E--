@@ -563,6 +563,11 @@ alter table public.exhibitions
 alter table profiles
   add column if not exists is_private boolean not null default false;
 
+-- A short "about me" and a profile photo, shown on the public profile.
+alter table profiles
+  add column if not exists bio text,
+  add column if not exists avatar_url text;
+
 create table if not exists follows (
   follower_id uuid not null references profiles (id) on delete cascade,
   followee_id uuid not null references profiles (id) on delete cascade,

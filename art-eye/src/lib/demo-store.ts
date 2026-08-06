@@ -376,6 +376,14 @@ export const demoApi: Api = {
     await persist();
   },
 
+  async updateOwnProfile(userId, patch) {
+    const s = await load();
+    const u = s.users.find((x) => x.id === userId);
+    if (!u) throw new Error('Profile not found.');
+    Object.assign(u, patch);
+    await persist();
+  },
+
   async discoverPeople(viewerId) {
     const s = await load();
     // everyone the viewer isn't already connected to, excluding themselves

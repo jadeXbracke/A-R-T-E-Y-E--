@@ -42,6 +42,8 @@ export interface Profile {
   display_name: string;
   city: string;
   is_private?: boolean; // closed profile — activity only visible to accepted followers
+  bio?: string | null; // short "about me", shown on the public profile
+  avatar_url?: string | null; // profile photo
 }
 
 // ---- social layer (Strava-style follow + activity feed) ---------------------
