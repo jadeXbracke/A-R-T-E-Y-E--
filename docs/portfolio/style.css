@@ -10,21 +10,23 @@
 }
 
 :root {
-  --ink: #111111;
-  --ink-soft: #888888;
+  --ink: #0a0a0a;
+  --ink-soft: #979797;
   --paper: #ffffff;
-  --hairline: #e6e6e6;
-  --gutter: 28px;
-  --track: 0.14em;
+  --hairline: #ebebeb;
+  --gutter: 20px;
+  --edge: 30px;
+  --track: 0.12em;
 }
 
 html {
   background: var(--paper);
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: var(--track);
   color: var(--ink);
   background: var(--paper);
@@ -40,9 +42,19 @@ a {
 img {
   display: block;
   max-width: 100%;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
-/* ---------- header ---------- */
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- header ----------
+   Vast bovenaan, geen achtergrond: via mix-blend-mode "versmelt" het
+   logo met de foto's die eronderdoor schuiven. Bij omlaag scrollen
+   glijdt de balk weg; bij omhoog scrollen komt hij terug. */
 
 .site-header {
   position: fixed;
@@ -53,45 +65,56 @@ img {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 26px 34px 18px;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(6px);
+  padding: 24px var(--edge) 16px;
+  color: #ffffff;
+  mix-blend-mode: difference;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity 0.35s ease;
+  will-change: transform;
+}
+
+.site-header.is-hidden {
+  transform: translateY(-110%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .wordmark {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .wordmark .sub {
-  color: var(--ink-soft);
+  color: rgba(255, 255, 255, 0.5);
   margin-left: 0.9em;
-  font-size: 11px;
-  letter-spacing: 0.28em;
+  font-size: 10px;
+  letter-spacing: 0.3em;
 }
 
 .site-nav {
   display: flex;
-  gap: 30px;
+  gap: 28px;
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .site-nav a {
   padding-bottom: 3px;
   border-bottom: 1px solid transparent;
-  transition: color 0.25s ease, border-color 0.25s ease;
+  opacity: 0.55;
+  transition: opacity 0.25s ease, border-color 0.25s ease;
 }
 
 .site-nav a:hover {
-  color: var(--ink-soft);
+  opacity: 1;
 }
 
 .site-nav a.is-active {
-  border-color: var(--ink);
+  opacity: 1;
+  border-color: currentColor;
 }
 
 /* ---------- serie-filters ---------- */
@@ -99,10 +122,10 @@ img {
 .series-nav {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px 26px;
-  padding: 108px 34px 8px;
+  gap: 10px 24px;
+  padding: 96px var(--edge) 6px;
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--ink-soft);
 }
 
@@ -137,11 +160,7 @@ img {
 .grid {
   columns: 3;
   column-gap: var(--gutter);
-  padding: 34px;
-}
-
-.series-nav + .grid {
-  padding-top: 26px;
+  padding: 26px var(--edge) var(--edge);
 }
 
 .grid figure {
@@ -150,14 +169,27 @@ img {
   cursor: pointer;
 }
 
+/* zachte onthulling bij het scrollen */
+.grid figure.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.grid figure.reveal.in-view {
+  opacity: 1;
+  transform: none;
+}
+
 .grid .frame {
-  background: #f4f4f4;
+  background: #f5f5f5;
+  overflow: hidden;
 }
 
 .grid img {
   width: 100%;
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.55s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .grid img.is-loaded {
@@ -165,13 +197,15 @@ img {
 }
 
 .grid figure:hover img.is-loaded {
-  opacity: 0.85;
-  transition: opacity 0.25s ease;
+  opacity: 0.88;
+  transform: scale(1.015);
+  transition: opacity 0.3s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .grid figcaption {
-  margin-top: 9px;
-  font-size: 10px;
+  margin-top: 7px;
+  font-size: 9px;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-soft);
 }
@@ -179,11 +213,11 @@ img {
 /* ---------- lege staat ---------- */
 
 .empty-state {
-  padding: 160px 34px;
+  padding: 150px var(--edge);
   max-width: 560px;
   text-transform: uppercase;
-  font-size: 11px;
-  line-height: 2.2;
+  font-size: 10px;
+  line-height: 2.3;
   color: var(--ink-soft);
 }
 
@@ -207,7 +241,7 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 72px 90px 64px;
+  padding: 66px 90px 58px;
   min-height: 0;
 }
 
@@ -220,32 +254,59 @@ img {
 .lightbox-bar {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  padding: 0 34px 26px;
+  gap: 28px;
+  padding: 0 var(--edge) 24px;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: 9px;
+  letter-spacing: 0.16em;
   color: var(--ink-soft);
+}
+
+.lightbox-caption {
+  flex: 1;
+}
+
+.lightbox-play {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 0 2px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.25s ease, border-color 0.25s ease;
+  position: relative;
+  z-index: 45;
+}
+
+.lightbox-play:hover,
+.lightbox-play.is-playing {
+  color: var(--ink);
+  border-color: var(--ink);
 }
 
 .lightbox-close {
   position: absolute;
-  top: 22px;
-  right: 28px;
+  top: 20px;
+  right: var(--edge);
+  z-index: 45;
   font: inherit;
-  font-size: 12px;
+  font-size: 10px;
   letter-spacing: var(--track);
   text-transform: uppercase;
   background: none;
   border: none;
   color: var(--ink);
   cursor: pointer;
-  padding: 6px;
+  padding: 6px 0;
 }
 
 .lightbox-arrow {
   position: absolute;
   top: 0;
-  bottom: 0;
+  bottom: 66px;
   width: 45%;
   background: none;
   border: none;
@@ -258,29 +319,29 @@ img {
 /* ---------- informatie-pagina ---------- */
 
 .info {
-  padding: 150px 34px 90px;
-  max-width: 620px;
+  padding: 140px var(--edge) 90px;
+  max-width: 600px;
 }
 
 .info h1 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
   text-transform: uppercase;
-  margin-bottom: 42px;
+  margin-bottom: 40px;
 }
 
 .info p {
   font-size: 13px;
   letter-spacing: 0.02em;
-  line-height: 2;
-  margin-bottom: 26px;
-  color: #333;
+  line-height: 1.9;
+  margin-bottom: 24px;
+  color: #2e2e2e;
 }
 
 .info .contact {
-  margin-top: 56px;
+  margin-top: 52px;
   text-transform: uppercase;
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: var(--track);
   line-height: 2.6;
 }
@@ -298,9 +359,10 @@ img {
 /* ---------- footer ---------- */
 
 .site-footer {
-  padding: 40px 34px 46px;
+  padding: 36px var(--edge) 42px;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: 9px;
+  letter-spacing: 0.16em;
   color: var(--ink-soft);
 }
 
@@ -311,17 +373,24 @@ img {
 }
 
 @media (max-width: 640px) {
-  :root { --gutter: 18px; }
+  :root { --gutter: 14px; --edge: 18px; }
 
   .site-header {
-    padding: 20px 20px 14px;
+    padding: 18px var(--edge) 12px;
     flex-direction: column;
-    gap: 10px;
+    gap: 9px;
   }
 
-  .series-nav { padding: 116px 20px 4px; }
-  .grid { columns: 1; padding: 26px 20px; }
-  .info { padding: 140px 20px 70px; }
-  .site-footer { padding: 30px 20px 36px; }
-  .lightbox-stage { padding: 70px 24px 56px; }
+  .series-nav { padding-top: 104px; }
+  .grid { columns: 1; }
+  .info { padding-top: 132px; padding-bottom: 70px; }
+  .lightbox-stage { padding: 64px 20px 52px; }
+  .lightbox-arrow { bottom: 60px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .grid figure.reveal { opacity: 1; transform: none; transition: none; }
+  .grid figure:hover img.is-loaded { transform: none; }
+  .site-header { transition: none; }
 }

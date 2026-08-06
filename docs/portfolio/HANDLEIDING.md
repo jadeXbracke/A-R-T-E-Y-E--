@@ -75,8 +75,23 @@ Open het bestand **`docs/portfolio/config.json`**, klik op het potlood-icoon
 | `instagram` | Je Instagram-naam (zonder @); leeg = niet tonen |
 | `over` | De tekst op de informatiepagina (een lege regel = nieuwe alinea) |
 | `copyright` | De regel onderaan elke pagina |
+| `rechtsklik_beveiliging` | `true` = rechtsklikken/slepen op foto's blokkeren, `false` = toestaan |
 
 Klik daarna op **Commit changes** — klaar.
+
+## Extra's die er al in zitten
+
+- **Verdwijnend logo** — bij omlaag scrollen glijdt de balk met je naam weg;
+  scroll je omhoog, dan komt hij terug en "versmelt" hij met de foto's die
+  eronderdoor schuiven (het logo krijgt de omgekeerde kleur van de foto).
+- **Diavoorstelling** — open een foto en klik op *Afspelen* (of druk op de
+  spatiebalk); elke 3,5 seconde verschijnt de volgende foto.
+- **Vegen op je telefoon** — in de fotoweergave veeg je naar links/rechts
+  voor de volgende/vorige foto.
+- **Deelbare series** — kies je een serie, dan verandert de link in de
+  adresbalk (bijv. `#serie=natuur`); die link kun je direct delen.
+- **Kopieerbescherming** — rechtsklikken en slepen op foto's is geblokkeerd
+  (uit te zetten in `config.json`).
 
 ## Tips voor je foto's
 
