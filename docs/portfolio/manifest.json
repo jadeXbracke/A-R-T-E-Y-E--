@@ -1,30 +1,30 @@
 {
-  "generated": "2026-08-05T08:29:29.492Z",
+  "generated": "2026-08-06T03:40:55.313Z",
   "series": [
     {
-      "slug": "01-serie-voorbeeld",
-      "title": "Serie voorbeeld",
+      "slug": "01-example-series",
+      "title": "Example series",
       "photos": [
         {
-          "src": "photos/01-serie-voorbeeld/01-duinlandschap_x.svg",
+          "src": "photos/01-example-series/01-dunes_x.svg",
           "caption": "",
           "width": 1200,
           "height": 800
         },
         {
-          "src": "photos/01-serie-voorbeeld/02-portret_x.svg",
+          "src": "photos/01-example-series/02-portrait_x.svg",
           "caption": "",
           "width": 900,
           "height": 1200
         },
         {
-          "src": "photos/01-serie-voorbeeld/03-zee_x.svg",
+          "src": "photos/01-example-series/03-sea_x.svg",
           "caption": "",
           "width": 1200,
           "height": 900
         },
         {
-          "src": "photos/01-serie-voorbeeld/04-detail_x.svg",
+          "src": "photos/01-example-series/04-detail_x.svg",
           "caption": "",
           "width": 1000,
           "height": 1000
@@ -32,23 +32,23 @@
       ]
     },
     {
-      "slug": "02-tweede-serie",
-      "title": "Tweede serie",
+      "slug": "02-second-series",
+      "title": "Second series",
       "photos": [
         {
-          "src": "photos/02-tweede-serie/01-stad_x.svg",
+          "src": "photos/02-second-series/01-city_x.svg",
           "caption": "",
           "width": 900,
           "height": 1200
         },
         {
-          "src": "photos/02-tweede-serie/02-avondlicht_x.svg",
+          "src": "photos/02-second-series/02-evening_x.svg",
           "caption": "",
           "width": 1200,
           "height": 800
         },
         {
-          "src": "photos/02-tweede-serie/03-schaduw_x.svg",
+          "src": "photos/02-second-series/03-shadow_x.svg",
           "caption": "",
           "width": 1200,
           "height": 960

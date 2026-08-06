@@ -39,10 +39,11 @@ te doen.)
 
 Elke map in `photos/` wordt een serie met een eigen filterknop bovenaan de site.
 
-- De **mapnaam** wordt de serienaam: de map `natuur` wordt "Natuur" op de site
-- Gebruik **streepjes in plaats van spaties**: `aan-zee` wordt "Aan zee"
+- De **mapnaam** wordt de serienaam: de map `nature` wordt "Nature" op de site
+  (gebruik Engelse namen, de site is Engelstalig)
+- Gebruik **streepjes in plaats van spaties**: `by-the-sea` wordt "By the sea"
 - Wil je de **volgorde** van series bepalen? Zet een nummer vooraan:
-  `01-natuur`, `02-portretten` — het nummer verdwijnt op de site
+  `01-nature`, `02-portraits` — het nummer verdwijnt op de site
 
 Een nieuwe serie maak je tijdens het uploaden: klik in `photos/` op
 **Add file → Upload files** lukt niet direct voor een nieuwe map, gebruik dan
@@ -53,14 +54,14 @@ map (het tekstbestandje mag je daarna weer verwijderen).
 ## Bestandsnamen = volgorde + bijschrift
 
 - Foto's staan **alfabetisch** op volgorde. Nummer ze om de volgorde te bepalen:
-  `01-duinen.jpg`, `02-zonsondergang.jpg`, ...
+  `01-dunes.jpg`, `02-sunset.jpg`, ...
 - De bestandsnaam wordt het **bijschrift** onder de foto:
-  `03-avond-aan-zee.jpg` → "Avond aan zee"
-- **Geen bijschrift?** Eindig de naam op `_x`: `04-strand_x.jpg` toont geen tekst
+  `03-evening-at-sea.jpg` → "Evening at sea"
+- **Geen bijschrift?** Eindig de naam op `_x`: `04-beach_x.jpg` toont geen tekst
 
 ## Voorbeeldfoto's verwijderen
 
-Er staan nu twee voorbeeldseries in (`01-serie-voorbeeld` en `02-tweede-serie`)
+Er staan nu twee voorbeeldseries in (`01-example-series` en `02-second-series`)
 met grijze oefenafbeeldingen. Verwijder ze zo:
 
 1. Open zo'n map op github.com
@@ -74,7 +75,7 @@ Open het bestand **`docs/portfolio/config.json`**, klik op het potlood-icoon
 
 | Veld | Wat het doet |
 | --- | --- |
-| `naam` | Je naam linksboven en in de titel |
+| `naam` | Je naam bovenaan in het midden en in de titel |
 | `email` | Je e-mailadres op de informatiepagina |
 | `instagram` | Je Instagram-naam (zonder @); leeg = niet tonen |
 | `over` | De tekst op de informatiepagina, in het Engels (een lege regel = nieuwe alinea) |
@@ -93,7 +94,7 @@ Klik daarna op **Commit changes** — klaar.
 - **Vegen op je telefoon** — in de fotoweergave veeg je naar links/rechts
   voor de volgende/vorige foto.
 - **Deelbare series** — kies je een serie, dan verandert de link in de
-  adresbalk (bijv. `#series=natuur`); die link kun je direct delen.
+  adresbalk (bijv. `#series=nature`); die link kun je direct delen.
 - **Kopieerbescherming** — rechtsklikken en slepen op foto's is geblokkeerd
   (uit te zetten in `config.json`).
 

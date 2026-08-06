@@ -3,5 +3,5 @@
     <stop offset="0" stop-color="#9e9e9e"/><stop offset="1" stop-color="#767676"/>
   </linearGradient></defs>
   <rect width="1000" height="1000" fill="url(#g)"/>
-  <text x="500" y="500" fill="#ffffff" fill-opacity="0.55" font-family="Helvetica, Arial, sans-serif" font-size="29" letter-spacing="9" text-anchor="middle">VOORBEELDFOTO</text>
+  <text x="500" y="500" fill="#ffffff" fill-opacity="0.55" font-family="Helvetica, Arial, sans-serif" font-size="29" letter-spacing="9" text-anchor="middle">SAMPLE PHOTO</text>
 </svg>
