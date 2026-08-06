@@ -387,6 +387,11 @@ export const demoApi: Api = {
       .map(stripUser);
   },
 
+  async searchPeople(viewerId) {
+    const s = await load();
+    return s.users.filter((u) => u.id !== viewerId && u.role !== 'admin').map(stripUser);
+  },
+
   async friendsFeed(viewerId) {
     const s = await load();
     const following = new Set(
@@ -396,6 +401,18 @@ export const demoApi: Api = {
     );
     return s.visits
       .filter((v) => following.has(v.user_id))
+      .map((v) => feedItemFrom(s, v, viewerId))
+      .filter((x): x is FeedItem => x !== null)
+      .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
+  },
+
+  async discoverFeed(viewerId) {
+    const s = await load();
+    const publicIds = new Set(
+      s.users.filter((u) => !u.is_private && u.role !== 'admin').map((u) => u.id)
+    );
+    return s.visits
+      .filter((v) => publicIds.has(v.user_id))
       .map((v) => feedItemFrom(s, v, viewerId))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));

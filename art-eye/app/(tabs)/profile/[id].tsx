@@ -94,8 +94,12 @@ export default function ProfileScreen() {
         </Text>
 
         <View style={styles.stats}>
-          <Stat label="FOLLOWERS" value={profile.followers} />
-          <Stat label="FOLLOWING" value={profile.following} />
+          <Pressable onPress={() => router.push(`/connections/${profile.id}?type=followers`)}>
+            <Stat label="FOLLOWERS" value={profile.followers} />
+          </Pressable>
+          <Pressable onPress={() => router.push(`/connections/${profile.id}?type=following`)}>
+            <Stat label="FOLLOWING" value={profile.following} />
+          </Pressable>
           <Stat label="LOGGED" value={profile.visit_count} />
         </View>
 

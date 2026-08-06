@@ -88,7 +88,9 @@ export interface Api {
   respondFollowRequest(userId: string, requesterId: string, accept: boolean): Promise<void>;
   setProfilePrivacy(userId: string, isPrivate: boolean): Promise<void>;
   discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
+  searchPeople(viewerId: string): Promise<Profile[]>; // everyone (except self), for name search
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows
+  discoverFeed(viewerId: string): Promise<FeedItem[]>; // activity from every public profile
   userActivity(userId: string, viewerId: string | null): Promise<FeedItem[]>;
 
   // reactions on posts (Letterboxd-style) — a post is (postUserId, exhibitionId)

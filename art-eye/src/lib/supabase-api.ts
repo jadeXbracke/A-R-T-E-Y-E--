@@ -687,6 +687,19 @@ export const supabaseApi: Api = {
     return (data ?? []).filter((p) => !exclude.has((p as Profile).id)) as Profile[];
   },
 
+  // Everyone (except the app owner and yourself), for the people search — the
+  // caller filters by name locally, same pattern as the venue/show search.
+  async searchPeople(viewerId) {
+    const { data, error } = await supabase()
+      .from('profiles')
+      .select('*')
+      .neq('role', 'admin')
+      .neq('id', viewerId)
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Profile[];
+  },
+
   async friendsFeed(viewerId) {
     const sb = supabase();
     const { data: following } = await sb
@@ -701,6 +714,23 @@ export const supabaseApi: Api = {
       .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
       .in('user_id', ids)
       .order('visit_date', { ascending: false });
+    if (error) throw new Error(error.message);
+    return withReactions((data ?? []).map(toFeedItem), viewerId);
+  },
+
+  // Every public profile's activity, not just people you follow — how new
+  // visitors find people to follow in the first place.
+  async discoverFeed(viewerId) {
+    const sb = supabase();
+    const { data: pub } = await sb.from('profiles').select('id').eq('is_private', false).neq('role', 'admin');
+    const ids = (pub ?? []).map((r) => (r as { id: string }).id);
+    if (ids.length === 0) return [];
+    const { data, error } = await sb
+      .from('user_visits')
+      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .in('user_id', ids)
+      .order('visit_date', { ascending: false })
+      .limit(100);
     if (error) throw new Error(error.message);
     return withReactions((data ?? []).map(toFeedItem), viewerId);
   },
