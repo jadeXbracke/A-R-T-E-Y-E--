@@ -70,22 +70,10 @@
     }, { passive: true });
   }
 
-  /* ---------- hero: naam + lokale tijd ---------- */
+  /* ---------- hero: lokale tijd ---------- */
 
-  function bindHero(config) {
+  function bindHero() {
     if (!heroEl) return;
-    if (config && config.naam) {
-      var parts = String(config.naam).trim().split(/\s+/);
-      var first = heroEl.querySelector(".hero-line.first");
-      var last = heroEl.querySelector(".hero-line.last");
-      if (parts.length > 1) {
-        first.textContent = parts[0];
-        last.textContent = parts.slice(1).join(" ");
-      } else {
-        first.textContent = parts[0];
-        last.textContent = "";
-      }
-    }
     var timeEl = heroEl.querySelector(".hero-time");
     if (timeEl) {
       var tick = function () {

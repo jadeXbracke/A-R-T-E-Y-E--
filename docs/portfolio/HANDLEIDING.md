@@ -86,24 +86,22 @@ Klik daarna op **Commit changes** — klaar.
 
 ## Extra's die er al in zitten
 
-- **Grote openingspagina** — je naam levensgroot over het scherm (voornaam
-  vol, achternaam als contour), met je lokale tijd en een scroll-hint.
-  De naam komt automatisch uit `config.json`.
+- **Openingspagina** — je naam rustig gecentreerd in beeld, met je lokale
+  tijd en een scroll-hint. De naam komt automatisch uit `config.json`.
 - **Verdwijnend logo** — bij omlaag scrollen glijdt de balk bovenaan weg;
   scroll je omhoog, dan komt hij terug en "versmelt" hij met de foto's die
   eronderdoor schuiven (omgekeerde kleur). Het kleine logo verschijnt pas
   nadat de grote openingsnaam uit beeld is.
 - **Editorial raster** — foto's staan niet in nette kolommen maar in een
   magazine-achtig ritme van groot en klein, met verspringende hoogtes en
-  cursieve nummers (01, 02, ...) bij elk beeld.
+  nummers (01, 02, ...) bij elk beeld.
 - **Grid / Index** — rechtsboven de foto's kun je wisselen tussen het
   raster en een tekstlijst van al het werk; zweef je over een regel, dan
   volgt een zwevende foto je cursor. Je keuze wordt onthouden.
 - **Eigen cursor** — op de werkpagina wordt de muisaanwijzer een stip die
   uitgroeit tot "View" boven foto's en indexregels.
-- **Grote afsluiter** — onderaan elke pagina staat een paginabrede
-  "Get in touch" die naar je e-mail linkt en bij aanraking omkeert naar
-  zwart met cursieve letters.
+- **Afsluiter** — onderaan elke pagina staat een ingetogen
+  "Get in touch"-regel die naar je e-mail linkt.
 - **Diavoorstelling** — open een foto en klik op *Play* (of druk op de
   spatiebalk); elke 3,5 seconde verschijnt de volgende foto.
 - **Vegen op je telefoon** — in de fotoweergave veeg je naar links/rechts

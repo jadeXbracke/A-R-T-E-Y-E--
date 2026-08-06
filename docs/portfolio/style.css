@@ -17,7 +17,6 @@
   --gutter: 20px;
   --edge: 30px;
   --track: 0.12em;
-  --serif: Georgia, "Times New Roman", serif;
 }
 
 html {
@@ -130,49 +129,36 @@ body.has-hero .site-header:not(.past-hero) .wordmark {
 /* ---------- hero ---------- */
 
 .hero {
-  min-height: 92vh;
+  min-height: 80vh;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding: 0 var(--edge) 30px;
+  padding: 0 var(--edge) 26px;
 }
 
 .hero-title {
-  display: flex;
-  flex-direction: column;
-  font-weight: 400;
+  margin: auto;
+  padding-top: 60px;
+  font-weight: 300;
   text-transform: uppercase;
-  font-size: clamp(64px, 15.5vw, 240px);
-  line-height: 0.92;
-  letter-spacing: 0.01em;
-  margin-bottom: 34px;
-}
-
-.hero-line.last {
-  align-self: flex-end;
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--ink);
-  text-stroke: 1.5px var(--ink);
+  font-size: clamp(24px, 4.2vw, 52px);
+  line-height: 1.1;
+  letter-spacing: 0.32em;
+  text-align: center;
 }
 
 .hero-meta {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  border-top: 1px solid var(--ink);
+  border-top: 1px solid var(--hairline);
   padding-top: 14px;
   text-transform: uppercase;
   font-size: 10px;
-  color: var(--ink);
+  color: var(--ink-soft);
 }
 
 .hero-meta .hero-time {
-  font-family: var(--serif);
-  font-style: italic;
-  text-transform: none;
-  letter-spacing: 0.04em;
-  font-size: 12px;
-  color: var(--ink-soft);
+  letter-spacing: 0.16em;
 }
 
 .hero-scroll {
@@ -303,10 +289,8 @@ body:not(.has-hero) .work-toolbar {
 }
 
 .grid .cap-num {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 12px;
-  letter-spacing: 0.03em;
+  font-size: 9px;
+  letter-spacing: 0.16em;
   color: var(--ink);
 }
 
@@ -349,27 +333,24 @@ body:not(.has-hero) .work-toolbar {
 }
 
 .index-num {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: 13px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
   color: var(--ink-soft);
   min-width: 34px;
 }
 
 .index-title {
-  font-size: clamp(20px, 3.4vw, 44px);
-  letter-spacing: 0.04em;
+  font-size: clamp(17px, 2.6vw, 34px);
+  font-weight: 300;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.1;
   flex: 1;
-  transition: font-style 0.2s ease;
+  transition: color 0.3s ease;
 }
 
 .index-row:hover .index-title {
-  font-family: var(--serif);
-  font-style: italic;
-  text-transform: none;
-  letter-spacing: 0.01em;
+  color: var(--ink-soft);
 }
 
 .index-serie {
@@ -496,10 +477,7 @@ body.has-fine-pointer .cursor {
 }
 
 .lightbox-counter {
-  font-family: var(--serif);
-  font-style: italic;
-  text-transform: none;
-  font-size: 12px;
+  letter-spacing: 0.16em;
 }
 
 .lightbox-play {
@@ -560,19 +538,11 @@ body.has-fine-pointer .cursor {
 }
 
 .info-title {
-  font-size: clamp(48px, 9vw, 140px);
-  font-weight: 400;
+  font-size: clamp(20px, 3vw, 38px);
+  font-weight: 300;
   text-transform: uppercase;
-  line-height: 0.95;
-  letter-spacing: 0.01em;
-  margin-bottom: 56px;
-}
-
-.info-title em {
-  font-family: var(--serif);
-  font-style: italic;
-  text-transform: none;
-  letter-spacing: 0;
+  letter-spacing: 0.28em;
+  margin-bottom: 52px;
 }
 
 .info-body p {
@@ -610,9 +580,8 @@ body.has-fine-pointer .cursor {
 
 .footer-cta {
   display: block;
-  padding: 46px var(--edge) 52px;
-  border-top: 1px solid var(--ink);
-  transition: background 0.35s ease, color 0.35s ease;
+  padding: 44px var(--edge) 48px;
+  border-top: 1px solid var(--hairline);
 }
 
 .footer-cta-small {
@@ -620,31 +589,24 @@ body.has-fine-pointer .cursor {
   font-size: 10px;
   text-transform: uppercase;
   color: var(--ink-soft);
-  margin-bottom: 16px;
-  transition: color 0.35s ease;
+  margin-bottom: 14px;
 }
 
 .footer-cta-big {
-  display: block;
-  font-size: clamp(40px, 8.5vw, 130px);
+  display: inline-block;
+  font-size: clamp(18px, 2.6vw, 34px);
+  font-weight: 300;
   line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.01em;
-}
-
-.footer-cta:hover {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.footer-cta:hover .footer-cta-small {
-  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.22em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--ink);
+  transition: color 0.3s ease, border-color 0.3s ease;
 }
 
 .footer-cta:hover .footer-cta-big {
-  font-family: var(--serif);
-  font-style: italic;
-  text-transform: none;
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
 }
 
 .footer-row {
