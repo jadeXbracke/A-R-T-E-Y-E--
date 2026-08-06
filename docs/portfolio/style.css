@@ -87,13 +87,6 @@ img {
   white-space: nowrap;
 }
 
-.wordmark .sub {
-  color: rgba(255, 255, 255, 0.5);
-  margin-left: 0.9em;
-  font-size: 10px;
-  letter-spacing: 0.3em;
-}
-
 .site-nav {
   display: flex;
   gap: 28px;

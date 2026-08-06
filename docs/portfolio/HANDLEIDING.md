@@ -18,6 +18,11 @@ GitHub Pages aanzetten (eenmalig):
 4. Kies branch **main** en map **/docs**, klik **Save**
 5. Na een paar minuten is de site live
 
+## Taal
+
+De site zelf is Engelstalig (Work, Information, Play, ...). Schrijf de
+teksten die je in `config.json` invult dus ook in het Engels.
+
 ## Foto's toevoegen
 
 1. Ga op github.com naar de map **`docs/portfolio/photos/`**
@@ -70,10 +75,9 @@ Open het bestand **`docs/portfolio/config.json`**, klik op het potlood-icoon
 | Veld | Wat het doet |
 | --- | --- |
 | `naam` | Je naam linksboven en in de titel |
-| `ondertitel` | Het woord naast je naam (bijv. "Fotografie") |
 | `email` | Je e-mailadres op de informatiepagina |
 | `instagram` | Je Instagram-naam (zonder @); leeg = niet tonen |
-| `over` | De tekst op de informatiepagina (een lege regel = nieuwe alinea) |
+| `over` | De tekst op de informatiepagina, in het Engels (een lege regel = nieuwe alinea) |
 | `copyright` | De regel onderaan elke pagina |
 | `rechtsklik_beveiliging` | `true` = rechtsklikken/slepen op foto's blokkeren, `false` = toestaan |
 
@@ -84,12 +88,12 @@ Klik daarna op **Commit changes** — klaar.
 - **Verdwijnend logo** — bij omlaag scrollen glijdt de balk met je naam weg;
   scroll je omhoog, dan komt hij terug en "versmelt" hij met de foto's die
   eronderdoor schuiven (het logo krijgt de omgekeerde kleur van de foto).
-- **Diavoorstelling** — open een foto en klik op *Afspelen* (of druk op de
+- **Diavoorstelling** — open een foto en klik op *Play* (of druk op de
   spatiebalk); elke 3,5 seconde verschijnt de volgende foto.
 - **Vegen op je telefoon** — in de fotoweergave veeg je naar links/rechts
   voor de volgende/vorige foto.
 - **Deelbare series** — kies je een serie, dan verandert de link in de
-  adresbalk (bijv. `#serie=natuur`); die link kun je direct delen.
+  adresbalk (bijv. `#series=natuur`); die link kun je direct delen.
 - **Kopieerbescherming** — rechtsklikken en slepen op foto's is geblokkeerd
   (uit te zetten in `config.json`).
 

@@ -115,7 +115,7 @@
       if (slug === "alles") {
         history.replaceState(null, "", location.pathname + location.search);
       } else {
-        history.replaceState(null, "", "#serie=" + encodeURIComponent(slug));
+        history.replaceState(null, "", "#series=" + encodeURIComponent(slug));
       }
     }
     renderSeriesNav();
@@ -123,7 +123,7 @@
   }
 
   function seriesFromHash() {
-    var match = location.hash.match(/serie=([^&]+)/);
+    var match = location.hash.match(/series?=([^&]+)/);
     if (!match) return "alles";
     var slug = decodeURIComponent(match[1]);
     return state.series.some(function (s) { return s.slug === slug; }) ? slug : "alles";
@@ -134,7 +134,7 @@
     seriesNavEl.innerHTML = "";
     if (state.series.length < 2) return;
 
-    var items = [{ slug: "alles", title: "Alles" }].concat(state.series);
+    var items = [{ slug: "alles", title: "All" }].concat(state.series);
     items.forEach(function (item) {
       var btn = document.createElement("button");
       btn.type = "button";
@@ -156,7 +156,7 @@
       var empty = document.createElement("div");
       empty.className = "empty-state";
       empty.textContent =
-        "Nog geen foto's — voeg afbeeldingen toe in docs/portfolio/photos/ (zie HANDLEIDING.md).";
+        "No photos yet — add images in docs/portfolio/photos/ (see HANDLEIDING.md).";
       gridEl.appendChild(empty);
       return;
     }
@@ -250,7 +250,7 @@
     state.slideshowTimer = window.setInterval(function () {
       stepLightbox(1);
     }, 3500);
-    btn.textContent = "Pauze";
+    btn.textContent = "Pause";
     btn.classList.add("is-playing");
   }
 
@@ -261,7 +261,7 @@
     }
     var btn = lightboxEl.querySelector(".lightbox-play");
     if (btn) {
-      btn.textContent = "Afspelen";
+      btn.textContent = "Play";
       btn.classList.remove("is-playing");
     }
   }
