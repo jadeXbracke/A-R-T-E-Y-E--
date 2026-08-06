@@ -120,6 +120,19 @@ export const supabaseApi: Api = {
     });
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error('Check your inbox to confirm your email, then sign in.');
+    // An existing, already-confirmed email comes back as a user with no
+    // identities and no session — Supabase's way of not revealing which
+    // emails are taken. Give that its own message instead of a database error.
+    if (!data.session && data.user.identities?.length === 0) {
+      throw new Error('An account with this email already exists — sign in instead.');
+    }
+    // Email confirmation is required: there is no session yet, so profiles
+    // (readable only when signed in) can't be fetched until the link is
+    // clicked. The profile row itself already exists (a database trigger
+    // created it), so this is not an error — just not signed in yet.
+    if (!data.session) {
+      throw new Error('Check your inbox to confirm your email, then sign in.');
+    }
     if (input.role === 'venue_owner' && input.venue) {
       await supabase().from('venues').insert({
         name: input.venue.name.trim(),
