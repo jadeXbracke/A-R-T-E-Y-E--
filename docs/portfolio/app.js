@@ -177,6 +177,86 @@
     return config;
   }
 
+  /* ---------- contactblok (informatiepagina) ----------
+     Groepen zoals Address / Love letters / Social, opgebouwd uit
+     config.json; lege velden en lege groepen verdwijnen vanzelf. */
+
+  function contactGroups(config) {
+    var address = [];
+    if (config.adres) {
+      String(config.adres).split(/\n/).forEach(function (regel) {
+        if (regel.trim()) address.push({ text: regel.trim() });
+      });
+    }
+    if (config.btw) {
+      var btw = String(config.btw).trim();
+      address.push({ text: /^btw/i.test(btw) ? btw : "BTW " + btw });
+    }
+    if (config.kvk) {
+      var kvk = String(config.kvk).trim();
+      address.push({ text: /^kvk/i.test(kvk) ? kvk : "KVK " + kvk });
+    }
+
+    var contact = [];
+    if (config.email) {
+      contact.push({ text: config.email, href: "mailto:" + config.email });
+    }
+
+    var social = [];
+    if (config.instagram) {
+      var handle = String(config.instagram).replace(/^@/, "").trim();
+      social.push({ text: "Instagram", href: "https://www.instagram.com/" + handle + "/" });
+    }
+    if (config.linkedin) {
+      var li = String(config.linkedin).trim();
+      social.push({
+        text: "LinkedIn",
+        href: /^https?:\/\//i.test(li) ? li : "https://www.linkedin.com/in/" + li,
+      });
+    }
+
+    return [
+      { label: "Address", items: address },
+      { label: "Love letters", items: contact },
+      { label: "Social", items: social },
+    ].filter(function (group) { return group.items.length; });
+  }
+
+  function renderContact(config) {
+    var wrap = document.querySelector("[data-contact]");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    contactGroups(config || {}).forEach(function (group) {
+      var col = document.createElement("div");
+      col.className = "contact-group";
+
+      var label = document.createElement("div");
+      label.className = "contact-label";
+      label.textContent = group.label;
+      col.appendChild(label);
+
+      group.items.forEach(function (item) {
+        var line = document.createElement("div");
+        line.className = "contact-line";
+        if (item.href) {
+          var a = document.createElement("a");
+          a.textContent = item.text;
+          a.setAttribute("href", item.href);
+          if (!/^mailto:/.test(item.href)) {
+            a.setAttribute("target", "_blank");
+            a.setAttribute("rel", "noopener");
+          }
+          line.appendChild(a);
+        } else {
+          line.textContent = item.text;
+        }
+        col.appendChild(line);
+      });
+
+      wrap.appendChild(col);
+    });
+  }
+
   /* ---------- raster ---------- */
 
   var revealObserver = ("IntersectionObserver" in window)
@@ -525,6 +605,7 @@
     .catch(function () { return {}; });
 
   configReady.then(bindHero);
+  configReady.then(renderContact);
 
   if (gridEl) {
     bindLightbox();

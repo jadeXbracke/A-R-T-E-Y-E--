@@ -554,21 +554,35 @@ body.has-fine-pointer .cursor {
   color: #2e2e2e;
 }
 
-.info .contact {
-  margin-top: 52px;
+.contact-grid {
+  margin-top: 64px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 220px));
+  gap: 40px 48px;
+}
+
+.contact-label {
   text-transform: uppercase;
   font-size: 10px;
-  letter-spacing: var(--track);
-  line-height: 2.6;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+  margin-bottom: 14px;
 }
 
-.info .contact a {
+.contact-line {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  line-height: 2.2;
+  color: var(--ink);
+}
+
+.contact-line a {
   border-bottom: 1px solid var(--hairline);
   padding-bottom: 2px;
-  transition: border-color 0.25s ease;
+  transition: border-color 0.25s ease, color 0.25s ease;
 }
 
-.info .contact a:hover {
+.contact-line a:hover {
   border-color: var(--ink);
 }
 
@@ -688,6 +702,7 @@ body.has-fine-pointer .cursor {
   .index-preview { display: none; }
 
   .info { padding-top: 120px; }
+  .contact-grid { grid-template-columns: 1fr; gap: 30px; }
   .lightbox-stage { padding: 64px 20px 52px; }
   .lightbox-arrow { bottom: 60px; }
 }

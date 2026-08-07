@@ -76,11 +76,20 @@ Open het bestand **`docs/portfolio/config.json`**, klik op het potlood-icoon
 | Veld | Wat het doet |
 | --- | --- |
 | `naam` | Je naam bovenaan in het midden en in de titel |
-| `email` | Je e-mailadres op de informatiepagina |
-| `instagram` | Je Instagram-naam (zonder @); leeg = niet tonen |
+| `email` | Je e-mailadres, onder het kopje "Love letters" |
+| `adres` | Je adres onder het kopje "Address"; gebruik `\n` voor een nieuwe regel (bijv. `"Straat 1\n1234 AB Stad"`); leeg = niet tonen |
+| `btw` | Je BTW-nummer (alleen het nummer, "BTW" komt er vanzelf voor); leeg = niet tonen |
+| `kvk` | Je KVK-nummer (alleen het nummer, "KVK" komt er vanzelf voor); leeg = niet tonen |
+| `instagram` | Je Instagram-naam (zonder @), onder "Social"; leeg = niet tonen |
+| `linkedin` | Je LinkedIn-naam of volledige LinkedIn-link, onder "Social"; leeg = niet tonen |
 | `over` | De tekst op de informatiepagina, in het Engels (een lege regel = nieuwe alinea) |
 | `copyright` | De regel onderaan elke pagina |
 | `rechtsklik_beveiliging` | `true` = rechtsklikken/slepen op foto's blokkeren, `false` = toestaan |
+
+Het contactblok op de informatiepagina bouwt zichzelf op uit deze velden, in
+drie kolommen: **Address** (adres + BTW + KVK), **Love letters** (e-mail) en
+**Social** (Instagram + LinkedIn). Alles wat je leeg laat wordt gewoon niet
+getoond — je hoeft dus niets in te vullen wat je niet wilt delen.
 
 Klik daarna op **Commit changes** — klaar.
 
@@ -103,7 +112,7 @@ Klik daarna op **Commit changes** — klaar.
 - **Afsluiter** — onderaan elke pagina staat een ingetogen
   "Say hello"-regel die naar je e-mail linkt.
 - **Speelse teksten** — subtiele knipogen door de site heen:
-  "Love letters" bij je e-mailadres, "Small talk" bij Instagram,
+  "Love letters" boven je e-mailadres,
   "Have a look" als scroll-hint en "Up we go" om terug omhoog te gaan.
   Wil je andere woorden? Vraag het of pas ze aan in `index.html` /
   `info.html`.
