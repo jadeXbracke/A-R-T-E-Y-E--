@@ -10,19 +10,19 @@ import {
 import { colors, fonts } from '../theme';
 
 /**
- * Cosmos-style launch sequence on an ink sheet — a ring of white dots
- * performs a quiet opening beat on black, dissolves, and the white ARTEYE
- * letters drift apart into the wordmark's wide tracking. Then the dark
- * sheet lifts to the white app and `Reveal` blocks below stagger in, so
- * the home screen appears to assemble itself. Runs once per app launch.
+ * Launch sequence on an ink sheet — a single white circle performs one
+ * quick gesture on black, dissolves, and the white ARTEYE letters drift
+ * apart into the wordmark's wide tracking. Then the dark sheet lifts to
+ * the white app and `Reveal` blocks below stagger in, so the home screen
+ * appears to assemble itself. Runs once per app launch.
  *
- * Five restrained takes on that one concept live here while the final one
- * is being chosen — set INTRO_VARIANT to lock it in:
- *   1 classic — dots pop into the ring, spin, and draw into the centre
- *   2 drift   — the ring breathes in together, turns slowly, softly fades
- *   3 gather  — dots glide in from wide to form the ring, then draw in
- *   4 pulse   — the ring gives one soft heartbeat while turning
- *   5 line    — the ring unfolds into a row of dots that becomes the letters
+ * Five candidate gestures live here while the final one is being chosen —
+ * set INTRO_VARIANT to lock it in:
+ *   1 aperture — a large circle contracts to a point, like a lens focusing
+ *   2 eclipse  — a shadow glides over the circle until only a rim remains
+ *   3 blink    — the circle blinks once like an eye, then slips away
+ *   4 ripple   — hairline circles ripple outward as the letters fade in
+ *   5 halo     — a hairline circle glows up around the arriving wordmark
  * On web, `?intro=N` previews a variant without rebuilding.
  */
 const INTRO_VARIANT = 1;
@@ -71,28 +71,23 @@ const LETTER_SIZE = 26;
 const TRACK = LETTER_SIZE * 0.55; // matches the Wordmark's letterSpacing ratio
 const CENTER = (LETTERS.length - 1) / 2;
 
-const DOTS = 6;
-const DOT_SIZE = 18;
-const RING_RADIUS = 40;
-const STAGE = (RING_RADIUS + DOT_SIZE) * 2;
-
-// Variant 5 — each dot's resting spot on the ring, and its slot in the row
-// it unfolds into (one slot per letter).
-const RING_XY = Array.from({ length: DOTS }, (_, i) => {
-  const a = (i / DOTS) * Math.PI * 2;
-  return { x: Math.sin(a) * RING_RADIUS, y: -Math.cos(a) * RING_RADIUS };
-});
-const ROW_X = Array.from({ length: DOTS }, (_, i) => (i - CENTER) * 30);
+const DISC_SIZE = 86;
+const RIM = 4; // the sliver of light the eclipse leaves
+const RIPPLE_SIZE = 120;
+const HALO_SIZE = 214;
+const STAGE = 230;
 
 export function IntroOverlay() {
   const [visible, setVisible] = useState(true);
   const [lifting, setLifting] = useState(false);
   const variant = useRef(activeVariant()).current;
 
-  const dots = useRef(Array.from({ length: DOTS }, () => new Animated.Value(0))).current;
-  const spin = useRef(new Animated.Value(0)).current;
-  const morph = useRef(new Animated.Value(0)).current;
-  const figureScale = useRef(new Animated.Value(1)).current;
+  const discIn = useRef(new Animated.Value(0)).current;
+  const discScale = useRef(new Animated.Value(1)).current;
+  const blink = useRef(new Animated.Value(1)).current;
+  const shadowX = useRef(new Animated.Value(0)).current;
+  const ripples = useRef(Array.from({ length: 3 }, () => new Animated.Value(0))).current;
+  const halo = useRef(new Animated.Value(0)).current;
   const figureFade = useRef(new Animated.Value(1)).current;
   const letters = useRef(LETTERS.map(() => new Animated.Value(0))).current;
   const sheet = useRef(new Animated.Value(1)).current;
@@ -107,169 +102,149 @@ export function IntroOverlay() {
         return;
       }
 
-      const popIn = Animated.stagger(
-        80,
-        dots.map((v) =>
-          Animated.timing(v, {
-            toValue: 1,
-            duration: 340,
-            easing: Easing.out(Easing.back(1.8)),
-            useNativeDriver: true,
-          })
-        )
-      );
-
-      const turn = (sweepMs: number) =>
-        Animated.timing(spin, {
-          toValue: 1,
-          duration: sweepMs,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
-        });
-
-      const drawIn = Animated.parallel([
-        Animated.timing(figureScale, {
-          toValue: 0.08,
-          duration: 550,
-          easing: Easing.in(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.delay(310),
-          Animated.timing(figureFade, { toValue: 0, duration: 240, useNativeDriver: true }),
-        ]),
-      ]);
+      const fadeFigure = (duration = 220) =>
+        Animated.timing(figureFade, { toValue: 0, duration, useNativeDriver: true });
 
       const letterDrift = Animated.stagger(
-        95,
+        60,
         letters.map((v) =>
           Animated.timing(v, {
             toValue: 1,
-            duration: 800,
+            duration: 550,
             easing: Easing.out(Easing.cubic),
             useNativeDriver: true,
           })
         )
       );
 
-      let figure: Animated.CompositeAnimation;
-      let closing: Animated.CompositeAnimation = Animated.sequence([
-        letterDrift,
-        Animated.delay(350),
-      ]);
+      let sequence: Animated.CompositeAnimation;
 
       switch (variant) {
         case 2:
-          // The ring breathes in together, turns slowly, and softly fades.
-          figure = Animated.sequence([
-            Animated.parallel(
-              dots.map((v) =>
-                Animated.timing(v, {
-                  toValue: 1,
-                  duration: 700,
-                  easing: Easing.out(Easing.quad),
-                  useNativeDriver: true,
-                })
-              )
-            ),
+          // A shadow glides over the circle until only a rim of light remains.
+          discScale.setValue(0.7);
+          sequence = Animated.sequence([
             Animated.parallel([
-              turn(1400),
-              Animated.sequence([
-                Animated.delay(850),
-                Animated.parallel([
-                  Animated.timing(figureScale, {
-                    toValue: 0.6,
-                    duration: 550,
-                    easing: Easing.in(Easing.quad),
-                    useNativeDriver: true,
-                  }),
-                  Animated.timing(figureFade, {
-                    toValue: 0,
-                    duration: 550,
-                    useNativeDriver: true,
-                  }),
-                ]),
-              ]),
+              Animated.timing(discIn, { toValue: 1, duration: 300, useNativeDriver: true }),
+              Animated.timing(discScale, {
+                toValue: 1,
+                duration: 340,
+                easing: Easing.out(Easing.cubic),
+                useNativeDriver: true,
+              }),
             ]),
-          ]);
-          break;
-        case 3:
-          // Dots glide in from wide to form the ring, then draw in.
-          figure = Animated.sequence([
-            Animated.stagger(
-              70,
-              dots.map((v) =>
-                Animated.timing(v, {
-                  toValue: 1,
-                  duration: 650,
-                  easing: Easing.out(Easing.cubic),
-                  useNativeDriver: true,
-                })
-              )
-            ),
-            Animated.parallel([turn(850), Animated.sequence([Animated.delay(350), drawIn])]),
-          ]);
-          break;
-        case 4:
-          // The ring gives one soft heartbeat while turning, then draws in.
-          figure = Animated.sequence([
-            popIn,
-            Animated.parallel([
-              turn(1300),
-              Animated.sequence([
-                Animated.timing(figureScale, {
-                  toValue: 1.16,
-                  duration: 420,
-                  easing: Easing.inOut(Easing.sin),
-                  useNativeDriver: true,
-                }),
-                Animated.timing(figureScale, {
-                  toValue: 1,
-                  duration: 420,
-                  easing: Easing.inOut(Easing.sin),
-                  useNativeDriver: true,
-                }),
-              ]),
-            ]),
-            drawIn,
-          ]);
-          break;
-        case 5:
-          // The ring unfolds into a row of dots that becomes the letters.
-          figure = Animated.sequence([
-            popIn,
-            Animated.delay(150),
-            Animated.timing(morph, {
+            Animated.timing(shadowX, {
               toValue: 1,
-              duration: 750,
+              duration: 620,
               easing: Easing.inOut(Easing.cubic),
               useNativeDriver: true,
             }),
-            Animated.delay(120),
+            Animated.delay(140),
+            Animated.parallel([fadeFigure(300), letterDrift]),
+            Animated.delay(250),
           ]);
-          closing = Animated.sequence([
+          break;
+        case 3:
+          // The circle blinks once like an eye, then slips away.
+          discScale.setValue(0.6);
+          sequence = Animated.sequence([
             Animated.parallel([
-              Animated.timing(figureFade, { toValue: 0, duration: 320, useNativeDriver: true }),
-              letterDrift,
+              Animated.timing(discIn, { toValue: 1, duration: 260, useNativeDriver: true }),
+              Animated.timing(discScale, {
+                toValue: 1,
+                duration: 300,
+                easing: Easing.out(Easing.back(1.4)),
+                useNativeDriver: true,
+              }),
             ]),
-            Animated.delay(350),
+            Animated.delay(120),
+            Animated.timing(blink, {
+              toValue: 0.06,
+              duration: 160,
+              easing: Easing.inOut(Easing.quad),
+              useNativeDriver: true,
+            }),
+            Animated.timing(blink, {
+              toValue: 1,
+              duration: 200,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }),
+            Animated.delay(90),
+            Animated.parallel([
+              Animated.timing(discScale, {
+                toValue: 0.05,
+                duration: 360,
+                easing: Easing.in(Easing.cubic),
+                useNativeDriver: true,
+              }),
+              Animated.sequence([Animated.delay(190), fadeFigure(170)]),
+            ]),
+            letterDrift,
+            Animated.delay(250),
+          ]);
+          break;
+        case 4:
+          // Hairline circles ripple outward as the letters fade in.
+          sequence = Animated.sequence([
+            Animated.parallel([
+              Animated.stagger(
+                200,
+                ripples.map((v) =>
+                  Animated.timing(v, {
+                    toValue: 1,
+                    duration: 850,
+                    easing: Easing.out(Easing.quad),
+                    useNativeDriver: true,
+                  })
+                )
+              ),
+              Animated.sequence([Animated.delay(420), letterDrift]),
+            ]),
+            Animated.delay(250),
+          ]);
+          break;
+        case 5:
+          // A hairline circle glows up around the arriving wordmark.
+          sequence = Animated.sequence([
+            Animated.parallel([
+              letterDrift,
+              Animated.timing(halo, {
+                toValue: 1,
+                duration: 950,
+                easing: Easing.out(Easing.quad),
+                useNativeDriver: true,
+              }),
+            ]),
+            Animated.delay(250),
           ]);
           break;
         default:
-          // 1 — dots pop into the ring, spin, and draw into the centre.
-          figure = Animated.sequence([
-            popIn,
-            Animated.parallel([turn(1000), Animated.sequence([Animated.delay(450), drawIn])]),
+          // 1 — a large circle contracts to a point, like a lens focusing.
+          discScale.setValue(2.4);
+          sequence = Animated.sequence([
+            Animated.parallel([
+              Animated.timing(discIn, { toValue: 1, duration: 180, useNativeDriver: true }),
+              Animated.timing(discScale, {
+                toValue: 0.06,
+                duration: 680,
+                easing: Easing.inOut(Easing.cubic),
+                useNativeDriver: true,
+              }),
+            ]),
+            fadeFigure(160),
+            letterDrift,
+            Animated.delay(250),
           ]);
       }
 
-      Animated.sequence([figure, closing]).start(() => {
+      sequence.start(() => {
         if (cancelled) return;
         setLifting(true);
         markIntroDone();
         Animated.timing(sheet, {
           toValue: 0,
-          duration: 650,
+          duration: 500,
           easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
         }).start(() => {
@@ -290,79 +265,71 @@ export function IntroOverlay() {
       style={[StyleSheet.absoluteFillObject, styles.sheet, { opacity: sheet }]}
     >
       <View style={styles.stage}>
-        <Animated.View
-          style={[styles.figure, { opacity: figureFade, transform: [{ scale: figureScale }] }]}
-        >
-          {variant === 5 ? (
-            // Cartesian dots so the ring can unfold into the letter row.
-            dots.map((v, i) => (
-              <Animated.View
-                key={i}
-                style={[
-                  styles.dot,
-                  {
-                    opacity: v,
-                    transform: [
-                      {
-                        translateX: morph.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [RING_XY[i].x, ROW_X[i]],
-                        }),
-                      },
-                      {
-                        translateY: morph.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [RING_XY[i].y, 0],
-                        }),
-                      },
-                      { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.8] }) },
-                    ],
-                  },
-                ]}
-              />
-            ))
-          ) : (
+        <Animated.View style={[styles.figure, { opacity: figureFade }]}>
+          {(variant === 1 || variant === 2 || variant === 3) && (
             <Animated.View
               style={[
-                styles.figure,
+                styles.disc,
                 {
-                  transform: [
-                    {
-                      rotate: spin.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', variant === 2 ? '160deg' : '300deg'],
-                      }),
-                    },
-                  ],
+                  opacity: discIn,
+                  transform: [{ scale: discScale }, { scaleY: blink }],
                 },
               ]}
             >
-              {dots.map((v, i) => (
+              {variant === 2 && (
                 <Animated.View
-                  key={i}
                   style={[
-                    styles.dot,
+                    styles.shadow,
                     {
-                      opacity: v,
                       transform: [
-                        { rotate: `${(i / DOTS) * 360}deg` },
                         {
-                          // Variant 3 glides in from wide; the rest sit on the ring.
-                          translateY:
-                            variant === 3
-                              ? v.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: [-RING_RADIUS * 2.4, -RING_RADIUS],
-                                })
-                              : -RING_RADIUS,
+                          translateX: shadowX.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [-DISC_SIZE * 1.4, 0],
+                          }),
                         },
-                        { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) },
                       ],
                     },
                   ]}
                 />
-              ))}
+              )}
             </Animated.View>
+          )}
+
+          {variant === 4 &&
+            ripples.map((v, i) => (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.ripple,
+                  {
+                    opacity: v.interpolate({
+                      inputRange: [0, 0.15, 1],
+                      outputRange: [0, 0.7, 0],
+                    }),
+                    transform: [
+                      { scale: v.interpolate({ inputRange: [0, 1], outputRange: [0.15, 1.9] }) },
+                    ],
+                  },
+                ]}
+              />
+            ))}
+
+          {variant === 5 && (
+            <Animated.View
+              style={[
+                styles.halo,
+                {
+                  opacity: halo.interpolate({
+                    inputRange: [0, 0.3, 1],
+                    outputRange: [0, 0.8, 0],
+                  }),
+                  transform: [
+                    { scale: halo.interpolate({ inputRange: [0, 1], outputRange: [0.78, 1.12] }) },
+                  ],
+                },
+              ]}
+            />
           )}
         </Animated.View>
 
@@ -401,8 +368,8 @@ export function IntroOverlay() {
 /**
  * Fades and rises its children into place once the intro sheet starts
  * lifting. Give successive blocks increasing `delay`s for the assembling
- * Cosmos feel. Cheap after launch: once the intro has run, blocks mounted
- * later (fresh data, other screens) still ease in from their delay alone.
+ * feel. Cheap after launch: once the intro has run, blocks mounted later
+ * (fresh data, other screens) still ease in from their delay alone.
  */
 export function Reveal({
   delay = 0,
@@ -425,7 +392,7 @@ export function Reveal({
       }
       Animated.timing(t, {
         toValue: 1,
-        duration: 750,
+        duration: 650,
         delay,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
@@ -468,14 +435,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   figure: StyleSheet.absoluteFillObject,
-  dot: {
+  disc: {
     position: 'absolute',
-    left: STAGE / 2 - DOT_SIZE / 2,
-    top: STAGE / 2 - DOT_SIZE / 2,
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
+    left: (STAGE - DISC_SIZE) / 2,
+    top: (STAGE - DISC_SIZE) / 2,
+    width: DISC_SIZE,
+    height: DISC_SIZE,
+    borderRadius: DISC_SIZE / 2,
     backgroundColor: colors.white,
+    overflow: 'hidden',
+  },
+  shadow: {
+    position: 'absolute',
+    left: RIM,
+    top: RIM,
+    width: DISC_SIZE - RIM * 2,
+    height: DISC_SIZE - RIM * 2,
+    borderRadius: (DISC_SIZE - RIM * 2) / 2,
+    backgroundColor: colors.ink,
+  },
+  ripple: {
+    position: 'absolute',
+    left: (STAGE - RIPPLE_SIZE) / 2,
+    top: (STAGE - RIPPLE_SIZE) / 2,
+    width: RIPPLE_SIZE,
+    height: RIPPLE_SIZE,
+    borderRadius: RIPPLE_SIZE / 2,
+    borderWidth: 1.5,
+    borderColor: colors.white,
+  },
+  halo: {
+    position: 'absolute',
+    left: (STAGE - HALO_SIZE) / 2,
+    top: (STAGE - HALO_SIZE) / 2,
+    width: HALO_SIZE,
+    height: HALO_SIZE,
+    borderRadius: HALO_SIZE / 2,
+    borderWidth: 1,
+    borderColor: colors.white,
   },
   row: { flexDirection: 'row' },
   letter: {
