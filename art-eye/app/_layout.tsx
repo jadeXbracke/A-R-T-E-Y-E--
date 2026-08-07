@@ -10,6 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../src/lib/auth';
+import { IntroOverlay } from '../src/components/intro';
 import { colors } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -41,6 +42,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
         <Stack.Screen name="log/[id]" options={{ presentation: 'modal' }} />
       </Stack>
+      <IntroOverlay />
     </AuthProvider>
   );
 }
