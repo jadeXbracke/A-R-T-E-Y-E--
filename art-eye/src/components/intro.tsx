@@ -1,14 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
-import { colors, fonts } from '../theme';
-import { Wordmark } from './ui';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { colors, fonts, type } from '../theme';
 
 // Opening timeline, in ms from app launch. The overlay owns 0 → LIFT_AT +
 // LIFT_MS; Reveal sections start their entrances while the overlay is
 // lifting so the reveal reads as one continuous motion, not two steps.
-const MARK_MS = 700; // wordmark fade/settle
+const LETTERS = 'ARTEYE'.split('');
+const LETTER_MS = 420; // each letter's fade/rise
+const LETTER_GAP = 110; // stagger between letters
+const MARK_MS = LETTER_MS + LETTER_GAP * (LETTERS.length - 1); // full wordmark
 const RULE_MS = 600; // hairline draws itself under the mark
-const LIFT_AT = 1500; // overlay starts to lift
+const LIFT_AT = MARK_MS + RULE_MS + 450; // overlay starts to lift
 const LIFT_MS = 550; // overlay fade duration
 const REVEAL_AT = LIFT_AT + 250; // sections may begin entering here
 
@@ -26,41 +28,57 @@ export function introRemaining() {
 }
 
 /**
- * Full-screen opening overlay: white ground, the ARTEYE wordmark settling
- * into place with a hairline drawing itself beneath, then the whole sheet
- * lifts to reveal the app. Renders once at the root, above the navigator,
- * and unmounts when done.
+ * Full-screen opening overlay: white ground, the ARTEYE wordmark composing
+ * itself letter by letter — each glyph fades in and settles down into the
+ * baseline — then a hairline draws itself beneath and the whole sheet lifts
+ * to reveal the app. Renders once at the root, above the navigator, and
+ * unmounts when done.
  */
 export function IntroOverlay() {
   const [done, setDone] = useState(false);
-  const mark = useRef(new Animated.Value(0)).current;
+  const letters = useRef(LETTERS.map(() => new Animated.Value(0))).current;
   const rule = useRef(new Animated.Value(0)).current;
   const sheet = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.sequence([
-      Animated.timing(mark, { toValue: 1, duration: MARK_MS, easing: ease, useNativeDriver: true }),
+      Animated.stagger(
+        LETTER_GAP,
+        letters.map((v) =>
+          Animated.timing(v, { toValue: 1, duration: LETTER_MS, easing: ease, useNativeDriver: true })
+        )
+      ),
       Animated.timing(rule, { toValue: 1, duration: RULE_MS, easing: ease, useNativeDriver: true }),
       Animated.delay(Math.max(0, LIFT_AT - MARK_MS - RULE_MS)),
       Animated.timing(sheet, { toValue: 0, duration: LIFT_MS, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
     ]).start(() => setDone(true));
-  }, [mark, rule, sheet]);
+  }, [letters, rule, sheet]);
 
   if (done) return null;
 
+  const size = 26;
   return (
     <Animated.View pointerEvents="none" style={[styles.sheet, { opacity: sheet }]}>
-      <Animated.View
-        style={{
-          opacity: mark,
-          transform: [
-            { translateY: mark.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) },
-            { scale: mark.interpolate({ inputRange: [0, 1], outputRange: [0.96, 1] }) },
-          ],
-        }}
-      >
-        <Wordmark size={26} />
-      </Animated.View>
+      <View style={styles.mark} accessible accessibilityRole="header" accessibilityLabel="ARTEYE">
+        {LETTERS.map((ch, i) => (
+          <Animated.Text
+            key={`${ch}-${i}`}
+            style={[
+              type.wordmark,
+              { fontSize: size, letterSpacing: 0, marginRight: i < LETTERS.length - 1 ? size * 0.55 : 0 },
+              {
+                opacity: letters[i],
+                transform: [
+                  { translateY: letters[i].interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) },
+                  { scale: letters[i].interpolate({ inputRange: [0, 1], outputRange: [1.12, 1] }) },
+                ],
+              },
+            ]}
+          >
+            {ch}
+          </Animated.Text>
+        ))}
+      </View>
       <Animated.View
         style={[styles.rule, { transform: [{ scaleX: rule }] }]}
       />
@@ -114,6 +132,7 @@ export function Reveal({
 }
 
 const styles = StyleSheet.create({
+  mark: { flexDirection: 'row', alignItems: 'center' },
   sheet: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.bg,
