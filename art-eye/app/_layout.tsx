@@ -9,6 +9,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { IntroOverlay } from '../src/components/intro';
 import { AuthProvider } from '../src/lib/auth';
 import { colors } from '../src/theme';
 
@@ -41,6 +42,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
         <Stack.Screen name="log/[id]" options={{ presentation: 'modal' }} />
       </Stack>
+      <IntroOverlay />
     </AuthProvider>
   );
 }

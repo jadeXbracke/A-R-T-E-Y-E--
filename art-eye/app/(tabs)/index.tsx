@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExhibitionGridItem, ExhibitionRow } from '../../src/components/exhibition';
 import { HeroCarousel } from '../../src/components/hero-carousel';
+import { Reveal } from '../../src/components/intro';
 import { SearchBar } from '../../src/components/search-bar';
 import { EmptyState, Hairline, Kicker, Lift, Loading, MonoLink, Wordmark } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
@@ -83,43 +84,49 @@ export default function AgendaScreen() {
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
     >
-      <View style={styles.header}>
-        <Wordmark size={22} style={{ marginBottom: 8 }} />
-        <Text style={styles.tagline}>YOUR EYE ON THE ART WORLD — SYDNEY</Text>
-      </View>
-      <Hairline style={{ marginBottom: space.l }} />
+      <Reveal>
+        <View style={styles.header}>
+          <Wordmark size={22} style={{ marginBottom: 8 }} />
+          <Text style={styles.tagline}>YOUR EYE ON THE ART WORLD — SYDNEY</Text>
+        </View>
+        <Hairline style={{ marginBottom: space.l }} />
+      </Reveal>
 
       {exhibitions === null ? (
         <Loading />
       ) : (
         <>
-          <HeroCarousel exhibitions={featured} />
+          <Reveal delay={140}>
+            <HeroCarousel exhibitions={featured} />
+          </Reveal>
 
-          <View style={styles.sectionHead}>
-            <Text style={type.serifHeading}>{heading}</Text>
-            <View style={{ flexDirection: 'row', gap: space.m }}>
-              <MonoLink label="LIST" active={view === 'list'} onPress={() => setView('list')} />
-              <MonoLink label="GRID" active={view === 'grid'} onPress={() => setView('grid')} />
+          <Reveal delay={280}>
+            <View style={styles.sectionHead}>
+              <Text style={type.serifHeading}>{heading}</Text>
+              <View style={{ flexDirection: 'row', gap: space.m }}>
+                <MonoLink label="LIST" active={view === 'list'} onPress={() => setView('list')} />
+                <MonoLink label="GRID" active={view === 'grid'} onPress={() => setView('grid')} />
+              </View>
             </View>
-          </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filters}
-          >
-            {FILTERS.map((f) => (
-              <MonoLink
-                key={f.value}
-                label={f.label}
-                active={filter === f.value}
-                onPress={() => setFilter(f.value)}
-              />
-            ))}
-          </ScrollView>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filters}
+            >
+              {FILTERS.map((f) => (
+                <MonoLink
+                  key={f.value}
+                  label={f.label}
+                  active={filter === f.value}
+                  onPress={() => setFilter(f.value)}
+                />
+              ))}
+            </ScrollView>
+          </Reveal>
 
           {curated.length > 0 && (
-            <View style={{ marginBottom: space.m }}>
+            <Reveal delay={400} style={{ marginBottom: space.m }}>
               <Kicker style={{ paddingHorizontal: space.page, marginBottom: space.s }}>
                 CURATED — BY ARTISTS, GALLERISTS & EDITORS
               </Kicker>
@@ -142,37 +149,41 @@ export default function AgendaScreen() {
                   </Lift>
                 ))}
               </ScrollView>
-            </View>
+            </Reveal>
           )}
 
-          <SearchBar
-            style={{
-              marginHorizontal: space.page,
-              marginTop: space.s,
-              marginBottom: space.l,
-            }}
-          />
+          <Reveal delay={500}>
+            <SearchBar
+              style={{
+                marginHorizontal: space.page,
+                marginTop: space.s,
+                marginBottom: space.l,
+              }}
+            />
+          </Reveal>
 
-          {agenda.length === 0 ? (
-            <EmptyState>
-              Nothing here just now. The agenda turns over weekly — check back soon.
-            </EmptyState>
-          ) : view === 'list' ? (
-            <View>
-              {agenda.map((e, i) => (
-                <View key={e.id}>
-                  {i > 0 && <Hairline style={{ marginHorizontal: space.page }} />}
-                  <ExhibitionRow exhibition={e} seen={seenIds.has(e.id)} />
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.grid}>
-              {agenda.map((e) => (
-                <ExhibitionGridItem key={e.id} exhibition={e} seen={seenIds.has(e.id)} />
-              ))}
-            </View>
-          )}
+          <Reveal delay={620}>
+            {agenda.length === 0 ? (
+              <EmptyState>
+                Nothing here just now. The agenda turns over weekly — check back soon.
+              </EmptyState>
+            ) : view === 'list' ? (
+              <View>
+                {agenda.map((e, i) => (
+                  <View key={e.id}>
+                    {i > 0 && <Hairline style={{ marginHorizontal: space.page }} />}
+                    <ExhibitionRow exhibition={e} seen={seenIds.has(e.id)} />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.grid}>
+                {agenda.map((e) => (
+                  <ExhibitionGridItem key={e.id} exhibition={e} seen={seenIds.has(e.id)} />
+                ))}
+              </View>
+            )}
+          </Reveal>
         </>
       )}
     </ScrollView>
