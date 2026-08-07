@@ -149,7 +149,7 @@
         el.setAttribute("href", "mailto:" + config.email);
       } else if (key === "instagram") {
         var handle = config.instagram.replace(/^@/, "");
-        el.textContent = "Instagram — @" + handle;
+        el.textContent = "Small talk — @" + handle;
         el.setAttribute("href", "https://www.instagram.com/" + handle + "/");
         el.closest("[data-config-row]") &&
           el.closest("[data-config-row]").removeAttribute("hidden");
@@ -287,7 +287,7 @@
       var empty = document.createElement("div");
       empty.className = "empty-state";
       empty.textContent =
-        "No photos yet — add images in docs/portfolio/photos/ (see HANDLEIDING.md).";
+        "The film is still developing — add images in docs/portfolio/photos/ (see HANDLEIDING.md).";
       gridEl.appendChild(empty);
       return;
     }
@@ -345,7 +345,7 @@
       var empty = document.createElement("div");
       empty.className = "empty-state";
       empty.textContent =
-        "No photos yet — add images in docs/portfolio/photos/ (see HANDLEIDING.md).";
+        "The film is still developing — add images in docs/portfolio/photos/ (see HANDLEIDING.md).";
       indexEl.appendChild(empty);
       return;
     }

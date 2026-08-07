@@ -101,7 +101,12 @@ Klik daarna op **Commit changes** — klaar.
 - **Eigen cursor** — op de werkpagina wordt de muisaanwijzer een stip die
   uitgroeit tot "View" boven foto's en indexregels.
 - **Afsluiter** — onderaan elke pagina staat een ingetogen
-  "Get in touch"-regel die naar je e-mail linkt.
+  "Say hello"-regel die naar je e-mail linkt.
+- **Speelse teksten** — subtiele knipogen door de site heen:
+  "Love letters" bij je e-mailadres, "Small talk" bij Instagram,
+  "Have a look" als scroll-hint en "Up we go" om terug omhoog te gaan.
+  Wil je andere woorden? Vraag het of pas ze aan in `index.html` /
+  `info.html`.
 - **Diavoorstelling** — open een foto en klik op *Play* (of druk op de
   spatiebalk); elke 3,5 seconde verschijnt de volgende foto.
 - **Vegen op je telefoon** — in de fotoweergave veeg je naar links/rechts
