@@ -6,15 +6,17 @@ import { EmptyState, Hairline, Loading } from '../../src/components/ui';
 import { ActivityRow, PersonRow } from '../../src/components/social';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
-import { FeedItem, Profile } from '../../src/lib/types';
+import { FeedItem, PostEngagement, Profile } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const [feed, setFeed] = useState<FeedItem[] | null>(null);
+  const [engagement, setEngagement] = useState<Record<string, PostEngagement>>({});
   const [people, setPeople] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<number>(0);
+  const [unread, setUnread] = useState<number>(0);
 
   const reload = useCallback(() => {
     if (!profile) {
@@ -25,10 +27,13 @@ export default function FeedScreen() {
       api.friendsFeed(profile.id),
       api.discoverPeople(profile.id),
       api.listFollowRequests(profile.id),
-    ]).then(([f, p, r]) => {
+      api.unreadMessageCount(profile.id),
+    ]).then(async ([f, p, r, u]) => {
       setFeed(f);
       setPeople(p);
       setRequests(r.length);
+      setUnread(u);
+      setEngagement(await api.postEngagement(profile.id, f));
     });
   }, [profile]);
 
@@ -38,6 +43,18 @@ export default function FeedScreen() {
     if (!profile) return;
     await api.followUser(profile.id, id);
     reload();
+  };
+
+  const toggleLike = async (item: FeedItem) => {
+    if (!profile) return;
+    const liked = await api.toggleLike(profile.id, item.user_id, item.exhibition_id);
+    setEngagement((prev) => {
+      const cur = prev[item.id] ?? { likes: 0, liked_by_me: false, comments: 0 };
+      return {
+        ...prev,
+        [item.id]: { ...cur, liked_by_me: liked, likes: cur.likes + (liked ? 1 : -1) },
+      };
+    });
   };
 
   return (
@@ -52,9 +69,16 @@ export default function FeedScreen() {
             <Text style={type.serifHeading}>Feed</Text>
           </View>
           {profile && (
-            <Pressable onPress={() => router.push(`/profile/${profile.id}`)} hitSlop={8}>
-              <Text style={styles.you}>YOUR PROFILE →</Text>
-            </Pressable>
+            <View style={{ alignItems: 'flex-end', gap: 8 }}>
+              <Pressable onPress={() => router.push(`/profile/${profile.id}`)} hitSlop={8}>
+                <Text style={styles.you}>YOUR PROFILE →</Text>
+              </Pressable>
+              <Pressable onPress={() => router.push('/messages')} hitSlop={8}>
+                <Text style={[styles.you, unread > 0 && { color: colors.red }]}>
+                  {unread > 0 ? `MESSAGES (${unread}) →` : 'MESSAGES →'}
+                </Text>
+              </Pressable>
+            </View>
           )}
         </View>
       </View>
@@ -84,7 +108,14 @@ export default function FeedScreen() {
           {feed.length === 0 ? (
             <EmptyState>No activity yet. Follow a few people below to fill your feed.</EmptyState>
           ) : (
-            feed.map((item) => <ActivityRow key={item.id} item={item} />)
+            feed.map((item) => (
+              <ActivityRow
+                key={item.id}
+                item={item}
+                engagement={engagement[item.id] ?? { likes: 0, liked_by_me: false, comments: 0 }}
+                onToggleLike={() => toggleLike(item)}
+              />
+            ))
           )}
 
           {people.length > 0 && (

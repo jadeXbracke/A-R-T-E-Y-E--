@@ -5,12 +5,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
+  Conversation,
   CuratedList,
+  DirectMessage,
   Exhibition,
   ExhibitionDraft,
   FeedItem,
   Follow,
   FollowState,
+  PostComment,
+  PostEngagement,
   Profile,
   PublicProfile,
   RejectionReason,
@@ -48,6 +52,16 @@ interface DemoUser extends Profile {
   password: string;
 }
 
+// A like on a post (a post = a visit, keyed by its author + exhibition).
+interface DemoLike {
+  post_user_id: string;
+  exhibition_id: string;
+  user_id: string;
+}
+
+// Stored without display_name — joined from users at read time.
+type DemoComment = Omit<PostComment, 'display_name'>;
+
 interface DemoState {
   users: DemoUser[];
   venues: Venue[];
@@ -55,12 +69,15 @@ interface DemoState {
   watchlist: WatchlistEntry[];
   visits: Visit[];
   follows: Follow[];
+  likes: DemoLike[];
+  comments: DemoComment[];
+  messages: DirectMessage[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v14';
+const KEY = 'arteye.demo.v15';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -173,6 +190,56 @@ function seedState(): DemoState {
       { follower_id: 'u-admin', followee_id: 'u-theo', status: 'pending', created_at: '2026-07-19T00:00:00.000Z' },
       { follower_id: 'u-curator', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-07T00:00:00.000Z' },
       { follower_id: 'u-mara', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-08T00:00:00.000Z' },
+    ],
+    // Engagement over the seeded posts, so the feed feels alive on first run.
+    likes: [
+      { post_user_id: 'u-curator', exhibition_id: 'e-murakami', user_id: 'u-mara' },
+      { post_user_id: 'u-curator', exhibition_id: 'e-murakami', user_id: 'u-theo' },
+      { post_user_id: 'u-mara', exhibition_id: 'e-primavera', user_id: 'u-curator' },
+    ],
+    comments: [
+      {
+        id: 'c-1',
+        post_user_id: 'u-curator',
+        exhibition_id: 'e-murakami',
+        user_id: 'u-mara',
+        body: 'That silver room did the same to me — twenty minutes, easily.',
+        created_at: '2026-07-05T09:12:00.000Z',
+      },
+      {
+        id: 'c-2',
+        post_user_id: 'u-mara',
+        exhibition_id: 'e-primavera',
+        user_id: 'u-curator',
+        body: 'Saving this one for the weekend.',
+        created_at: '2026-07-21T18:40:00.000Z',
+      },
+    ],
+    messages: [
+      {
+        id: 'm-1',
+        sender_id: 'u-curator',
+        recipient_id: 'u-mara',
+        body: 'Are you going to the Primavera opening on Thursday?',
+        created_at: '2026-07-19T08:05:00.000Z',
+        read_at: '2026-07-19T09:00:00.000Z',
+      },
+      {
+        id: 'm-2',
+        sender_id: 'u-mara',
+        recipient_id: 'u-curator',
+        body: 'Yes — meet at the MCA steps at six?',
+        created_at: '2026-07-19T09:02:00.000Z',
+        read_at: '2026-07-19T09:30:00.000Z',
+      },
+      {
+        id: 'm-3',
+        sender_id: 'u-curator',
+        recipient_id: 'u-admin',
+        body: 'Did you make it to Murakami yet? The silver room alone is worth it.',
+        created_at: '2026-07-22T10:15:00.000Z',
+        read_at: null,
+      },
     ],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
@@ -480,6 +547,133 @@ export const demoApi: Api = {
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
   },
 
+  // ---- engagement (likes + comments) ---------------------------------------
+  async postEngagement(viewerId, posts) {
+    const s = await load();
+    const out: Record<string, PostEngagement> = {};
+    for (const p of posts) {
+      const likes = (s.likes ?? []).filter(
+        (l) => l.post_user_id === p.user_id && l.exhibition_id === p.exhibition_id
+      );
+      const comments = (s.comments ?? []).filter(
+        (c) => c.post_user_id === p.user_id && c.exhibition_id === p.exhibition_id
+      );
+      out[p.id] = {
+        likes: likes.length,
+        liked_by_me: !!viewerId && likes.some((l) => l.user_id === viewerId),
+        comments: comments.length,
+      };
+    }
+    return out;
+  },
+
+  async toggleLike(viewerId, postUserId, exhibitionId) {
+    const s = await load();
+    s.likes = s.likes ?? [];
+    const idx = s.likes.findIndex(
+      (l) => l.post_user_id === postUserId && l.exhibition_id === exhibitionId && l.user_id === viewerId
+    );
+    const liked = idx === -1;
+    if (liked) s.likes.push({ post_user_id: postUserId, exhibition_id: exhibitionId, user_id: viewerId });
+    else s.likes.splice(idx, 1);
+    await persist();
+    return liked;
+  },
+
+  async listComments(postUserId, exhibitionId) {
+    const s = await load();
+    return (s.comments ?? [])
+      .filter((c) => c.post_user_id === postUserId && c.exhibition_id === exhibitionId)
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+      .map((c) => ({
+        ...c,
+        display_name: s.users.find((u) => u.id === c.user_id)?.display_name ?? 'Someone',
+      }));
+  },
+
+  async addComment(viewerId, postUserId, exhibitionId, body) {
+    const s = await load();
+    s.comments = s.comments ?? [];
+    s.comments.push({
+      id: uid('c'),
+      post_user_id: postUserId,
+      exhibition_id: exhibitionId,
+      user_id: viewerId,
+      body: body.trim(),
+      created_at: new Date().toISOString(),
+    });
+    await persist();
+  },
+
+  async deleteComment(commentId, viewerId) {
+    const s = await load();
+    s.comments = (s.comments ?? []).filter(
+      (c) => !(c.id === commentId && (c.user_id === viewerId || c.post_user_id === viewerId))
+    );
+    await persist();
+  },
+
+  // ---- direct messages -----------------------------------------------------
+  async listConversations(userId) {
+    const s = await load();
+    const mine = (s.messages ?? [])
+      .filter((m) => m.sender_id === userId || m.recipient_id === userId)
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    const byPeer = new Map<string, { last: DirectMessage; unread: number }>();
+    for (const m of mine) {
+      const peerId = m.sender_id === userId ? m.recipient_id : m.sender_id;
+      const entry = byPeer.get(peerId) ?? { last: m, unread: 0 };
+      if (m.recipient_id === userId && !m.read_at) entry.unread += 1;
+      byPeer.set(peerId, entry);
+    }
+    return [...byPeer.entries()]
+      .map(([peerId, entry]): Conversation | null => {
+        const peer = s.users.find((u) => u.id === peerId);
+        return peer ? { peer: stripUser(peer), last: entry.last, unread: entry.unread } : null;
+      })
+      .filter((c): c is Conversation => c !== null)
+      .sort((a, b) => (a.last.created_at < b.last.created_at ? 1 : -1));
+  },
+
+  async listMessages(userId, peerId) {
+    const s = await load();
+    return (s.messages ?? [])
+      .filter(
+        (m) =>
+          (m.sender_id === userId && m.recipient_id === peerId) ||
+          (m.sender_id === peerId && m.recipient_id === userId)
+      )
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+  },
+
+  async sendMessage(senderId, recipientId, body) {
+    const s = await load();
+    s.messages = s.messages ?? [];
+    s.messages.push({
+      id: uid('m'),
+      sender_id: senderId,
+      recipient_id: recipientId,
+      body: body.trim(),
+      created_at: new Date().toISOString(),
+      read_at: null,
+    });
+    await persist();
+  },
+
+  async markThreadRead(userId, peerId) {
+    const s = await load();
+    const now = new Date().toISOString();
+    for (const m of s.messages ?? []) {
+      if (m.recipient_id === userId && m.sender_id === peerId && !m.read_at) m.read_at = now;
+    }
+    await persist();
+  },
+
+  async unreadMessageCount(userId) {
+    const s = await load();
+    return (s.messages ?? []).filter((m) => m.recipient_id === userId && !m.read_at).length;
+  },
+
   async submitExhibition(draft: ExhibitionDraft, userId) {
     const s = await load();
     let venue = s.venues.find(
@@ -658,6 +852,9 @@ export const demoApi: Api = {
     s.exhibitions = s.exhibitions.filter((e) => e.id !== id);
     s.watchlist = s.watchlist.filter((w) => w.exhibition_id !== id);
     s.visits = s.visits.filter((v) => v.exhibition_id !== id);
+    // mirror the DB cascade: engagement on those posts goes too
+    s.likes = (s.likes ?? []).filter((l) => l.exhibition_id !== id);
+    s.comments = (s.comments ?? []).filter((c) => c.exhibition_id !== id);
     await persist();
   },
 

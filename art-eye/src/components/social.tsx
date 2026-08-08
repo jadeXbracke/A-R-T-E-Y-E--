@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { fmtDay } from '../lib/dates';
-import { FeedItem, FollowState, Profile } from '../lib/types';
+import { FeedItem, FollowState, PostEngagement, Profile } from '../lib/types';
 import { PROFILE_TYPES } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
 import { Lift, MonoLink, RatingDots } from './ui';
@@ -13,7 +13,15 @@ function typeLabel(pt: Profile['profile_type']): string {
 }
 
 /** One activity-feed entry: a person logging a visit to a show. */
-export function ActivityRow({ item }: { item: FeedItem }) {
+export function ActivityRow({
+  item,
+  engagement,
+  onToggleLike,
+}: {
+  item: FeedItem;
+  engagement?: PostEngagement; // omit to render the row without like/comment actions
+  onToggleLike?: () => void;
+}) {
   return (
     <View style={styles.activity}>
       <View style={styles.activityHead}>
@@ -40,6 +48,24 @@ export function ActivityRow({ item }: { item: FeedItem }) {
           style={styles.video}
         />
       ) : null}
+      {engagement && (
+        <View style={styles.engageRow}>
+          <Pressable onPress={onToggleLike} hitSlop={8}>
+            <Text style={[styles.engage, engagement.liked_by_me && { color: colors.red }]}>
+              {engagement.liked_by_me ? '● LIKED' : '○ LIKE'}
+              {engagement.likes > 0 ? `  ${engagement.likes}` : ''}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push(`/post/${item.user_id}/${item.exhibition_id}`)}
+            hitSlop={8}
+          >
+            <Text style={styles.engage}>
+              {engagement.comments > 0 ? `COMMENTS  ${engagement.comments}` : 'COMMENT'} →
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -97,6 +123,8 @@ const styles = StyleSheet.create({
   venue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginTop: 3 },
   reflection: { ...type.serifBody, fontSize: 16, lineHeight: 24, marginTop: space.s },
   video: { width: '100%', marginTop: space.m, backgroundColor: colors.dim },
+  engageRow: { flexDirection: 'row', gap: space.l, marginTop: space.m },
+  engage: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.4, color: colors.ink },
   personRow: {
     flexDirection: 'row',
     alignItems: 'center',

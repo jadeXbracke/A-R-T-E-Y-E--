@@ -7,7 +7,7 @@ import { ActivityRow, PersonRow } from '../../src/components/social';
 import { PROFILE_TYPES } from '../../src/lib/types';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
-import { FeedItem, Profile, PublicProfile } from '../../src/lib/types';
+import { FeedItem, PostEngagement, Profile, PublicProfile } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
 function typeLabel(pt: Profile['profile_type']): string {
@@ -21,6 +21,7 @@ export default function ProfileScreen() {
 
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
   const [activity, setActivity] = useState<FeedItem[]>([]);
+  const [engagement, setEngagement] = useState<Record<string, PostEngagement>>({});
   const [requests, setRequests] = useState<Profile[]>([]);
 
   const isOwn = !!me && me.id === id;
@@ -28,7 +29,10 @@ export default function ProfileScreen() {
   const reload = useCallback(() => {
     if (!id) return;
     api.getPublicProfile(id, me?.id ?? null).then(setProfile);
-    api.userActivity(id, me?.id ?? null).then(setActivity);
+    api.userActivity(id, me?.id ?? null).then(async (a) => {
+      setActivity(a);
+      setEngagement(await api.postEngagement(me?.id ?? null, a));
+    });
     if (me && me.id === id) api.listFollowRequests(id).then(setRequests);
   }, [id, me]);
 
@@ -100,7 +104,7 @@ export default function ProfileScreen() {
         </View>
 
         {!isOwn && (
-          <View style={{ marginTop: space.m }}>
+          <View style={{ flexDirection: 'row', gap: space.l, marginTop: space.m }}>
             <MonoLink
               label={
                 profile.follow_state === 'following'
@@ -113,6 +117,10 @@ export default function ProfileScreen() {
               }
               active={profile.follow_state !== 'none'}
               onPress={toggleFollow}
+            />
+            <MonoLink
+              label="MESSAGE"
+              onPress={() => (me ? router.push(`/messages/${profile.id}`) : router.push('/auth'))}
             />
           </View>
         )}
@@ -166,7 +174,21 @@ export default function ProfileScreen() {
       ) : activity.length === 0 ? (
         <Text style={styles.private}>Nothing logged yet.</Text>
       ) : (
-        activity.map((item) => <ActivityRow key={item.id} item={item} />)
+        activity.map((item) => (
+          <ActivityRow
+            key={item.id}
+            item={item}
+            engagement={engagement[item.id] ?? { likes: 0, liked_by_me: false, comments: 0 }}
+            onToggleLike={async () => {
+              if (!me) {
+                router.push('/auth');
+                return;
+              }
+              await api.toggleLike(me.id, item.user_id, item.exhibition_id);
+              reload();
+            }}
+          />
+        ))
       )}
     </ScrollView>
   );

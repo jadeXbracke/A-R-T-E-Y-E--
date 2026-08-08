@@ -1,4 +1,4 @@
-import { CuratedList, Exhibition, ExhibitionDraft, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, FeedItem, FollowState, PostComment, PostEngagement, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -69,6 +69,20 @@ export interface Api {
   discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows
   userActivity(userId: string, viewerId: string | null): Promise<FeedItem[]>;
+
+  // engagement — likes and comments on posts (a post = a logged visit)
+  postEngagement(viewerId: string | null, posts: FeedItem[]): Promise<Record<string, PostEngagement>>; // keyed by FeedItem.id
+  toggleLike(viewerId: string, postUserId: string, exhibitionId: string): Promise<boolean>; // resolves to the new liked state
+  listComments(postUserId: string, exhibitionId: string): Promise<PostComment[]>;
+  addComment(viewerId: string, postUserId: string, exhibitionId: string, body: string): Promise<void>;
+  deleteComment(commentId: string, viewerId: string): Promise<void>; // commenter or post owner
+
+  // direct messages — one-to-one threads
+  listConversations(userId: string): Promise<Conversation[]>;
+  listMessages(userId: string, peerId: string): Promise<DirectMessage[]>; // oldest first
+  sendMessage(senderId: string, recipientId: string, body: string): Promise<void>;
+  markThreadRead(userId: string, peerId: string): Promise<void>;
+  unreadMessageCount(userId: string): Promise<number>;
 
   // media
   uploadImage(localUri: string): Promise<string>;

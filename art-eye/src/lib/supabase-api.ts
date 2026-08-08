@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { CuratedList, CuratorRole, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { Conversation, CuratedList, CuratorRole, DirectMessage, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, PostComment, PostEngagement, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 
 let client: SupabaseClient | null = null;
@@ -573,6 +573,174 @@ export const supabaseApi: Api = {
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []).map(toFeedItem);
+  },
+
+  // ---- engagement (likes + comments) ---------------------------------------
+  async postEngagement(viewerId, posts) {
+    if (posts.length === 0) return {};
+    const sb = supabase();
+    const userIds = [...new Set(posts.map((p) => p.user_id))];
+    const exIds = [...new Set(posts.map((p) => p.exhibition_id))];
+    // Fetch by the row/column envelope of the page, then keep exact pairs —
+    // avoids composite-key OR filters, and a feed page is small anyway.
+    const wanted = new Set(posts.map((p) => `${p.user_id}:${p.exhibition_id}`));
+    const [likesRes, commentsRes] = await Promise.all([
+      sb.from('post_likes').select('post_user_id, exhibition_id, user_id')
+        .in('post_user_id', userIds).in('exhibition_id', exIds),
+      sb.from('post_comments').select('post_user_id, exhibition_id')
+        .in('post_user_id', userIds).in('exhibition_id', exIds),
+    ]);
+    if (likesRes.error) throw new Error(likesRes.error.message);
+    if (commentsRes.error) throw new Error(commentsRes.error.message);
+    const out: Record<string, PostEngagement> = {};
+    for (const key of wanted) out[key] = { likes: 0, liked_by_me: false, comments: 0 };
+    for (const row of likesRes.data ?? []) {
+      const r = row as { post_user_id: string; exhibition_id: string; user_id: string };
+      const key = `${r.post_user_id}:${r.exhibition_id}`;
+      if (!wanted.has(key)) continue;
+      out[key].likes += 1;
+      if (viewerId && r.user_id === viewerId) out[key].liked_by_me = true;
+    }
+    for (const row of commentsRes.data ?? []) {
+      const r = row as { post_user_id: string; exhibition_id: string };
+      const key = `${r.post_user_id}:${r.exhibition_id}`;
+      if (wanted.has(key)) out[key].comments += 1;
+    }
+    return out;
+  },
+
+  async toggleLike(viewerId, postUserId, exhibitionId) {
+    const sb = supabase();
+    const { data: existing, error: readErr } = await sb
+      .from('post_likes')
+      .select('user_id')
+      .eq('post_user_id', postUserId)
+      .eq('exhibition_id', exhibitionId)
+      .eq('user_id', viewerId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (existing) {
+      const { error } = await sb.from('post_likes').delete()
+        .eq('post_user_id', postUserId).eq('exhibition_id', exhibitionId).eq('user_id', viewerId);
+      if (error) throw new Error(error.message);
+      return false;
+    }
+    const { error } = await sb.from('post_likes')
+      .insert({ post_user_id: postUserId, exhibition_id: exhibitionId, user_id: viewerId });
+    if (error) throw new Error(error.message);
+    return true;
+  },
+
+  async listComments(postUserId, exhibitionId) {
+    const { data, error } = await supabase()
+      .from('post_comments')
+      .select('*, commenter:profiles!post_comments_user_id_fkey(display_name)')
+      .eq('post_user_id', postUserId)
+      .eq('exhibition_id', exhibitionId)
+      .order('created_at');
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row) => {
+      const r = row as PostComment & { commenter?: { display_name?: string } | null };
+      return {
+        id: r.id,
+        post_user_id: r.post_user_id,
+        exhibition_id: r.exhibition_id,
+        user_id: r.user_id,
+        display_name: r.commenter?.display_name ?? 'Someone',
+        body: r.body,
+        created_at: r.created_at,
+      };
+    });
+  },
+
+  async addComment(viewerId, postUserId, exhibitionId, body) {
+    const { error } = await supabase().from('post_comments').insert({
+      post_user_id: postUserId,
+      exhibition_id: exhibitionId,
+      user_id: viewerId,
+      body: body.trim(),
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async deleteComment(commentId, _viewerId) {
+    // RLS restricts this to the commenter or the post owner
+    const { error } = await supabase().from('post_comments').delete().eq('id', commentId);
+    if (error) throw new Error(error.message);
+  },
+
+  // ---- direct messages -----------------------------------------------------
+  async listConversations(userId) {
+    const sb = supabase();
+    const { data, error } = await sb
+      .from('messages')
+      .select('*')
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    const byPeer = new Map<string, { last: DirectMessage; unread: number }>();
+    for (const row of (data ?? []) as DirectMessage[]) {
+      const peerId = row.sender_id === userId ? row.recipient_id : row.sender_id;
+      const entry = byPeer.get(peerId) ?? { last: row, unread: 0 };
+      if (row.recipient_id === userId && !row.read_at) entry.unread += 1;
+      byPeer.set(peerId, entry);
+    }
+    if (byPeer.size === 0) return [];
+    const { data: peers, error: pErr } = await sb
+      .from('profiles')
+      .select('*')
+      .in('id', [...byPeer.keys()]);
+    if (pErr) throw new Error(pErr.message);
+    const profileById = new Map((peers ?? []).map((p) => [(p as Profile).id, p as Profile]));
+    return [...byPeer.entries()]
+      .map(([peerId, entry]): Conversation | null => {
+        const peer = profileById.get(peerId);
+        return peer ? { peer, last: entry.last, unread: entry.unread } : null;
+      })
+      .filter((c): c is Conversation => c !== null)
+      .sort((a, b) => (a.last.created_at < b.last.created_at ? 1 : -1));
+  },
+
+  async listMessages(userId, peerId) {
+    const { data, error } = await supabase()
+      .from('messages')
+      .select('*')
+      .or(
+        `and(sender_id.eq.${userId},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${userId})`
+      )
+      .order('created_at');
+    if (error) throw new Error(error.message);
+    return (data ?? []) as DirectMessage[];
+  },
+
+  async sendMessage(senderId, recipientId, body) {
+    const { error } = await supabase().from('messages').insert({
+      sender_id: senderId,
+      recipient_id: recipientId,
+      body: body.trim(),
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async markThreadRead(userId, peerId) {
+    const { error } = await supabase()
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('recipient_id', userId)
+      .eq('sender_id', peerId)
+      .is('read_at', null);
+    if (error) throw new Error(error.message);
+  },
+
+  async unreadMessageCount(userId) {
+    const { count, error } = await supabase()
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', userId)
+      .is('read_at', null);
+    if (error) throw new Error(error.message);
+    return count ?? 0;
   },
 
   async uploadImage(localUri) {

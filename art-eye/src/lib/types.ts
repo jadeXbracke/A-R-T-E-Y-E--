@@ -77,6 +77,42 @@ export interface FeedItem {
   video_url?: string | null; // short clip attached to the post
 }
 
+// Likes + comment count on a post, from the viewer's perspective.
+// Keyed by FeedItem.id (`${user_id}:${exhibition_id}`) in engagement maps.
+export interface PostEngagement {
+  likes: number;
+  liked_by_me: boolean;
+  comments: number;
+}
+
+export interface PostComment {
+  id: string;
+  post_user_id: string; // the post's author
+  exhibition_id: string;
+  user_id: string; // the commenter
+  display_name: string;
+  body: string;
+  created_at: string;
+}
+
+// ---- direct messages --------------------------------------------------------
+export interface DirectMessage {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+// One inbox row: the other party, the latest message, and how many of
+// their messages the viewer hasn't read yet.
+export interface Conversation {
+  peer: Profile;
+  last: DirectMessage;
+  unread: number;
+}
+
 export interface Venue {
   id: string;
   name: string;
