@@ -2,13 +2,13 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArtImage } from '../../src/components/exhibition';
-import { EmptyState, Hairline, Kicker, Loading, MonoLink, RatingDots } from '../../src/components/ui';
-import { api } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth';
-import { fmtDay } from '../../src/lib/dates';
-import { Exhibition, PROFILE_TYPES, Visit } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+import { ArtImage } from '../src/components/exhibition';
+import { EmptyState, Hairline, Kicker, Loading, MonoLink, RatingDots } from '../src/components/ui';
+import { api } from '../src/lib/api';
+import { useAuth } from '../src/lib/auth';
+import { fmtDay } from '../src/lib/dates';
+import { Exhibition, PROFILE_TYPES, Visit } from '../src/lib/types';
+import { colors, fonts, space, type } from '../src/theme';
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -75,7 +75,10 @@ export default function CuratorScreen() {
           paddingHorizontal: space.page,
         }}
       >
-        <Kicker style={{ marginBottom: 10 }}>CURATOR</Kicker>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <Kicker>CURATOR</Kicker>
+          <Kicker onPress={() => router.back()}>← BACK</Kicker>
+        </View>
         <Text style={type.serifHeading}>Your record</Text>
         <Text style={styles.signedOut}>
           Every exhibition you see becomes part of your record — your eye on the art world,
@@ -100,7 +103,10 @@ export default function CuratorScreen() {
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
     >
       <View style={{ paddingHorizontal: space.page, paddingBottom: space.l }}>
-        <Kicker style={{ marginBottom: 10 }}>CURATOR</Kicker>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <Kicker>CURATOR</Kicker>
+          <Kicker onPress={() => router.back()}>← BACK</Kicker>
+        </View>
         <Text style={[type.serifHeading, { marginBottom: 8 }]}>{profile.display_name}</Text>
         <Text style={styles.profileType}>
           {typeLabel} — {profile.city.toUpperCase()}

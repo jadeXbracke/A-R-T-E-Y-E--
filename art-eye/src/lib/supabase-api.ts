@@ -230,6 +230,7 @@ export const supabaseApi: Api = {
       image_url: draft.image_url,
       video_url: draft.video_url ?? null,
       reel_url: draft.reel_url ?? null,
+      mediums: draft.mediums ?? [],
       status: 'pending',
       city: 'Sydney',
     });
@@ -385,6 +386,7 @@ export const supabaseApi: Api = {
       image_url: draft.image_url,
       video_url: draft.video_url ?? null,
       reel_url: draft.reel_url ?? null,
+      mediums: draft.mediums ?? [],
       status: 'approved',
       city: 'Sydney',
     });

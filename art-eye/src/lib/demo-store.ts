@@ -97,7 +97,7 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v17';
+const KEY = 'arteye.demo.v18';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -803,6 +803,7 @@ export const demoApi: Api = {
       image_url: draft.image_url,
       video_url: draft.video_url ?? null,
       reel_url: draft.reel_url ?? null,
+      mediums: draft.mediums ?? [],
       status: 'pending',
       rejection_reason: null,
       is_featured: false,
@@ -940,6 +941,7 @@ export const demoApi: Api = {
       image_url: draft.image_url,
       video_url: draft.video_url ?? null,
       reel_url: draft.reel_url ?? null,
+      mediums: draft.mediums ?? [],
       status: 'approved', // the host publishes directly
       rejection_reason: null,
       is_featured: false,

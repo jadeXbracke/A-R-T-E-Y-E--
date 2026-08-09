@@ -25,6 +25,23 @@ export const VENUE_TYPES: { value: VenueType; label: string }[] = [
 
 export type ExhibitionStatus = 'pending' | 'approved' | 'rejected';
 
+// Art-medium vocabulary — the values stored in exhibitions.mediums.
+export const MEDIUMS: { value: string; label: string }[] = [
+  { value: 'painting', label: 'PAINTING' },
+  { value: 'photography', label: 'PHOTOGRAPHY' },
+  { value: 'sculpture', label: 'SCULPTURE' },
+  { value: 'installation', label: 'INSTALLATION' },
+  { value: 'video', label: 'VIDEO & NEW MEDIA' },
+  { value: 'works_on_paper', label: 'WORKS ON PAPER' },
+  { value: 'textiles_ceramics', label: 'TEXTILES & CERAMICS' },
+  { value: 'performance', label: 'PERFORMANCE' },
+  { value: 'mixed_media', label: 'MIXED MEDIA' },
+];
+
+export function mediumLabel(value: string): string {
+  return MEDIUMS.find((m) => m.value === value)?.label ?? value.toUpperCase();
+}
+
 export type RejectionReason = 'outside_sydney' | 'incomplete' | 'no_image' | 'other';
 
 export const REJECTION_REASONS: { value: RejectionReason; label: string }[] = [
@@ -169,6 +186,7 @@ export interface Exhibition {
   image_source?: string | null; // page a pipeline-fetched press image came from
   video_url?: string | null; // short muted clip — plays as a moving background where set
   reel_url?: string | null; // link to an Instagram Reel or TikTok about the show
+  mediums?: string[]; // art-medium tags from the MEDIUMS vocabulary
   status: ExhibitionStatus;
   rejection_reason: RejectionReason | null;
   is_featured: boolean;
@@ -222,6 +240,7 @@ export interface ExhibitionDraft {
   image_url: string | null;
   video_url?: string | null;
   reel_url?: string | null;
+  mediums?: string[];
   venue_name: string;
   venue_type: VenueType;
   venue_address: string;

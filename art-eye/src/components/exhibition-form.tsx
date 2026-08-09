@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { ExhibitionDraft, VENUE_TYPES, VenueType } from '../lib/types';
+import { ExhibitionDraft, MEDIUMS, VENUE_TYPES, VenueType } from '../lib/types';
 import { colors, fonts, space } from '../theme';
 import { Field, InkBar, Kicker, MonoLink } from './ui';
 
@@ -23,6 +23,7 @@ export interface ExhibitionFormValues {
   image_url: string | null;
   video_url: string;
   reel_url: string;
+  mediums: string[];
 }
 
 export function draftFromValues(v: ExhibitionFormValues): ExhibitionDraft {
@@ -42,6 +43,7 @@ export function draftFromValues(v: ExhibitionFormValues): ExhibitionDraft {
     image_url: v.image_url,
     video_url: v.video_url.trim() || null,
     reel_url: v.reel_url.trim() || null,
+    mediums: v.mediums,
   };
 }
 
@@ -60,6 +62,7 @@ export function emptyValues(): ExhibitionFormValues {
     image_url: null,
     video_url: '',
     reel_url: '',
+    mediums: [],
   };
 }
 
@@ -192,6 +195,27 @@ export function ExhibitionForm({
         />
       </View>
 
+      <Kicker style={{ marginBottom: 10 }}>MEDIUM — PICK WHAT APPLIES</Kicker>
+      <View style={styles.mediumRow}>
+        {MEDIUMS.map((m) => {
+          const on = values.mediums.includes(m.value);
+          return (
+            <MonoLink
+              key={m.value}
+              label={m.label}
+              active={on}
+              onPress={() =>
+                set({
+                  mediums: on
+                    ? values.mediums.filter((x) => x !== m.value)
+                    : [...values.mediums, m.value],
+                })
+              }
+            />
+          );
+        })}
+      </View>
+
       <Kicker style={{ marginBottom: 8 }}>DESCRIPTION</Kicker>
       <TextInput
         value={values.description}
@@ -245,6 +269,13 @@ export function ExhibitionForm({
 }
 
 const styles = StyleSheet.create({
+  mediumRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.m,
+    rowGap: space.s,
+    marginBottom: space.l,
+  },
   description: {
     fontFamily: fonts.serif, letterSpacing: 2, textTransform: 'uppercase',
     fontSize: 14,

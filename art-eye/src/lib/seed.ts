@@ -1080,3 +1080,37 @@ export const SEED_EXHIBITIONS: Exhibition[] = [
     city: 'Sydney',
   },
 ];
+
+// Art-medium tags for the seeded agenda (migration 0017). Kept as a map so
+// the exhibition entries above stay readable; shows not listed here stay
+// untagged and simply sit outside the medium filters.
+const SEED_MEDIUMS: Record<string, string[]> = {
+  'e-archibald': ['painting'],
+  'e-murakami': ['painting', 'sculpture'],
+  'e-primavera': ['mixed_media', 'installation'],
+  'e-armanious': ['sculpture', 'installation'],
+  'e-kahukiwa': ['painting'],
+  'e-nell': ['mixed_media', 'sculpture'],
+  'e-constructed-world': ['installation', 'video'],
+  'e-bennett': ['painting'],
+  'e-gabori-ledgerwood': ['painting'],
+  'e-infinite-gesture': ['painting', 'works_on_paper'],
+  'e-crothers': ['painting'],
+  'e-pulse': ['video', 'installation'],
+  'e-abbotsleigh': ['mixed_media'],
+  'e-black-myth': ['mixed_media'],
+  'e-nsw-fellowship': ['mixed_media'],
+  'e-undying': ['mixed_media'],
+  'e-unkept': ['mixed_media'],
+  'e-salon-des-refuses': ['painting'],
+  'e-mitch-cairns': ['painting'],
+  'e-jasper-knight': ['painting'],
+  'e-tamara-dean': ['photography'],
+  'e-min-wong': ['sculpture', 'installation'],
+  'e-chronos': ['video'],
+  'e-friends-annual': ['mixed_media'],
+  'e-dorabialski': ['painting'],
+  'e-bartley': ['painting'],
+  'e-nhan': ['painting'],
+};
+for (const e of SEED_EXHIBITIONS) e.mediums = SEED_MEDIUMS[e.id] ?? [];
