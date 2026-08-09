@@ -2,7 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmptyState, Hairline, Loading } from '../../src/components/ui';
+import { ActionBar, EmptyState, Hairline, Loading } from '../../src/components/ui';
 import { ActivityRow, PersonRow } from '../../src/components/social';
 import { api } from '../../src/lib/api';
 import { getActivitySeen } from '../../src/lib/activity-seen';
@@ -119,6 +119,10 @@ export default function FeedScreen() {
         <Loading />
       ) : (
         <>
+          <View style={{ paddingHorizontal: space.page, paddingVertical: space.m }}>
+            <ActionBar actions={[{ label: '＋ POST', onPress: () => router.push('/new-post') }]} />
+          </View>
+
           {requests > 0 && (
             <Pressable style={styles.requests} onPress={() => router.push(`/profile/${profile.id}`)}>
               <Text style={styles.requestsText}>

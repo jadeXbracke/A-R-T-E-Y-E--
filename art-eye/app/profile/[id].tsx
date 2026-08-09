@@ -207,7 +207,12 @@ export default function ProfileScreen() {
         )}
 
         {isOwn && (
-          <View style={{ marginTop: space.l }}>
+          <View style={{ flexDirection: 'row', gap: space.l, marginTop: space.l }}>
+            <MonoLink
+              label="PRIVACY & TERMS"
+              onPress={() => router.push('/privacy')}
+              style={{ alignSelf: 'flex-start' }}
+            />
             <MonoLink
               label="DELETE ACCOUNT"
               color={colors.red}

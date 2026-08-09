@@ -182,6 +182,12 @@ export default function AuthScreen() {
           busy={busy}
         />
 
+        <Pressable onPress={() => router.push('/privacy')} hitSlop={8}>
+          <Text style={styles.terms}>
+            BY CONTINUING YOU AGREE TO THE PRIVACY POLICY & TERMS →
+          </Text>
+        </Pressable>
+
         {DEMO_MODE && (
           <Text style={styles.demoNote}>
             Demo build — try jadebrack@gmail.com (admin), gallery@arteye.demo (venue) or
@@ -232,5 +238,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     color: colors.ink,
     marginTop: space.l,
+  },
+  terms: {
+    fontFamily: fonts.mono,
+    fontSize: 9,
+    lineHeight: 15,
+    letterSpacing: 0.8,
+    color: colors.ink,
+    marginTop: space.m,
+    textAlign: 'center',
   },
 });

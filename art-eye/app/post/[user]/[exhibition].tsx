@@ -157,9 +157,31 @@ export default function PostScreen() {
                         {fmtOpening(c.created_at).toUpperCase()}
                       </Text>
                     </Text>
-                    {me && (c.user_id === me.id || post.user_id === me.id) && (
-                      <MonoLink label="REMOVE" color={colors.red} onPress={() => removeComment(c)} />
-                    )}
+                    <View style={{ flexDirection: 'row', gap: space.m }}>
+                      {me && c.user_id !== me.id && (
+                        <MonoLink
+                          label="REPORT"
+                          color={colors.red}
+                          onPress={() =>
+                            confirmAction(
+                              'Report this comment?',
+                              'This sends the comment to the host for review.',
+                              () =>
+                                api.reportContent({
+                                  reporterId: me.id,
+                                  kind: 'comment',
+                                  subjectUserId: c.user_id,
+                                  commentId: c.id,
+                                  reason: 'Comment reported from the app',
+                                })
+                            )
+                          }
+                        />
+                      )}
+                      {me && (c.user_id === me.id || post.user_id === me.id) && (
+                        <MonoLink label="REMOVE" color={colors.red} onPress={() => removeComment(c)} />
+                      )}
+                    </View>
                   </View>
                   <Text style={styles.commentBody}>{c.body}</Text>
                 </View>
