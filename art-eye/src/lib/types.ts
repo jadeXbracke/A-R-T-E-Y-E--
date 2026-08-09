@@ -25,22 +25,21 @@ export const VENUE_TYPES: { value: VenueType; label: string }[] = [
 
 export type ExhibitionStatus = 'pending' | 'approved' | 'rejected';
 
-// Contemporary-art category vocabulary — the values stored in
-// exhibitions.mediums. Ordered roughly by how often they appear in a
-// contemporary programme.
+// Art-category vocabulary — styles and movements, the way audiences browse
+// (Contemporary, Abstract, Pop Art…), stored in exhibitions.mediums.
 export const MEDIUMS: { value: string; label: string }[] = [
-  { value: 'painting', label: 'PAINTING' },
-  { value: 'sculpture', label: 'SCULPTURE' },
-  { value: 'photography', label: 'PHOTOGRAPHY' },
-  { value: 'installation', label: 'INSTALLATION' },
-  { value: 'video_film', label: 'VIDEO & FILM' },
-  { value: 'digital_new_media', label: 'DIGITAL & NEW MEDIA' },
-  { value: 'performance_sound', label: 'PERFORMANCE & SOUND' },
-  { value: 'drawing_printmaking', label: 'DRAWING & PRINTMAKING' },
-  { value: 'ceramics_textiles', label: 'CERAMICS & TEXTILES' },
+  { value: 'contemporary', label: 'CONTEMPORARY' },
+  { value: 'modern', label: 'MODERN' },
+  { value: 'abstract', label: 'ABSTRACT' },
+  { value: 'figurative', label: 'FIGURATIVE' },
+  { value: 'conceptual', label: 'CONCEPTUAL' },
+  { value: 'pop_art', label: 'POP ART' },
+  { value: 'street_art', label: 'STREET ART' },
+  { value: 'minimalism', label: 'MINIMALISM' },
+  { value: 'surrealism', label: 'SURREALISM' },
+  { value: 'digital_art', label: 'DIGITAL ART' },
   { value: 'first_nations', label: 'FIRST NATIONS & INDIGENOUS' },
-  { value: 'street_art', label: 'STREET & URBAN ART' },
-  { value: 'multidisciplinary', label: 'MULTIDISCIPLINARY' },
+  { value: 'classical', label: 'CLASSICAL & HISTORICAL' },
 ];
 
 export function mediumLabel(value: string): string {

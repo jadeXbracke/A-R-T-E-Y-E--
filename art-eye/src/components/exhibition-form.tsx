@@ -195,7 +195,7 @@ export function ExhibitionForm({
         />
       </View>
 
-      <Kicker style={{ marginBottom: 10 }}>MEDIUM — PICK WHAT APPLIES</Kicker>
+      <Kicker style={{ marginBottom: 10 }}>CATEGORY — PICK WHAT APPLIES</Kicker>
       <View style={styles.mediumRow}>
         {MEDIUMS.map((m) => {
           const on = values.mediums.includes(m.value);

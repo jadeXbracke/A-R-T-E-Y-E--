@@ -124,7 +124,7 @@ export default function AgendaScreen() {
               />
             ))}
             <MonoLink
-              label={mediums.size > 0 ? `MEDIUM (${mediums.size}) ☰` : 'MEDIUM ☰'}
+              label={mediums.size > 0 ? `CATEGORY (${mediums.size}) ☰` : 'CATEGORY ☰'}
               active={mediums.size > 0}
               onPress={() => setMediumSheet(true)}
             />
@@ -189,7 +189,7 @@ export default function AgendaScreen() {
       )}
     </ScrollView>
 
-    <SideSheet title="FILTER BY MEDIUM" visible={mediumSheet} onClose={() => setMediumSheet(false)}>
+    <SideSheet title="FILTER BY CATEGORY" visible={mediumSheet} onClose={() => setMediumSheet(false)}>
       {MEDIUMS.map((m) => (
         <SheetRow
           key={m.value}

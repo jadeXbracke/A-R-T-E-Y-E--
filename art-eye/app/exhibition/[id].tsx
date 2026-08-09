@@ -159,7 +159,7 @@ export default function ExhibitionDetail() {
           <SpecRow label="VENUE" value={e.venue?.name.toUpperCase() ?? '—'} />
           <SpecRow label="TYPE" value={(e.venue?.type ?? '—').toUpperCase()} />
           {e.mediums && e.mediums.length > 0 && (
-            <SpecRow label="MEDIUM" value={e.mediums.map(mediumLabel).join(' · ')} />
+            <SpecRow label="CATEGORY" value={e.mediums.map(mediumLabel).join(' · ')} />
           )}
           <SpecRow label="DATES" value={fmtRange(e.start_date, e.end_date)} />
           {e.opening_datetime && (
