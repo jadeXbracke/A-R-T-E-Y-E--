@@ -25,17 +25,22 @@ export const VENUE_TYPES: { value: VenueType; label: string }[] = [
 
 export type ExhibitionStatus = 'pending' | 'approved' | 'rejected';
 
-// Art-medium vocabulary — the values stored in exhibitions.mediums.
+// Contemporary-art category vocabulary — the values stored in
+// exhibitions.mediums. Ordered roughly by how often they appear in a
+// contemporary programme.
 export const MEDIUMS: { value: string; label: string }[] = [
   { value: 'painting', label: 'PAINTING' },
-  { value: 'photography', label: 'PHOTOGRAPHY' },
   { value: 'sculpture', label: 'SCULPTURE' },
+  { value: 'photography', label: 'PHOTOGRAPHY' },
   { value: 'installation', label: 'INSTALLATION' },
-  { value: 'video', label: 'VIDEO & NEW MEDIA' },
-  { value: 'works_on_paper', label: 'WORKS ON PAPER' },
-  { value: 'textiles_ceramics', label: 'TEXTILES & CERAMICS' },
-  { value: 'performance', label: 'PERFORMANCE' },
-  { value: 'mixed_media', label: 'MIXED MEDIA' },
+  { value: 'video_film', label: 'VIDEO & FILM' },
+  { value: 'digital_new_media', label: 'DIGITAL & NEW MEDIA' },
+  { value: 'performance_sound', label: 'PERFORMANCE & SOUND' },
+  { value: 'drawing_printmaking', label: 'DRAWING & PRINTMAKING' },
+  { value: 'ceramics_textiles', label: 'CERAMICS & TEXTILES' },
+  { value: 'first_nations', label: 'FIRST NATIONS & INDIGENOUS' },
+  { value: 'street_art', label: 'STREET & URBAN ART' },
+  { value: 'multidisciplinary', label: 'MULTIDISCIPLINARY' },
 ];
 
 export function mediumLabel(value: string): string {
