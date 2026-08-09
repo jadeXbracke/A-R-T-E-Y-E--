@@ -95,6 +95,19 @@ export interface PostComment {
   created_at: string;
 }
 
+// One "something happened to your post" event: a like or a comment by
+// someone else, newest first. Powers the activity screen and its badge.
+export interface ActivityEvent {
+  id: string;
+  kind: 'like' | 'comment';
+  actor_id: string;
+  actor_name: string;
+  exhibition_id: string; // the post is (you, this exhibition)
+  exhibition_title: string;
+  body?: string; // the comment text, for kind === 'comment'
+  created_at: string;
+}
+
 // ---- direct messages --------------------------------------------------------
 export interface DirectMessage {
   id: string;

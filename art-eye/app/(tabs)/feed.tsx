@@ -1,10 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, Hairline, Loading } from '../../src/components/ui';
 import { ActivityRow, PersonRow } from '../../src/components/social';
 import { api } from '../../src/lib/api';
+import { getActivitySeen } from '../../src/lib/activity-seen';
 import { useAuth } from '../../src/lib/auth';
 import { FeedItem, PostEngagement, Profile } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
@@ -17,27 +18,40 @@ export default function FeedScreen() {
   const [people, setPeople] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<number>(0);
   const [unread, setUnread] = useState<number>(0);
+  const [newActivity, setNewActivity] = useState<number>(0);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const reload = useCallback(() => {
+  const reload = useCallback(async () => {
     if (!profile) {
       setFeed([]);
       return;
     }
-    Promise.all([
+    const [f, p, r, u, events, seen] = await Promise.all([
       api.friendsFeed(profile.id),
       api.discoverPeople(profile.id),
       api.listFollowRequests(profile.id),
       api.unreadMessageCount(profile.id),
-    ]).then(async ([f, p, r, u]) => {
-      setFeed(f);
-      setPeople(p);
-      setRequests(r.length);
-      setUnread(u);
-      setEngagement(await api.postEngagement(profile.id, f));
-    });
+      api.listActivity(profile.id),
+      getActivitySeen(profile.id),
+    ]);
+    setFeed(f);
+    setPeople(p);
+    setRequests(r.length);
+    setUnread(u);
+    setNewActivity(events.filter((e) => e.created_at > seen).length);
+    setEngagement(await api.postEngagement(profile.id, f));
   }, [profile]);
 
-  useFocusEffect(useCallback(() => reload(), [reload]));
+  useFocusEffect(
+    useCallback(() => {
+      reload();
+    }, [reload])
+  );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    reload().finally(() => setRefreshing(false));
+  }, [reload]);
 
   const follow = async (id: string) => {
     if (!profile) return;
@@ -61,6 +75,9 @@ export default function FeedScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.ink} />
+      }
     >
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -72,6 +89,11 @@ export default function FeedScreen() {
             <View style={{ alignItems: 'flex-end', gap: 8 }}>
               <Pressable onPress={() => router.push(`/profile/${profile.id}`)} hitSlop={8}>
                 <Text style={styles.you}>YOUR PROFILE →</Text>
+              </Pressable>
+              <Pressable onPress={() => router.push('/activity')} hitSlop={8}>
+                <Text style={[styles.you, newActivity > 0 && { color: colors.red }]}>
+                  {newActivity > 0 ? `ACTIVITY (${newActivity}) →` : 'ACTIVITY →'}
+                </Text>
               </Pressable>
               <Pressable onPress={() => router.push('/messages')} hitSlop={8}>
                 <Text style={[styles.you, unread > 0 && { color: colors.red }]}>
@@ -124,7 +146,13 @@ export default function FeedScreen() {
                 <Text style={styles.sectionTitle}>PEOPLE TO FOLLOW</Text>
               </View>
               {people.map((p) => (
-                <PersonRow key={p.id} person={p} state="none" onFollow={() => follow(p.id)} />
+                <PersonRow
+                  key={p.id}
+                  person={p}
+                  state="none"
+                  onFollow={() => follow(p.id)}
+                  onMessage={() => router.push(`/messages/${p.id}`)}
+                />
               ))}
             </>
           )}

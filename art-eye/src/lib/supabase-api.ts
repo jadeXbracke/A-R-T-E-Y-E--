@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Conversation, CuratedList, CuratorRole, DirectMessage, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, PostComment, PostEngagement, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { ActivityEvent, Conversation, CuratedList, CuratorRole, DirectMessage, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, PostComment, PostEngagement, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 
 let client: SupabaseClient | null = null;
@@ -553,8 +553,8 @@ export const supabaseApi: Api = {
       .select('followee_id')
       .eq('follower_id', viewerId)
       .eq('status', 'accepted');
-    const ids = (following ?? []).map((r) => (r as { followee_id: string }).followee_id);
-    if (ids.length === 0) return [];
+    // Your own posts belong in your feed too, Strava-style.
+    const ids = [viewerId, ...(following ?? []).map((r) => (r as { followee_id: string }).followee_id)];
     const { data, error } = await sb
       .from('user_visits')
       .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
@@ -667,6 +667,55 @@ export const supabaseApi: Api = {
     // RLS restricts this to the commenter or the post owner
     const { error } = await supabase().from('post_comments').delete().eq('id', commentId);
     if (error) throw new Error(error.message);
+  },
+
+  async listActivity(userId) {
+    const sb = supabase();
+    const [likesRes, commentsRes] = await Promise.all([
+      sb.from('post_likes')
+        .select('user_id, exhibition_id, created_at, actor:profiles!post_likes_user_id_fkey(display_name), exhibition:exhibitions(title)')
+        .eq('post_user_id', userId)
+        .neq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      sb.from('post_comments')
+        .select('id, user_id, exhibition_id, body, created_at, actor:profiles!post_comments_user_id_fkey(display_name), exhibition:exhibitions(title)')
+        .eq('post_user_id', userId)
+        .neq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50),
+    ]);
+    if (likesRes.error) throw new Error(likesRes.error.message);
+    if (commentsRes.error) throw new Error(commentsRes.error.message);
+    type Joined = {
+      id?: string;
+      user_id: string;
+      exhibition_id: string;
+      body?: string;
+      created_at: string;
+      actor?: { display_name?: string } | null;
+      exhibition?: { title?: string } | null;
+    };
+    const likes: ActivityEvent[] = ((likesRes.data ?? []) as Joined[]).map((r) => ({
+      id: `like:${r.user_id}:${r.exhibition_id}`,
+      kind: 'like',
+      actor_id: r.user_id,
+      actor_name: r.actor?.display_name ?? 'Someone',
+      exhibition_id: r.exhibition_id,
+      exhibition_title: r.exhibition?.title ?? 'a show',
+      created_at: r.created_at,
+    }));
+    const comments: ActivityEvent[] = ((commentsRes.data ?? []) as Joined[]).map((r) => ({
+      id: `comment:${r.id}`,
+      kind: 'comment',
+      actor_id: r.user_id,
+      actor_name: r.actor?.display_name ?? 'Someone',
+      exhibition_id: r.exhibition_id,
+      exhibition_title: r.exhibition?.title ?? 'a show',
+      body: r.body,
+      created_at: r.created_at,
+    }));
+    return [...likes, ...comments].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   },
 
   // ---- direct messages -----------------------------------------------------

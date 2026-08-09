@@ -76,11 +76,13 @@ export function PersonRow({
   state,
   onFollow,
   onUnfollow,
+  onMessage,
 }: {
   person: Profile;
   state?: FollowState;
   onFollow?: () => void;
   onUnfollow?: () => void;
+  onMessage?: () => void;
 }) {
   return (
     <View style={styles.personRow}>
@@ -93,6 +95,7 @@ export function PersonRow({
           {person.is_private ? '  ·  PRIVATE' : ''}
         </Text>
       </Lift>
+      {onMessage && <MonoLink label="MESSAGE" onPress={onMessage} />}
       {state === 'following' ? (
         <MonoLink label="FOLLOWING" active onPress={onUnfollow} />
       ) : state === 'requested' ? (

@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
+  ActivityEvent,
   Conversation,
   CuratedList,
   DirectMessage,
@@ -57,6 +58,7 @@ interface DemoLike {
   post_user_id: string;
   exhibition_id: string;
   user_id: string;
+  created_at: string;
 }
 
 // Stored without display_name — joined from users at read time.
@@ -77,7 +79,7 @@ interface DemoState {
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v15';
+const KEY = 'arteye.demo.v16';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -193,9 +195,9 @@ function seedState(): DemoState {
     ],
     // Engagement over the seeded posts, so the feed feels alive on first run.
     likes: [
-      { post_user_id: 'u-curator', exhibition_id: 'e-murakami', user_id: 'u-mara' },
-      { post_user_id: 'u-curator', exhibition_id: 'e-murakami', user_id: 'u-theo' },
-      { post_user_id: 'u-mara', exhibition_id: 'e-primavera', user_id: 'u-curator' },
+      { post_user_id: 'u-curator', exhibition_id: 'e-murakami', user_id: 'u-mara', created_at: '2026-07-05T08:30:00.000Z' },
+      { post_user_id: 'u-curator', exhibition_id: 'e-murakami', user_id: 'u-theo', created_at: '2026-07-16T11:00:00.000Z' },
+      { post_user_id: 'u-mara', exhibition_id: 'e-primavera', user_id: 'u-curator', created_at: '2026-07-21T18:35:00.000Z' },
     ],
     comments: [
       {
@@ -526,6 +528,7 @@ export const demoApi: Api = {
         .filter((f) => f.follower_id === viewerId && f.status === 'accepted')
         .map((f) => f.followee_id)
     );
+    following.add(viewerId); // your own posts belong in your feed too
     return s.visits
       .filter((v) => following.has(v.user_id))
       .map((v) => feedItemFrom(s, v))
@@ -574,8 +577,16 @@ export const demoApi: Api = {
       (l) => l.post_user_id === postUserId && l.exhibition_id === exhibitionId && l.user_id === viewerId
     );
     const liked = idx === -1;
-    if (liked) s.likes.push({ post_user_id: postUserId, exhibition_id: exhibitionId, user_id: viewerId });
-    else s.likes.splice(idx, 1);
+    if (liked) {
+      s.likes.push({
+        post_user_id: postUserId,
+        exhibition_id: exhibitionId,
+        user_id: viewerId,
+        created_at: new Date().toISOString(),
+      });
+    } else {
+      s.likes.splice(idx, 1);
+    }
     await persist();
     return liked;
   },
@@ -611,6 +622,36 @@ export const demoApi: Api = {
       (c) => !(c.id === commentId && (c.user_id === viewerId || c.post_user_id === viewerId))
     );
     await persist();
+  },
+
+  async listActivity(userId) {
+    const s = await load();
+    const name = (id: string) => s.users.find((u) => u.id === id)?.display_name ?? 'Someone';
+    const title = (id: string) => s.exhibitions.find((e) => e.id === id)?.title ?? 'a show';
+    const likes = (s.likes ?? [])
+      .filter((l) => l.post_user_id === userId && l.user_id !== userId)
+      .map((l): ActivityEvent => ({
+        id: `like:${l.user_id}:${l.exhibition_id}`,
+        kind: 'like',
+        actor_id: l.user_id,
+        actor_name: name(l.user_id),
+        exhibition_id: l.exhibition_id,
+        exhibition_title: title(l.exhibition_id),
+        created_at: l.created_at ?? '',
+      }));
+    const comments = (s.comments ?? [])
+      .filter((c) => c.post_user_id === userId && c.user_id !== userId)
+      .map((c): ActivityEvent => ({
+        id: `comment:${c.id}`,
+        kind: 'comment',
+        actor_id: c.user_id,
+        actor_name: name(c.user_id),
+        exhibition_id: c.exhibition_id,
+        exhibition_title: title(c.exhibition_id),
+        body: c.body,
+        created_at: c.created_at,
+      }));
+    return [...likes, ...comments].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   },
 
   // ---- direct messages -----------------------------------------------------

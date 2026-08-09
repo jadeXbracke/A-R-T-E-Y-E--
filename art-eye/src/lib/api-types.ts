@@ -1,4 +1,4 @@
-import { Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, FeedItem, FollowState, PostComment, PostEngagement, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { ActivityEvent, Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, FeedItem, FollowState, PostComment, PostEngagement, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -76,6 +76,7 @@ export interface Api {
   listComments(postUserId: string, exhibitionId: string): Promise<PostComment[]>;
   addComment(viewerId: string, postUserId: string, exhibitionId: string, body: string): Promise<void>;
   deleteComment(commentId: string, viewerId: string): Promise<void>; // commenter or post owner
+  listActivity(userId: string): Promise<ActivityEvent[]>; // likes/comments by others on your posts, newest first
 
   // direct messages — one-to-one threads
   listConversations(userId: string): Promise<Conversation[]>;

@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
+import { fmtOpening } from '../../src/lib/dates';
 import { DirectMessage, PublicProfile } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
@@ -111,6 +112,7 @@ export default function MessageThread() {
                       {m.body}
                     </Text>
                   </View>
+                  <Text style={styles.bubbleTime}>{fmtOpening(m.created_at).toUpperCase()}</Text>
                 </View>
               );
             })
@@ -160,6 +162,7 @@ const styles = StyleSheet.create({
   bubbleMine: { backgroundColor: colors.ink },
   bubbleTheirs: { borderWidth: 1, borderColor: colors.hairline },
   bubbleText: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 22, color: colors.ink },
+  bubbleTime: { fontFamily: fonts.mono, fontSize: 8, letterSpacing: 0.8, color: colors.ink, opacity: 0.5, marginTop: 3 },
   composer: {
     flexDirection: 'row',
     alignItems: 'flex-end',

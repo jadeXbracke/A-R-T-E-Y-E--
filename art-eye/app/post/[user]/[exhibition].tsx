@@ -15,6 +15,7 @@ import { ActivityRow } from '../../../src/components/social';
 import { EmptyState, Kicker, Loading, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth';
+import { fmtOpening } from '../../../src/lib/dates';
 import { FeedItem, PostComment, PostEngagement } from '../../../src/lib/types';
 import { colors, fonts, space } from '../../../src/theme';
 
@@ -121,6 +122,10 @@ export default function PostScreen() {
                       onPress={() => router.push(`/profile/${c.user_id}`)}
                     >
                       {c.display_name.toUpperCase()}
+                      <Text style={styles.commentDate}>
+                        {'   '}
+                        {fmtOpening(c.created_at).toUpperCase()}
+                      </Text>
                     </Text>
                     {me && (c.user_id === me.id || post.user_id === me.id) && (
                       <MonoLink label="REMOVE" color={colors.red} onPress={() => removeComment(c)} />
@@ -195,6 +200,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   commentName: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.4, color: colors.ink },
+  commentDate: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.8, color: colors.ink, opacity: 0.6 },
   commentBody: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 22, color: colors.ink },
   composer: {
     flexDirection: 'row',
