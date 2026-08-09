@@ -5,12 +5,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
+  ActivityEvent,
+  Conversation,
   CuratedList,
+  DirectMessage,
   Exhibition,
   ExhibitionDraft,
   FeedItem,
   Follow,
   FollowState,
+  PostComment,
+  PostEngagement,
   Profile,
   PublicProfile,
   RejectionReason,
@@ -48,6 +53,33 @@ interface DemoUser extends Profile {
   password: string;
 }
 
+// A like on a post (a post = a visit, keyed by its author + exhibition).
+interface DemoLike {
+  post_user_id: string;
+  exhibition_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+// Stored without display_name — joined from users at read time.
+type DemoComment = Omit<PostComment, 'display_name'>;
+
+interface DemoBlock {
+  blocker_id: string;
+  blocked_id: string;
+}
+
+interface DemoReport {
+  id: string;
+  reporter_id: string;
+  kind: 'post' | 'comment' | 'profile';
+  subject_user_id: string;
+  exhibition_id: string | null;
+  comment_id: string | null;
+  reason: string;
+  created_at: string;
+}
+
 interface DemoState {
   users: DemoUser[];
   venues: Venue[];
@@ -55,12 +87,17 @@ interface DemoState {
   watchlist: WatchlistEntry[];
   visits: Visit[];
   follows: Follow[];
+  likes: DemoLike[];
+  comments: DemoComment[];
+  messages: DirectMessage[];
+  blocks: DemoBlock[];
+  reports: DemoReport[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v14';
+const KEY = 'arteye.demo.v20';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -174,6 +211,58 @@ function seedState(): DemoState {
       { follower_id: 'u-curator', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-07T00:00:00.000Z' },
       { follower_id: 'u-mara', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-08T00:00:00.000Z' },
     ],
+    // Engagement over the seeded posts, so the feed feels alive on first run.
+    likes: [
+      { post_user_id: 'u-curator', exhibition_id: 'e-murakami', user_id: 'u-mara', created_at: '2026-07-05T08:30:00.000Z' },
+      { post_user_id: 'u-curator', exhibition_id: 'e-murakami', user_id: 'u-theo', created_at: '2026-07-16T11:00:00.000Z' },
+      { post_user_id: 'u-mara', exhibition_id: 'e-primavera', user_id: 'u-curator', created_at: '2026-07-21T18:35:00.000Z' },
+    ],
+    comments: [
+      {
+        id: 'c-1',
+        post_user_id: 'u-curator',
+        exhibition_id: 'e-murakami',
+        user_id: 'u-mara',
+        body: 'That silver room did the same to me — twenty minutes, easily.',
+        created_at: '2026-07-05T09:12:00.000Z',
+      },
+      {
+        id: 'c-2',
+        post_user_id: 'u-mara',
+        exhibition_id: 'e-primavera',
+        user_id: 'u-curator',
+        body: 'Saving this one for the weekend.',
+        created_at: '2026-07-21T18:40:00.000Z',
+      },
+    ],
+    messages: [
+      {
+        id: 'm-1',
+        sender_id: 'u-curator',
+        recipient_id: 'u-mara',
+        body: 'Are you going to the Primavera opening on Thursday?',
+        created_at: '2026-07-19T08:05:00.000Z',
+        read_at: '2026-07-19T09:00:00.000Z',
+      },
+      {
+        id: 'm-2',
+        sender_id: 'u-mara',
+        recipient_id: 'u-curator',
+        body: 'Yes — meet at the MCA steps at six?',
+        created_at: '2026-07-19T09:02:00.000Z',
+        read_at: '2026-07-19T09:30:00.000Z',
+      },
+      {
+        id: 'm-3',
+        sender_id: 'u-curator',
+        recipient_id: 'u-admin',
+        body: 'Did you make it to Murakami yet? The silver room alone is worth it.',
+        created_at: '2026-07-22T10:15:00.000Z',
+        read_at: null,
+      },
+    ],
+    blocks: [],
+    reports: [],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
@@ -214,6 +303,13 @@ function withVenue(e: Exhibition, venues: Venue[]): Exhibition {
   return { ...e, venue: venues.find((v) => v.id === e.venue_id) };
 }
 
+// Ids the viewer has blocked — kept out of social reads.
+function blockedOf(s: DemoState, viewerId: string | null): Set<string> {
+  return new Set(
+    (s.blocks ?? []).filter((b) => b.blocker_id === viewerId).map((b) => b.blocked_id)
+  );
+}
+
 // The viewer's relationship to a target user, from the follow graph.
 function followStateFor(s: DemoState, viewerId: string | null, targetId: string): FollowState {
   if (!viewerId || viewerId === targetId) return 'none';
@@ -232,12 +328,14 @@ function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
     id: `${v.user_id}:${v.exhibition_id}`,
     user_id: v.user_id,
     display_name: user.display_name,
+    avatar_url: user.avatar_url ?? null,
     exhibition_id: ex.id,
     exhibition_title: ex.title,
     venue_name: venue?.name ?? null,
     rating: v.rating,
     reflection: v.reflection,
     visit_date: v.visit_date,
+    photo_urls: v.photo_urls ?? [],
     video_url: v.video_url ?? null,
   };
 }
@@ -352,6 +450,21 @@ export const demoApi: Api = {
     await persist();
   },
 
+  async deleteVisit(userId, exhibitionId) {
+    const s = await load();
+    s.visits = s.visits.filter(
+      (v) => !(v.user_id === userId && v.exhibition_id === exhibitionId)
+    );
+    // mirror the DB cascade: the post's engagement goes with it
+    s.likes = (s.likes ?? []).filter(
+      (l) => !(l.post_user_id === userId && l.exhibition_id === exhibitionId)
+    );
+    s.comments = (s.comments ?? []).filter(
+      (c) => !(c.post_user_id === userId && c.exhibition_id === exhibitionId)
+    );
+    await persist();
+  },
+
   // ---- social layer -------------------------------------------------------
   async getPublicProfile(userId, viewerId) {
     const s = await load();
@@ -441,14 +554,42 @@ export const demoApi: Api = {
     await persist();
   },
 
+  async setAvatar(userId, url) {
+    const s = await load();
+    const u = s.users.find((x) => x.id === userId);
+    if (!u) throw new Error('Profile not found.');
+    u.avatar_url = url;
+    await persist();
+  },
+
   async discoverPeople(viewerId) {
     const s = await load();
     // everyone the viewer isn't already connected to, excluding themselves
     const connected = new Set(
       s.follows.filter((f) => f.follower_id === viewerId).map((f) => f.followee_id)
     );
+    const blocked = blockedOf(s, viewerId);
     return s.users
-      .filter((u) => u.id !== viewerId && !connected.has(u.id) && u.role !== 'admin')
+      .filter(
+        (u) => u.id !== viewerId && !connected.has(u.id) && !blocked.has(u.id) && u.role !== 'admin'
+      )
+      .map(stripUser);
+  },
+
+  async searchPeople(query, viewerId) {
+    const s = await load();
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    const blocked = blockedOf(s, viewerId);
+    return s.users
+      .filter(
+        (u) =>
+          u.id !== viewerId &&
+          u.role !== 'admin' &&
+          !blocked.has(u.id) &&
+          u.display_name.toLowerCase().includes(q)
+      )
+      .slice(0, 20)
       .map(stripUser);
   },
 
@@ -459,6 +600,7 @@ export const demoApi: Api = {
         .filter((f) => f.follower_id === viewerId && f.status === 'accepted')
         .map((f) => f.followee_id)
     );
+    following.add(viewerId); // your own posts belong in your feed too
     return s.visits
       .filter((v) => following.has(v.user_id))
       .map((v) => feedItemFrom(s, v))
@@ -478,6 +620,187 @@ export const demoApi: Api = {
       .map((v) => feedItemFrom(s, v))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
+  },
+
+  // ---- engagement (likes + comments) ---------------------------------------
+  async postEngagement(viewerId, posts) {
+    const s = await load();
+    const out: Record<string, PostEngagement> = {};
+    for (const p of posts) {
+      const likes = (s.likes ?? []).filter(
+        (l) => l.post_user_id === p.user_id && l.exhibition_id === p.exhibition_id
+      );
+      const comments = (s.comments ?? []).filter(
+        (c) => c.post_user_id === p.user_id && c.exhibition_id === p.exhibition_id
+      );
+      out[p.id] = {
+        likes: likes.length,
+        liked_by_me: !!viewerId && likes.some((l) => l.user_id === viewerId),
+        comments: comments.length,
+      };
+    }
+    return out;
+  },
+
+  async toggleLike(viewerId, postUserId, exhibitionId) {
+    const s = await load();
+    s.likes = s.likes ?? [];
+    const idx = s.likes.findIndex(
+      (l) => l.post_user_id === postUserId && l.exhibition_id === exhibitionId && l.user_id === viewerId
+    );
+    const liked = idx === -1;
+    if (liked) {
+      s.likes.push({
+        post_user_id: postUserId,
+        exhibition_id: exhibitionId,
+        user_id: viewerId,
+        created_at: new Date().toISOString(),
+      });
+    } else {
+      s.likes.splice(idx, 1);
+    }
+    await persist();
+    return liked;
+  },
+
+  async listComments(postUserId, exhibitionId) {
+    const s = await load();
+    return (s.comments ?? [])
+      .filter((c) => c.post_user_id === postUserId && c.exhibition_id === exhibitionId)
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+      .map((c) => {
+        const u = s.users.find((x) => x.id === c.user_id);
+        return {
+          ...c,
+          display_name: u?.display_name ?? 'Someone',
+          avatar_url: u?.avatar_url ?? null,
+        };
+      });
+  },
+
+  async addComment(viewerId, postUserId, exhibitionId, body) {
+    const s = await load();
+    s.comments = s.comments ?? [];
+    s.comments.push({
+      id: uid('c'),
+      post_user_id: postUserId,
+      exhibition_id: exhibitionId,
+      user_id: viewerId,
+      body: body.trim(),
+      created_at: new Date().toISOString(),
+    });
+    await persist();
+  },
+
+  async deleteComment(commentId, viewerId) {
+    const s = await load();
+    s.comments = (s.comments ?? []).filter(
+      (c) => !(c.id === commentId && (c.user_id === viewerId || c.post_user_id === viewerId))
+    );
+    await persist();
+  },
+
+  async listActivity(userId) {
+    const s = await load();
+    const name = (id: string) => s.users.find((u) => u.id === id)?.display_name ?? 'Someone';
+    const title = (id: string) => s.exhibitions.find((e) => e.id === id)?.title ?? 'a show';
+    const likes = (s.likes ?? [])
+      .filter((l) => l.post_user_id === userId && l.user_id !== userId)
+      .map((l): ActivityEvent => ({
+        id: `like:${l.user_id}:${l.exhibition_id}`,
+        kind: 'like',
+        actor_id: l.user_id,
+        actor_name: name(l.user_id),
+        exhibition_id: l.exhibition_id,
+        exhibition_title: title(l.exhibition_id),
+        created_at: l.created_at ?? '',
+      }));
+    const comments = (s.comments ?? [])
+      .filter((c) => c.post_user_id === userId && c.user_id !== userId)
+      .map((c): ActivityEvent => ({
+        id: `comment:${c.id}`,
+        kind: 'comment',
+        actor_id: c.user_id,
+        actor_name: name(c.user_id),
+        exhibition_id: c.exhibition_id,
+        exhibition_title: title(c.exhibition_id),
+        body: c.body,
+        created_at: c.created_at,
+      }));
+    const blocked = blockedOf(s, userId);
+    return [...likes, ...comments]
+      .filter((e) => !blocked.has(e.actor_id))
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  },
+
+  // ---- direct messages -----------------------------------------------------
+  async listConversations(userId) {
+    const s = await load();
+    const blocked = blockedOf(s, userId);
+    const mine = (s.messages ?? [])
+      .filter((m) => m.sender_id === userId || m.recipient_id === userId)
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    const byPeer = new Map<string, { last: DirectMessage; unread: number }>();
+    for (const m of mine) {
+      const peerId = m.sender_id === userId ? m.recipient_id : m.sender_id;
+      if (blocked.has(peerId)) continue;
+      const entry = byPeer.get(peerId) ?? { last: m, unread: 0 };
+      if (m.recipient_id === userId && !m.read_at) entry.unread += 1;
+      byPeer.set(peerId, entry);
+    }
+    return [...byPeer.entries()]
+      .map(([peerId, entry]): Conversation | null => {
+        const peer = s.users.find((u) => u.id === peerId);
+        return peer ? { peer: stripUser(peer), last: entry.last, unread: entry.unread } : null;
+      })
+      .filter((c): c is Conversation => c !== null)
+      .sort((a, b) => (a.last.created_at < b.last.created_at ? 1 : -1));
+  },
+
+  async listMessages(userId, peerId) {
+    const s = await load();
+    return (s.messages ?? [])
+      .filter(
+        (m) =>
+          (m.sender_id === userId && m.recipient_id === peerId) ||
+          (m.sender_id === peerId && m.recipient_id === userId)
+      )
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+  },
+
+  async sendMessage(senderId, recipientId, body) {
+    const s = await load();
+    // a block in either direction stops messages, matching the live RLS
+    const stopped = (s.blocks ?? []).some(
+      (b) =>
+        (b.blocker_id === recipientId && b.blocked_id === senderId) ||
+        (b.blocker_id === senderId && b.blocked_id === recipientId)
+    );
+    if (stopped) throw new Error('You can’t message this person.');
+    s.messages = s.messages ?? [];
+    s.messages.push({
+      id: uid('m'),
+      sender_id: senderId,
+      recipient_id: recipientId,
+      body: body.trim(),
+      created_at: new Date().toISOString(),
+      read_at: null,
+    });
+    await persist();
+  },
+
+  async markThreadRead(userId, peerId) {
+    const s = await load();
+    const now = new Date().toISOString();
+    for (const m of s.messages ?? []) {
+      if (m.recipient_id === userId && m.sender_id === peerId && !m.read_at) m.read_at = now;
+    }
+    await persist();
+  },
+
+  async unreadMessageCount(userId) {
+    const s = await load();
+    return (s.messages ?? []).filter((m) => m.recipient_id === userId && !m.read_at).length;
   },
 
   async submitExhibition(draft: ExhibitionDraft, userId) {
@@ -508,6 +831,7 @@ export const demoApi: Api = {
       image_url: draft.image_url,
       video_url: draft.video_url ?? null,
       reel_url: draft.reel_url ?? null,
+      mediums: draft.mediums ?? [],
       status: 'pending',
       rejection_reason: null,
       is_featured: false,
@@ -645,6 +969,7 @@ export const demoApi: Api = {
       image_url: draft.image_url,
       video_url: draft.video_url ?? null,
       reel_url: draft.reel_url ?? null,
+      mediums: draft.mediums ?? [],
       status: 'approved', // the host publishes directly
       rejection_reason: null,
       is_featured: false,
@@ -658,6 +983,9 @@ export const demoApi: Api = {
     s.exhibitions = s.exhibitions.filter((e) => e.id !== id);
     s.watchlist = s.watchlist.filter((w) => w.exhibition_id !== id);
     s.visits = s.visits.filter((v) => v.exhibition_id !== id);
+    // mirror the DB cascade: engagement on those posts goes too
+    s.likes = (s.likes ?? []).filter((l) => l.exhibition_id !== id);
+    s.comments = (s.comments ?? []).filter((c) => c.exhibition_id !== id);
     await persist();
   },
 
@@ -709,6 +1037,71 @@ export const demoApi: Api = {
     if (!p) throw new Error('Proposal not found.');
     p.status = 'rejected';
     p.review_note = note.trim() || null;
+    await persist();
+  },
+
+  // ---- safety --------------------------------------------------------------
+  async listBlockedIds(viewerId) {
+    const s = await load();
+    return (s.blocks ?? []).filter((b) => b.blocker_id === viewerId).map((b) => b.blocked_id);
+  },
+
+  async blockUser(viewerId, targetId) {
+    const s = await load();
+    s.blocks = s.blocks ?? [];
+    if (!s.blocks.some((b) => b.blocker_id === viewerId && b.blocked_id === targetId)) {
+      s.blocks.push({ blocker_id: viewerId, blocked_id: targetId });
+    }
+    // blocking severs the follow relationship in both directions
+    s.follows = s.follows.filter(
+      (f) =>
+        !(f.follower_id === viewerId && f.followee_id === targetId) &&
+        !(f.follower_id === targetId && f.followee_id === viewerId)
+    );
+    await persist();
+  },
+
+  async unblockUser(viewerId, targetId) {
+    const s = await load();
+    s.blocks = (s.blocks ?? []).filter(
+      (b) => !(b.blocker_id === viewerId && b.blocked_id === targetId)
+    );
+    await persist();
+  },
+
+  async reportContent(input) {
+    const s = await load();
+    s.reports = s.reports ?? [];
+    s.reports.push({
+      id: uid('r'),
+      reporter_id: input.reporterId,
+      kind: input.kind,
+      subject_user_id: input.subjectUserId,
+      exhibition_id: input.exhibitionId ?? null,
+      comment_id: input.commentId ?? null,
+      reason: input.reason.trim(),
+      created_at: new Date().toISOString(),
+    });
+    await persist();
+  },
+
+  async deleteAccount(userId) {
+    const s = await load();
+    s.users = s.users.filter((u) => u.id !== userId);
+    s.visits = s.visits.filter((v) => v.user_id !== userId);
+    s.watchlist = s.watchlist.filter((w) => w.user_id !== userId);
+    s.follows = s.follows.filter((f) => f.follower_id !== userId && f.followee_id !== userId);
+    s.likes = (s.likes ?? []).filter((l) => l.user_id !== userId && l.post_user_id !== userId);
+    s.comments = (s.comments ?? []).filter(
+      (c) => c.user_id !== userId && c.post_user_id !== userId
+    );
+    s.messages = (s.messages ?? []).filter(
+      (m) => m.sender_id !== userId && m.recipient_id !== userId
+    );
+    s.blocks = (s.blocks ?? []).filter(
+      (b) => b.blocker_id !== userId && b.blocked_id !== userId
+    );
+    if (s.sessionUserId === userId) s.sessionUserId = null;
     await persist();
   },
 

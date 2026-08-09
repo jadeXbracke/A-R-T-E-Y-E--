@@ -9,8 +9,9 @@ import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { fmtOpening, fmtRange } from '../../src/lib/dates';
 import { directionsUrl } from '../../src/lib/maps';
+import { shareExhibition } from '../../src/lib/share';
 import { ReelLink } from '../../src/components/reel-link';
-import { Exhibition, Visit } from '../../src/lib/types';
+import { Exhibition, mediumLabel, Visit } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
 function openLink(url: string) {
@@ -127,7 +128,12 @@ export default function ExhibitionDetail() {
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Text style={styles.backLabel}>← BACK</Text>
           </Pressable>
-          {visit && <RedDot size={10} />}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+            {visit && <RedDot size={10} />}
+            <Pressable onPress={() => shareExhibition(e)} hitSlop={12}>
+              <Text style={styles.backLabel}>SHARE ↗</Text>
+            </Pressable>
+          </View>
         </View>
         <View style={{ paddingHorizontal: space.page }}>
           <LiveArt
@@ -152,6 +158,9 @@ export default function ExhibitionDetail() {
           <Hairline />
           <SpecRow label="VENUE" value={e.venue?.name.toUpperCase() ?? '—'} />
           <SpecRow label="TYPE" value={(e.venue?.type ?? '—').toUpperCase()} />
+          {e.mediums && e.mediums.length > 0 && (
+            <SpecRow label="CATEGORY" value={e.mediums.map(mediumLabel).join(' · ')} />
+          )}
           <SpecRow label="DATES" value={fmtRange(e.start_date, e.end_date)} />
           {e.opening_datetime && (
             <SpecRow label="OPENING" value={fmtOpening(e.opening_datetime).toUpperCase()} accent />

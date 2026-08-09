@@ -42,9 +42,21 @@ export function Lift({
   );
 }
 
-/** Mono kicker label, e.g. "YOUR RATING" */
-export function Kicker({ children, style }: { children: React.ReactNode; style?: object }) {
-  return <Text style={[styles.kicker, style]}>{children}</Text>;
+/** Mono kicker label, e.g. "YOUR RATING". Pressable when onPress is given. */
+export function Kicker({
+  children,
+  style,
+  onPress,
+}: {
+  children: React.ReactNode;
+  style?: object;
+  onPress?: () => void;
+}) {
+  return (
+    <Text style={[styles.kicker, style]} onPress={onPress}>
+      {children}
+    </Text>
+  );
 }
 
 /**

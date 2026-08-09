@@ -6,10 +6,11 @@ import { ExhibitionGridItem, ExhibitionRow } from '../../src/components/exhibiti
 import { HeroCarousel } from '../../src/components/hero-carousel';
 import { SearchBar } from '../../src/components/search-bar';
 import { EmptyState, Hairline, Kicker, Lift, Loading, MonoLink, Wordmark } from '../../src/components/ui';
+import { SheetRow, SideSheet } from '../../src/components/side-sheet';
 import { api } from '../../src/lib/api';
 import { daysUntil, isOnNow, todayStr } from '../../src/lib/dates';
 import { useAuth } from '../../src/lib/auth';
-import { AgendaFilter, CuratedList, Exhibition } from '../../src/lib/types';
+import { AgendaFilter, CuratedList, Exhibition, MEDIUMS } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
 const FILTERS: { value: AgendaFilter; label: string }[] = [
@@ -27,6 +28,8 @@ export default function AgendaScreen() {
   const [exhibitions, setExhibitions] = useState<Exhibition[] | null>(null);
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<AgendaFilter>('all');
+  const [mediums, setMediums] = useState<Set<string>>(new Set());
+  const [mediumSheet, setMediumSheet] = useState(false);
   const [view, setView] = useState<'list' | 'grid'>('list');
   const [curated, setCurated] = useState<CuratedList[]>([]);
 
@@ -55,7 +58,10 @@ export default function AgendaScreen() {
 
   const agenda = useMemo(() => {
     const t = todayStr();
-    const all = (exhibitions ?? []).filter((e) => e.end_date >= t);
+    let all = (exhibitions ?? []).filter((e) => e.end_date >= t);
+    if (mediums.size > 0) {
+      all = all.filter((e) => (e.mediums ?? []).some((m) => mediums.has(m)));
+    }
     switch (filter) {
       case 'opening_soon':
         return all
@@ -74,13 +80,14 @@ export default function AgendaScreen() {
       default:
         return all.sort((a, b) => (a.end_date < b.end_date ? -1 : 1));
     }
-  }, [exhibitions, filter]);
+  }, [exhibitions, filter, mediums]);
 
   const heading = filter === 'opening_soon' ? 'Opening soon' : 'On now';
 
   return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.bg }}
+      style={{ flex: 1 }}
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
     >
       <View style={styles.header}>
@@ -116,6 +123,11 @@ export default function AgendaScreen() {
                 onPress={() => setFilter(f.value)}
               />
             ))}
+            <MonoLink
+              label={mediums.size > 0 ? `CATEGORY (${mediums.size}) ☰` : 'CATEGORY ☰'}
+              active={mediums.size > 0}
+              onPress={() => setMediumSheet(true)}
+            />
           </ScrollView>
 
           {curated.length > 0 && (
@@ -176,6 +188,28 @@ export default function AgendaScreen() {
         </>
       )}
     </ScrollView>
+
+    <SideSheet title="FILTER BY CATEGORY" visible={mediumSheet} onClose={() => setMediumSheet(false)}>
+      {MEDIUMS.map((m) => (
+        <SheetRow
+          key={m.value}
+          label={m.label}
+          active={mediums.has(m.value)}
+          onPress={() =>
+            setMediums((prev) => {
+              const next = new Set(prev);
+              if (next.has(m.value)) next.delete(m.value);
+              else next.add(m.value);
+              return next;
+            })
+          }
+        />
+      ))}
+      {mediums.size > 0 && (
+        <SheetRow label="CLEAR FILTERS" accent onPress={() => setMediums(new Set())} />
+      )}
+    </SideSheet>
+    </View>
   );
 }
 

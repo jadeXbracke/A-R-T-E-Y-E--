@@ -1,13 +1,16 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '../../src/components/avatar';
 import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { ActivityRow, PersonRow } from '../../src/components/social';
 import { PROFILE_TYPES } from '../../src/lib/types';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
-import { FeedItem, Profile, PublicProfile } from '../../src/lib/types';
+import { confirmAction } from '../../src/lib/confirm';
+import { FeedItem, PostEngagement, Profile, PublicProfile } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
 function typeLabel(pt: Profile['profile_type']): string {
@@ -17,19 +20,27 @@ function typeLabel(pt: Profile['profile_type']): string {
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { profile: me, refresh } = useAuth();
+  const { profile: me, refresh, signOut } = useAuth();
 
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
   const [activity, setActivity] = useState<FeedItem[]>([]);
+  const [engagement, setEngagement] = useState<Record<string, PostEngagement>>({});
   const [requests, setRequests] = useState<Profile[]>([]);
+  const [blockedByMe, setBlockedByMe] = useState(false);
 
   const isOwn = !!me && me.id === id;
 
   const reload = useCallback(() => {
     if (!id) return;
     api.getPublicProfile(id, me?.id ?? null).then(setProfile);
-    api.userActivity(id, me?.id ?? null).then(setActivity);
+    api.userActivity(id, me?.id ?? null).then(async (a) => {
+      setActivity(a);
+      setEngagement(await api.postEngagement(me?.id ?? null, a));
+    });
     if (me && me.id === id) api.listFollowRequests(id).then(setRequests);
+    if (me && me.id !== id) {
+      api.listBlockedIds(me.id).then((ids) => setBlockedByMe(ids.includes(id)));
+    }
   }, [id, me]);
 
   useFocusEffect(useCallback(() => reload(), [reload]));
@@ -74,6 +85,69 @@ export default function ProfileScreen() {
     reload();
   };
 
+  const toggleBlock = () => {
+    if (!me) return;
+    if (blockedByMe) {
+      api.unblockUser(me.id, profile.id).then(reload);
+      return;
+    }
+    confirmAction(
+      `Block ${profile.display_name}?`,
+      'They won’t be able to message you, and you won’t see each other’s activity. Any follow between you is removed.',
+      async () => {
+        await api.blockUser(me.id, profile.id);
+        reload();
+      }
+    );
+  };
+
+  const report = () => {
+    if (!me) {
+      router.push('/auth');
+      return;
+    }
+    confirmAction(
+      `Report ${profile.display_name}?`,
+      'This sends the profile to the host for review.',
+      async () => {
+        await api.reportContent({
+          reporterId: me.id,
+          kind: 'profile',
+          subjectUserId: profile.id,
+          reason: 'Profile reported from the app',
+        });
+      }
+    );
+  };
+
+  const changePhoto = async () => {
+    if (!isOwn || !me) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const url = await api.uploadImage(result.assets[0].uri);
+    await api.setAvatar(me.id, url);
+    reload();
+    refresh();
+  };
+
+  const deleteAccount = () => {
+    if (!me) return;
+    confirmAction(
+      'Delete your account?',
+      'This permanently removes your profile, posts, comments, likes and messages. There is no undo.',
+      async () => {
+        await api.deleteAccount(me.id);
+        await signOut();
+        router.replace('/(tabs)');
+      }
+    );
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
@@ -87,11 +161,23 @@ export default function ProfileScreen() {
       </View>
 
       <View style={{ paddingHorizontal: space.page }}>
-        <Text style={type.serifHeading}>{profile.display_name}</Text>
-        <Text style={styles.city}>
-          {profile.city.toUpperCase()}
-          {profile.is_private ? '  ·  PRIVATE' : '  ·  PUBLIC'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+          <Avatar name={profile.display_name} uri={profile.avatar_url} size={64} />
+          <View style={{ flex: 1 }}>
+            <Text style={type.serifHeading}>{profile.display_name}</Text>
+            <Text style={styles.city}>
+              {profile.city.toUpperCase()}
+              {profile.is_private ? '  ·  PRIVATE' : '  ·  PUBLIC'}
+            </Text>
+            {isOwn && (
+              <Pressable onPress={changePhoto} hitSlop={8}>
+                <Text style={styles.changePhoto}>
+                  {profile.avatar_url ? 'CHANGE PHOTO' : 'ADD A PROFILE PHOTO'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
 
         <View style={styles.stats}>
           <Stat label="FOLLOWERS" value={profile.followers} />
@@ -99,8 +185,8 @@ export default function ProfileScreen() {
           <Stat label="LOGGED" value={profile.visit_count} />
         </View>
 
-        {!isOwn && (
-          <View style={{ marginTop: space.m }}>
+        {!isOwn && !blockedByMe && (
+          <View style={{ flexDirection: 'row', gap: space.l, marginTop: space.m }}>
             <MonoLink
               label={
                 profile.follow_state === 'following'
@@ -114,6 +200,21 @@ export default function ProfileScreen() {
               active={profile.follow_state !== 'none'}
               onPress={toggleFollow}
             />
+            <MonoLink
+              label="MESSAGE"
+              onPress={() => (me ? router.push(`/messages/${profile.id}`) : router.push('/auth'))}
+            />
+          </View>
+        )}
+
+        {!isOwn && me && (
+          <View style={{ flexDirection: 'row', gap: space.l, marginTop: space.m }}>
+            <MonoLink
+              label={blockedByMe ? 'BLOCKED — TAP TO UNBLOCK' : 'BLOCK'}
+              color={colors.red}
+              onPress={toggleBlock}
+            />
+            {!blockedByMe && <MonoLink label="REPORT" color={colors.red} onPress={report} />}
           </View>
         )}
 
@@ -130,6 +231,22 @@ export default function ProfileScreen() {
               onValueChange={setPrivacy}
               trackColor={{ true: colors.ink, false: colors.dim }}
               thumbColor={colors.white}
+            />
+          </View>
+        )}
+
+        {isOwn && (
+          <View style={{ flexDirection: 'row', gap: space.l, marginTop: space.l }}>
+            <MonoLink
+              label="PRIVACY & TERMS"
+              onPress={() => router.push('/privacy')}
+              style={{ alignSelf: 'flex-start' }}
+            />
+            <MonoLink
+              label="DELETE ACCOUNT"
+              color={colors.red}
+              onPress={deleteAccount}
+              style={{ alignSelf: 'flex-start' }}
             />
           </View>
         )}
@@ -159,14 +276,30 @@ export default function ProfileScreen() {
       <View style={styles.sectionHead}>
         <Text style={styles.sectionTitle}>{isOwn ? 'YOUR ACTIVITY' : 'ACTIVITY'}</Text>
       </View>
-      {!profile.can_view_activity ? (
+      {blockedByMe ? (
+        <Text style={styles.private}>You’ve blocked this person, so their activity is hidden.</Text>
+      ) : !profile.can_view_activity ? (
         <Text style={styles.private}>
           This profile is private. Follow to see what {profile.display_name.split(' ')[0]} logs.
         </Text>
       ) : activity.length === 0 ? (
         <Text style={styles.private}>Nothing logged yet.</Text>
       ) : (
-        activity.map((item) => <ActivityRow key={item.id} item={item} />)
+        activity.map((item) => (
+          <ActivityRow
+            key={item.id}
+            item={item}
+            engagement={engagement[item.id] ?? { likes: 0, liked_by_me: false, comments: 0 }}
+            onToggleLike={async () => {
+              if (!me) {
+                router.push('/auth');
+                return;
+              }
+              await api.toggleLike(me.id, item.user_id, item.exhibition_id);
+              reload();
+            }}
+          />
+        ))
       )}
     </ScrollView>
   );
@@ -192,6 +325,13 @@ const styles = StyleSheet.create({
   },
   back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.ink },
   city: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, color: colors.ink, marginTop: 6 },
+  changePhoto: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    color: colors.red,
+    marginTop: 8,
+  },
   stats: { flexDirection: 'row', gap: space.xl, marginTop: space.l },
   stat: {},
   statValue: { fontFamily: fonts.sansMedium, fontSize: 22, color: colors.ink },

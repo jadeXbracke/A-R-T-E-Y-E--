@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Hairline, InkBar, Kicker, RatingDots } from '../../src/components/ui';
-import { PhotoPicker } from '../../src/components/image-upload';
+import { PhotoMultiPicker, PhotoPicker } from '../../src/components/image-upload';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { todayStr } from '../../src/lib/dates';
@@ -26,6 +26,7 @@ export default function LogVisit() {
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [rating, setRating] = useState(0);
   const [reflection, setReflection] = useState('');
+  const [photos, setPhotos] = useState<string[]>([]);
   const [video, setVideo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export default function LogVisit() {
         if (v) {
           setRating(v.rating);
           setReflection(v.reflection);
+          setPhotos(v.photo_urls ?? []);
           setVideo(v.video_url ?? null);
         }
       });
@@ -49,6 +51,10 @@ export default function LogVisit() {
     setBusy(true);
     setError(null);
     try {
+      // Local picks upload on save; urls that are already remote pass through.
+      const photoUrls = await Promise.all(
+        photos.map((p) => (p.startsWith('http') ? Promise.resolve(p) : api.uploadImage(p)))
+      );
       let videoUrl = video;
       if (videoUrl && !videoUrl.startsWith('http')) {
         videoUrl = await api.uploadImage(videoUrl); // uploads video too (content-type detected)
@@ -59,6 +65,7 @@ export default function LogVisit() {
         rating,
         reflection: reflection.trim(),
         visit_date: todayStr(),
+        photo_urls: photoUrls,
         video_url: videoUrl,
       });
       router.back();
@@ -98,7 +105,13 @@ export default function LogVisit() {
 
         <Hairline style={{ marginVertical: space.l }} />
 
-        <Kicker style={{ marginBottom: space.m }}>YOUR RATING</Kicker>
+        <Kicker style={{ marginBottom: space.s }}>YOUR PHOTOS</Kicker>
+        <PhotoMultiPicker uris={photos} onChange={setPhotos} />
+        <Text style={styles.hint}>
+          What you saw, in your own frame. The first photo leads the post.
+        </Text>
+
+        <Kicker style={{ marginTop: space.xl, marginBottom: space.m }}>YOUR RATING</Kicker>
         <RatingDots value={rating} onChange={setRating} size={22} gap={18} />
 
         <Kicker style={{ marginTop: space.xl, marginBottom: space.s }}>YOUR NOTE</Kicker>

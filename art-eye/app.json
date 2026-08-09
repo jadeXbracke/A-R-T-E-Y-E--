@@ -17,7 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.arteye.app",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "ART EYE uses your photo library so venues can attach an exhibition image to a submission."
+        "NSPhotoLibraryUsageDescription": "ART EYE uses your photo library so you can attach photos and short clips to your posts, and so venues can add an image to a submission."
       }
     },
     "android": {

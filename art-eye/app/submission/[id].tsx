@@ -33,6 +33,7 @@ export function valuesFromExhibition(e: Exhibition): ExhibitionFormValues {
     image_url: e.image_url,
     video_url: e.video_url ?? '',
     reel_url: e.reel_url ?? '',
+    mediums: e.mediums ?? [],
   };
 }
 
@@ -77,6 +78,7 @@ export default function EditSubmission() {
           image_url: d.image_url,
           video_url: d.video_url ?? null,
           reel_url: d.reel_url ?? null,
+          mediums: d.mediums ?? [],
         },
         profile.id
       );

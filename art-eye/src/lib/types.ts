@@ -25,6 +25,27 @@ export const VENUE_TYPES: { value: VenueType; label: string }[] = [
 
 export type ExhibitionStatus = 'pending' | 'approved' | 'rejected';
 
+// Art-category vocabulary — styles and movements, the way audiences browse
+// (Contemporary, Abstract, Pop Art…), stored in exhibitions.mediums.
+export const MEDIUMS: { value: string; label: string }[] = [
+  { value: 'contemporary', label: 'CONTEMPORARY' },
+  { value: 'modern', label: 'MODERN' },
+  { value: 'abstract', label: 'ABSTRACT' },
+  { value: 'figurative', label: 'FIGURATIVE' },
+  { value: 'conceptual', label: 'CONCEPTUAL' },
+  { value: 'pop_art', label: 'POP ART' },
+  { value: 'street_art', label: 'STREET ART' },
+  { value: 'minimalism', label: 'MINIMALISM' },
+  { value: 'surrealism', label: 'SURREALISM' },
+  { value: 'digital_art', label: 'DIGITAL ART' },
+  { value: 'first_nations', label: 'FIRST NATIONS & INDIGENOUS' },
+  { value: 'classical', label: 'CLASSICAL & HISTORICAL' },
+];
+
+export function mediumLabel(value: string): string {
+  return MEDIUMS.find((m) => m.value === value)?.label ?? value.toUpperCase();
+}
+
 export type RejectionReason = 'outside_sydney' | 'incomplete' | 'no_image' | 'other';
 
 export const REJECTION_REASONS: { value: RejectionReason; label: string }[] = [
@@ -42,6 +63,7 @@ export interface Profile {
   display_name: string;
   city: string;
   is_private?: boolean; // closed profile — activity only visible to accepted followers
+  avatar_url?: string | null; // profile picture; monogram fallback when unset
 }
 
 // ---- social layer (Strava-style follow + activity feed) ---------------------
@@ -68,13 +90,65 @@ export interface FeedItem {
   id: string;
   user_id: string;
   display_name: string;
+  avatar_url?: string | null;
   exhibition_id: string;
   exhibition_title: string;
   venue_name: string | null;
   rating: number;
   reflection: string;
   visit_date: string; // YYYY-MM-DD
+  photo_urls?: string[]; // the post's photos — its main visual component
   video_url?: string | null; // short clip attached to the post
+}
+
+// Likes + comment count on a post, from the viewer's perspective.
+// Keyed by FeedItem.id (`${user_id}:${exhibition_id}`) in engagement maps.
+export interface PostEngagement {
+  likes: number;
+  liked_by_me: boolean;
+  comments: number;
+}
+
+export interface PostComment {
+  id: string;
+  post_user_id: string; // the post's author
+  exhibition_id: string;
+  user_id: string; // the commenter
+  display_name: string;
+  avatar_url?: string | null;
+  body: string;
+  created_at: string;
+}
+
+// One "something happened to your post" event: a like or a comment by
+// someone else, newest first. Powers the activity screen and its badge.
+export interface ActivityEvent {
+  id: string;
+  kind: 'like' | 'comment';
+  actor_id: string;
+  actor_name: string;
+  exhibition_id: string; // the post is (you, this exhibition)
+  exhibition_title: string;
+  body?: string; // the comment text, for kind === 'comment'
+  created_at: string;
+}
+
+// ---- direct messages --------------------------------------------------------
+export interface DirectMessage {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+}
+
+// One inbox row: the other party, the latest message, and how many of
+// their messages the viewer hasn't read yet.
+export interface Conversation {
+  peer: Profile;
+  last: DirectMessage;
+  unread: number;
 }
 
 export interface Venue {
@@ -119,6 +193,7 @@ export interface Exhibition {
   image_source?: string | null; // page a pipeline-fetched press image came from
   video_url?: string | null; // short muted clip — plays as a moving background where set
   reel_url?: string | null; // link to an Instagram Reel or TikTok about the show
+  mediums?: string[]; // art-medium tags from the MEDIUMS vocabulary
   status: ExhibitionStatus;
   rejection_reason: RejectionReason | null;
   is_featured: boolean;
@@ -158,6 +233,7 @@ export interface Visit {
   rating: number; // 1–5
   reflection: string;
   visit_date: string; // YYYY-MM-DD
+  photo_urls?: string[]; // the post's photos — its main visual component
   video_url?: string | null; // short clip the user attached to the post
 }
 
@@ -171,6 +247,7 @@ export interface ExhibitionDraft {
   image_url: string | null;
   video_url?: string | null;
   reel_url?: string | null;
+  mediums?: string[];
   venue_name: string;
   venue_type: VenueType;
   venue_address: string;

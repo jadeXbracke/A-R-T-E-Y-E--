@@ -1,4 +1,4 @@
-import { CuratedList, Exhibition, ExhibitionDraft, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { ActivityEvent, Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, FeedItem, FollowState, PostComment, PostEngagement, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -27,6 +27,7 @@ export interface Api {
   removeFromWatchlist(userId: string, exhibitionId: string): Promise<void>;
   listVisits(userId: string): Promise<Visit[]>;
   saveVisit(visit: Visit): Promise<void>;
+  deleteVisit(userId: string, exhibitionId: string): Promise<void>; // removes the post and its engagement
 
   // submissions
   submitExhibition(draft: ExhibitionDraft, userId: string | null): Promise<void>;
@@ -66,9 +67,40 @@ export interface Api {
   listFollowRequests(userId: string): Promise<Profile[]>; // pending requests to approve
   respondFollowRequest(userId: string, requesterId: string, accept: boolean): Promise<void>;
   setProfilePrivacy(userId: string, isPrivate: boolean): Promise<void>;
+  setAvatar(userId: string, url: string | null): Promise<void>; // url from uploadImage, or null to clear
   discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
+  searchPeople(query: string, viewerId: string | null): Promise<Profile[]>; // find people by name
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows
   userActivity(userId: string, viewerId: string | null): Promise<FeedItem[]>;
+
+  // engagement — likes and comments on posts (a post = a logged visit)
+  postEngagement(viewerId: string | null, posts: FeedItem[]): Promise<Record<string, PostEngagement>>; // keyed by FeedItem.id
+  toggleLike(viewerId: string, postUserId: string, exhibitionId: string): Promise<boolean>; // resolves to the new liked state
+  listComments(postUserId: string, exhibitionId: string): Promise<PostComment[]>;
+  addComment(viewerId: string, postUserId: string, exhibitionId: string, body: string): Promise<void>;
+  deleteComment(commentId: string, viewerId: string): Promise<void>; // commenter or post owner
+  listActivity(userId: string): Promise<ActivityEvent[]>; // likes/comments by others on your posts, newest first
+
+  // direct messages — one-to-one threads
+  listConversations(userId: string): Promise<Conversation[]>;
+  listMessages(userId: string, peerId: string): Promise<DirectMessage[]>; // oldest first
+  sendMessage(senderId: string, recipientId: string, body: string): Promise<void>;
+  markThreadRead(userId: string, peerId: string): Promise<void>;
+  unreadMessageCount(userId: string): Promise<number>;
+
+  // safety — blocking, reporting, account deletion (app-store requirements)
+  listBlockedIds(viewerId: string): Promise<string[]>;
+  blockUser(viewerId: string, targetId: string): Promise<void>; // also severs follows both ways
+  unblockUser(viewerId: string, targetId: string): Promise<void>;
+  reportContent(input: {
+    reporterId: string;
+    kind: 'post' | 'comment' | 'profile';
+    subjectUserId: string; // whose content/profile is being reported
+    exhibitionId?: string; // kind 'post'
+    commentId?: string; // kind 'comment'
+    reason: string;
+  }): Promise<void>;
+  deleteAccount(userId: string): Promise<void>; // removes the account and all its content
 
   // media
   uploadImage(localUri: string): Promise<string>;

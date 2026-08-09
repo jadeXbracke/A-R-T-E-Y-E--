@@ -2,12 +2,12 @@ import { router } from 'expo-router';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmptyState, Hairline, Lift } from '../../src/components/ui';
-import { DateBlock } from '../../src/components/date-block';
-import { fmtRange } from '../../src/lib/dates';
-import { listFairs } from '../../src/lib/fairs';
-import { todayStr } from '../../src/lib/dates';
-import { colors, fonts, space, type } from '../../src/theme';
+import { EmptyState, Hairline, Lift } from '../src/components/ui';
+import { DateBlock } from '../src/components/date-block';
+import { fmtRange } from '../src/lib/dates';
+import { listFairs } from '../src/lib/fairs';
+import { todayStr } from '../src/lib/dates';
+import { colors, fonts, space, type } from '../src/theme';
 
 export default function FairsScreen() {
   const insets = useSafeAreaInsets();
@@ -28,7 +28,12 @@ export default function FairsScreen() {
       contentContainerStyle={{ paddingTop: insets.top + space.m, paddingBottom: space.xl }}
     >
       <View style={styles.header}>
-        <Text style={styles.kicker}>THE INTERNATIONAL CALENDAR</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.kicker}>THE INTERNATIONAL CALENDAR</Text>
+          <Text style={styles.kicker} onPress={() => router.back()}>
+            ← BACK
+          </Text>
+        </View>
         <Text style={type.serifHeading}>Fairs</Text>
       </View>
       <Hairline />

@@ -1,10 +1,12 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { fmtDay } from '../lib/dates';
-import { FeedItem, FollowState, Profile } from '../lib/types';
+import { FeedItem, FollowState, PostEngagement, Profile } from '../lib/types';
 import { PROFILE_TYPES } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
+import { Avatar } from './avatar';
 import { Lift, MonoLink, RatingDots } from './ui';
 import { LiveArt } from './live-art';
 
@@ -13,13 +15,25 @@ function typeLabel(pt: Profile['profile_type']): string {
 }
 
 /** One activity-feed entry: a person logging a visit to a show. */
-export function ActivityRow({ item }: { item: FeedItem }) {
+export function ActivityRow({
+  item,
+  engagement,
+  onToggleLike,
+}: {
+  item: FeedItem;
+  engagement?: PostEngagement; // omit to render the row without like/comment actions
+  onToggleLike?: () => void;
+}) {
   return (
     <View style={styles.activity}>
       <View style={styles.activityHead}>
-        <Text style={styles.person} onPress={() => router.push(`/profile/${item.user_id}`)}>
-          {item.display_name.toUpperCase()}
-        </Text>
+        <Pressable
+          onPress={() => router.push(`/profile/${item.user_id}`)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+        >
+          <Avatar name={item.display_name} uri={item.avatar_url} size={28} />
+          <Text style={styles.person}>{item.display_name.toUpperCase()}</Text>
+        </Pressable>
         <Text style={styles.date}>{fmtDay(item.visit_date, true).toUpperCase()}</Text>
       </View>
       <Lift onPress={() => router.push(`/exhibition/${item.exhibition_id}`)}>
@@ -32,6 +46,24 @@ export function ActivityRow({ item }: { item: FeedItem }) {
         <RatingDots value={item.rating} size={9} gap={7} />
       </View>
       {item.reflection ? <Text style={styles.reflection}>{item.reflection}</Text> : null}
+      {item.photo_urls && item.photo_urls.length > 0 ? (
+        <>
+          <Image
+            source={{ uri: item.photo_urls[0] }}
+            style={styles.photoLead}
+            contentFit="cover"
+          />
+          {item.photo_urls.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: space.s }}>
+              <View style={{ flexDirection: 'row', gap: space.s }}>
+                {item.photo_urls.slice(1).map((u) => (
+                  <Image key={u} source={{ uri: u }} style={styles.photoThumb} contentFit="cover" />
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </>
+      ) : null}
       {item.video_url ? (
         <LiveArt
           videoUrl={item.video_url}
@@ -40,6 +72,24 @@ export function ActivityRow({ item }: { item: FeedItem }) {
           style={styles.video}
         />
       ) : null}
+      {engagement && (
+        <View style={styles.engageRow}>
+          <Pressable onPress={onToggleLike} hitSlop={8}>
+            <Text style={[styles.engage, engagement.liked_by_me && { color: colors.red }]}>
+              {engagement.liked_by_me ? '● LIKED' : '○ LIKE'}
+              {engagement.likes > 0 ? `  ${engagement.likes}` : ''}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push(`/post/${item.user_id}/${item.exhibition_id}`)}
+            hitSlop={8}
+          >
+            <Text style={styles.engage}>
+              {engagement.comments > 0 ? `COMMENTS  ${engagement.comments}` : 'COMMENT'} →
+            </Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -50,23 +100,31 @@ export function PersonRow({
   state,
   onFollow,
   onUnfollow,
+  onMessage,
 }: {
   person: Profile;
   state?: FollowState;
   onFollow?: () => void;
   onUnfollow?: () => void;
+  onMessage?: () => void;
 }) {
   return (
     <View style={styles.personRow}>
       <Lift style={{ flex: 1 }} onPress={() => router.push(`/profile/${person.id}`)}>
-        <Text style={styles.personName} numberOfLines={1}>
-          {person.display_name}
-        </Text>
-        <Text style={styles.personMeta} numberOfLines={1}>
-          {typeLabel(person.profile_type)}
-          {person.is_private ? '  ·  PRIVATE' : ''}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+          <Avatar name={person.display_name} uri={person.avatar_url} size={36} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.personName} numberOfLines={1}>
+              {person.display_name}
+            </Text>
+            <Text style={styles.personMeta} numberOfLines={1}>
+              {typeLabel(person.profile_type)}
+              {person.is_private ? '  ·  PRIVATE' : ''}
+            </Text>
+          </View>
+        </View>
       </Lift>
+      {onMessage && <MonoLink label="MESSAGE" onPress={onMessage} />}
       {state === 'following' ? (
         <MonoLink label="FOLLOWING" active onPress={onUnfollow} />
       ) : state === 'requested' ? (
@@ -97,6 +155,10 @@ const styles = StyleSheet.create({
   venue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginTop: 3 },
   reflection: { ...type.serifBody, fontSize: 16, lineHeight: 24, marginTop: space.s },
   video: { width: '100%', marginTop: space.m, backgroundColor: colors.dim },
+  photoLead: { width: '100%', aspectRatio: 4 / 5, marginTop: space.m, backgroundColor: colors.dim },
+  photoThumb: { width: 84, height: 84, backgroundColor: colors.dim },
+  engageRow: { flexDirection: 'row', gap: space.l, marginTop: space.m },
+  engage: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.4, color: colors.ink },
   personRow: {
     flexDirection: 'row',
     alignItems: 'center',

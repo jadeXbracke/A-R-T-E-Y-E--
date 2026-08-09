@@ -57,6 +57,80 @@ export function PhotoPicker({
   );
 }
 
+/**
+ * Pick several photos for a post. First photo is the lead image; the rest
+ * show as a thumbnail strip. Tap a thumbnail's × to remove it. Reports
+ * local uris via onChange; the caller uploads them when saving.
+ */
+export function PhotoMultiPicker({
+  uris,
+  onChange,
+  max = 6,
+}: {
+  uris: string[];
+  onChange: (uris: string[]) => void;
+  max?: number;
+}) {
+  const [picking, setPicking] = useState(false);
+
+  const pick = async () => {
+    setPicking(true);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.85,
+        allowsMultipleSelection: true,
+        selectionLimit: Math.max(1, max - uris.length),
+      });
+      if (!result.canceled && result.assets.length) {
+        onChange([...uris, ...result.assets.map((a) => a.uri)].slice(0, max));
+      }
+    } finally {
+      setPicking(false);
+    }
+  };
+
+  const remove = (uri: string) => onChange(uris.filter((u) => u !== uri));
+
+  return (
+    <View>
+      {uris.length > 0 && (
+        <Image source={{ uri: uris[0] }} style={styles.lead} contentFit="cover" />
+      )}
+      {uris.length > 1 && (
+        <View style={styles.strip}>
+          {uris.slice(1).map((u) => (
+            <View key={u}>
+              <Image source={{ uri: u }} style={styles.thumb} contentFit="cover" />
+              <Text style={styles.remove} onPress={() => remove(u)}>
+                ×
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+      <View style={{ flexDirection: 'row', gap: space.l }}>
+        {uris.length < max && (
+          <MonoLink
+            label={picking ? 'OPENING LIBRARY…' : uris.length ? 'ADD MORE' : 'ADD PHOTOS'}
+            active
+            onPress={pick}
+            style={{ alignSelf: 'flex-start' }}
+          />
+        )}
+        {uris.length > 0 && (
+          <MonoLink
+            label="REMOVE LEAD"
+            color={colors.red}
+            onPress={() => remove(uris[0])}
+            style={{ alignSelf: 'flex-start' }}
+          />
+        )}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   preview: {
     width: '100%',
@@ -70,5 +144,26 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     color: colors.ink,
     marginBottom: space.m,
+  },
+  lead: {
+    width: '100%',
+    aspectRatio: 4 / 5,
+    backgroundColor: colors.dim,
+    marginBottom: space.s,
+  },
+  strip: { flexDirection: 'row', flexWrap: 'wrap', gap: space.s, marginBottom: space.s },
+  thumb: { width: 64, height: 64, backgroundColor: colors.dim },
+  remove: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 20,
+    height: 20,
+    textAlign: 'center',
+    lineHeight: 20,
+    backgroundColor: colors.ink,
+    color: colors.white,
+    fontFamily: fonts.monoMedium,
+    fontSize: 12,
   },
 });

@@ -6,6 +6,7 @@ import { ExhibitionRow } from '../../src/components/exhibition';
 import { EmptyState, Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
+import { daysUntil } from '../../src/lib/dates';
 import { Exhibition } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
@@ -26,7 +27,14 @@ export default function SavedScreen() {
           api.listWatchlist(profile.id),
           api.listApprovedExhibitions(),
         ]);
-        if (alive) setItems(all.filter((e) => ids.includes(e.id)));
+        // soonest-closing first, so nothing slips away unseen
+        if (alive) {
+          setItems(
+            all
+              .filter((e) => ids.includes(e.id))
+              .sort((a, b) => (a.end_date < b.end_date ? -1 : 1))
+          );
+        }
       })();
       return () => {
         alive = false;
@@ -65,18 +73,33 @@ export default function SavedScreen() {
           what not to miss.
         </EmptyState>
       ) : (
-        items.map((e, i) => (
-          <View key={e.id}>
-            {i > 0 && <Hairline style={{ marginHorizontal: space.page }} />}
-            <ExhibitionRow exhibition={e} />
-          </View>
-        ))
+        items.map((e, i) => {
+          const left = daysUntil(e.end_date);
+          const closing =
+            left < 0 ? null : left === 0 ? 'CLOSES TODAY' : left <= 7 ? `CLOSES IN ${left} DAY${left > 1 ? 'S' : ''}` : null;
+          return (
+            <View key={e.id}>
+              {i > 0 && <Hairline style={{ marginHorizontal: space.page }} />}
+              {closing && <Text style={styles.closing}>● {closing}</Text>}
+              <ExhibitionRow exhibition={e} />
+            </View>
+          );
+        })
       )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  closing: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.red,
+    paddingHorizontal: space.page,
+    paddingTop: space.m,
+    marginBottom: -6,
+  },
   signedOut: {
     fontFamily: fonts.serif, letterSpacing: 2.2, textTransform: 'uppercase',
     fontSize: 16,

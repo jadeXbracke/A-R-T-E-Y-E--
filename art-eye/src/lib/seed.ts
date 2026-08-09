@@ -1080,3 +1080,37 @@ export const SEED_EXHIBITIONS: Exhibition[] = [
     city: 'Sydney',
   },
 ];
+
+// Art-medium tags for the seeded agenda (migration 0017). Kept as a map so
+// the exhibition entries above stay readable; shows not listed here stay
+// untagged and simply sit outside the medium filters.
+const SEED_MEDIUMS: Record<string, string[]> = {
+  'e-archibald': ['contemporary', 'figurative'],
+  'e-murakami': ['contemporary', 'pop_art'],
+  'e-primavera': ['contemporary', 'conceptual'],
+  'e-armanious': ['contemporary', 'conceptual'],
+  'e-kahukiwa': ['figurative', 'first_nations'],
+  'e-nell': ['contemporary', 'conceptual'],
+  'e-constructed-world': ['contemporary', 'conceptual'],
+  'e-bennett': ['contemporary'],
+  'e-gabori-ledgerwood': ['abstract', 'first_nations'],
+  'e-infinite-gesture': ['abstract'],
+  'e-crothers': ['contemporary', 'abstract'],
+  'e-pulse': ['contemporary', 'digital_art'],
+  'e-abbotsleigh': ['contemporary'],
+  'e-black-myth': ['contemporary', 'surrealism'],
+  'e-nsw-fellowship': ['contemporary'],
+  'e-undying': ['contemporary'],
+  'e-unkept': ['contemporary'],
+  'e-salon-des-refuses': ['figurative'],
+  'e-mitch-cairns': ['contemporary', 'figurative'],
+  'e-jasper-knight': ['contemporary', 'figurative'],
+  'e-tamara-dean': ['contemporary', 'figurative'],
+  'e-min-wong': ['contemporary', 'conceptual'],
+  'e-chronos': ['digital_art'],
+  'e-friends-annual': ['contemporary'],
+  'e-dorabialski': ['contemporary', 'abstract'],
+  'e-bartley': ['contemporary', 'abstract'],
+  'e-nhan': ['contemporary', 'figurative'],
+};
+for (const e of SEED_EXHIBITIONS) e.mediums = SEED_MEDIUMS[e.id] ?? [];

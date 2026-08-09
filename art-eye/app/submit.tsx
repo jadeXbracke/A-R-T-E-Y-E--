@@ -8,13 +8,13 @@ import {
   ExhibitionForm,
   ExhibitionFormValues,
   validate,
-} from '../../src/components/exhibition-form';
-import { Hairline, Kicker, MonoLink } from '../../src/components/ui';
-import { api } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth';
-import { fmtRange } from '../../src/lib/dates';
-import { Exhibition, REJECTION_REASONS, Venue } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+} from '../src/components/exhibition-form';
+import { Hairline, Kicker, MonoLink } from '../src/components/ui';
+import { api } from '../src/lib/api';
+import { useAuth } from '../src/lib/auth';
+import { fmtRange } from '../src/lib/dates';
+import { Exhibition, REJECTION_REASONS, Venue } from '../src/lib/types';
+import { colors, fonts, space, type } from '../src/theme';
 
 function statusLine(e: Exhibition): { text: string; color: string } {
   if (e.status === 'approved') return { text: 'IN THE AGENDA', color: colors.ink };
@@ -91,9 +91,12 @@ export default function SubmitScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={{ paddingHorizontal: space.page, paddingBottom: space.m }}>
-        <Kicker style={{ marginBottom: 10 }}>
-          {isOwner ? `FOR ${venue?.name.toUpperCase() ?? 'YOUR VENUE'}` : 'OPEN TO ALL — NO ACCOUNT NEEDED'}
-        </Kicker>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <Kicker>
+            {isOwner ? `FOR ${venue?.name.toUpperCase() ?? 'YOUR VENUE'}` : 'OPEN TO ALL — NO ACCOUNT NEEDED'}
+          </Kicker>
+          <Kicker onPress={() => router.back()}>← BACK</Kicker>
+        </View>
         <Text style={type.serifHeading}>Submit an exhibition</Text>
         <Text style={styles.intro}>
           Know of a show our editors should see? Sydney exhibitions only — each submission is

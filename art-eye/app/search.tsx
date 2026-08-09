@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExhibitionRow } from '../src/components/exhibition';
+import { PersonRow } from '../src/components/social';
 import { Hairline, Kicker, Lift } from '../src/components/ui';
 import { api } from '../src/lib/api';
 import { areaForSuburb } from '../src/lib/areas';
-import { Exhibition, Venue } from '../src/lib/types';
+import { useAuth } from '../src/lib/auth';
+import { Exhibition, Profile, Venue } from '../src/lib/types';
 import { colors, fonts, space, type } from '../src/theme';
 
 function norm(s: string) {
@@ -22,9 +24,11 @@ function norm(s: string) {
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const { profile } = useAuth();
   const [query, setQuery] = useState('');
   const [venues, setVenues] = useState<Venue[]>([]);
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+  const [people, setPeople] = useState<Profile[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -41,6 +45,21 @@ export default function SearchScreen() {
   );
 
   const q = norm(query.trim());
+
+  // People come from the backend (name search); shows/venues filter locally.
+  React.useEffect(() => {
+    let alive = true;
+    if (q.length < 2) {
+      setPeople([]);
+      return;
+    }
+    api.searchPeople(query.trim(), profile?.id ?? null).then((p) => {
+      if (alive) setPeople(p);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [q, query, profile]);
 
   const venueHits = useMemo(() => {
     if (q.length < 2) return [];
@@ -93,13 +112,25 @@ export default function SearchScreen() {
 
       {q.length < 2 ? (
         <Text style={styles.hint}>
-          Type at least two letters — search covers every venue in the register and every show in
-          the agenda.
+          Type at least two letters — search covers every venue in the register, every show in
+          the agenda, and people to follow.
         </Text>
-      ) : venueHits.length === 0 && showHits.length === 0 ? (
+      ) : venueHits.length === 0 && showHits.length === 0 && people.length === 0 ? (
         <Text style={styles.hint}>Nothing found for “{query.trim()}”.</Text>
       ) : (
         <>
+          {people.length > 0 && (
+            <>
+              <View style={styles.sectionHead}>
+                <Text style={styles.sectionTitle}>PEOPLE</Text>
+                <Text style={styles.sectionCount}>{people.length}</Text>
+              </View>
+              {people.map((p) => (
+                <PersonRow key={p.id} person={p} />
+              ))}
+            </>
+          )}
+
           {showHits.length > 0 && (
             <>
               <View style={styles.sectionHead}>
