@@ -74,6 +74,7 @@ export interface FeedItem {
   rating: number;
   reflection: string;
   visit_date: string; // YYYY-MM-DD
+  photo_urls?: string[]; // the post's photos — its main visual component
   video_url?: string | null; // short clip attached to the post
 }
 
@@ -207,6 +208,7 @@ export interface Visit {
   rating: number; // 1–5
   reflection: string;
   visit_date: string; // YYYY-MM-DD
+  photo_urls?: string[]; // the post's photos — its main visual component
   video_url?: string | null; // short clip the user attached to the post
 }
 

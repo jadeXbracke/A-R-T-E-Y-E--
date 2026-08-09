@@ -15,7 +15,9 @@ import { ActivityRow } from '../../../src/components/social';
 import { EmptyState, Kicker, Loading, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth';
+import { confirmAction } from '../../../src/lib/confirm';
 import { fmtOpening } from '../../../src/lib/dates';
+import { sharePost } from '../../../src/lib/share';
 import { FeedItem, PostComment, PostEngagement } from '../../../src/lib/types';
 import { colors, fonts, space } from '../../../src/theme';
 
@@ -89,9 +91,37 @@ export default function PostScreen() {
       >
         <View style={styles.head}>
           <Kicker>POST</Kicker>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Text style={styles.back}>← BACK</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: space.l }}>
+            {post && me && post.user_id !== me.id ? (
+              <Pressable
+                onPress={() =>
+                  confirmAction(
+                    'Report this post?',
+                    'This sends the post to the host for review.',
+                    () =>
+                      api.reportContent({
+                        reporterId: me.id,
+                        kind: 'post',
+                        subjectUserId: post.user_id,
+                        exhibitionId: post.exhibition_id,
+                        reason: 'Post reported from the app',
+                      })
+                  )
+                }
+                hitSlop={12}
+              >
+                <Text style={[styles.back, { color: colors.red }]}>REPORT</Text>
+              </Pressable>
+            ) : null}
+            {post ? (
+              <Pressable onPress={() => sharePost(post)} hitSlop={12}>
+                <Text style={styles.back}>SHARE ↗</Text>
+              </Pressable>
+            ) : null}
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <Text style={styles.back}>← BACK</Text>
+            </Pressable>
+          </View>
         </View>
 
         {post === undefined ? (

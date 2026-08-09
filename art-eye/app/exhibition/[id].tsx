@@ -9,6 +9,7 @@ import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { fmtOpening, fmtRange } from '../../src/lib/dates';
 import { directionsUrl } from '../../src/lib/maps';
+import { shareExhibition } from '../../src/lib/share';
 import { ReelLink } from '../../src/components/reel-link';
 import { Exhibition, Visit } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
@@ -127,7 +128,12 @@ export default function ExhibitionDetail() {
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Text style={styles.backLabel}>← BACK</Text>
           </Pressable>
-          {visit && <RedDot size={10} />}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+            {visit && <RedDot size={10} />}
+            <Pressable onPress={() => shareExhibition(e)} hitSlop={12}>
+              <Text style={styles.backLabel}>SHARE ↗</Text>
+            </Pressable>
+          </View>
         </View>
         <View style={{ paddingHorizontal: space.page }}>
           <LiveArt

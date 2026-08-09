@@ -1,6 +1,7 @@
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { fmtDay } from '../lib/dates';
 import { FeedItem, FollowState, PostEngagement, Profile } from '../lib/types';
 import { PROFILE_TYPES } from '../lib/types';
@@ -40,6 +41,24 @@ export function ActivityRow({
         <RatingDots value={item.rating} size={9} gap={7} />
       </View>
       {item.reflection ? <Text style={styles.reflection}>{item.reflection}</Text> : null}
+      {item.photo_urls && item.photo_urls.length > 0 ? (
+        <>
+          <Image
+            source={{ uri: item.photo_urls[0] }}
+            style={styles.photoLead}
+            contentFit="cover"
+          />
+          {item.photo_urls.length > 1 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: space.s }}>
+              <View style={{ flexDirection: 'row', gap: space.s }}>
+                {item.photo_urls.slice(1).map((u) => (
+                  <Image key={u} source={{ uri: u }} style={styles.photoThumb} contentFit="cover" />
+                ))}
+              </View>
+            </ScrollView>
+          )}
+        </>
+      ) : null}
       {item.video_url ? (
         <LiveArt
           videoUrl={item.video_url}
@@ -126,6 +145,8 @@ const styles = StyleSheet.create({
   venue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginTop: 3 },
   reflection: { ...type.serifBody, fontSize: 16, lineHeight: 24, marginTop: space.s },
   video: { width: '100%', marginTop: space.m, backgroundColor: colors.dim },
+  photoLead: { width: '100%', aspectRatio: 4 / 5, marginTop: space.m, backgroundColor: colors.dim },
+  photoThumb: { width: 84, height: 84, backgroundColor: colors.dim },
   engageRow: { flexDirection: 'row', gap: space.l, marginTop: space.m },
   engage: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.4, color: colors.ink },
   personRow: {

@@ -7,6 +7,7 @@ import { ActivityRow, PersonRow } from '../../src/components/social';
 import { PROFILE_TYPES } from '../../src/lib/types';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
+import { confirmAction } from '../../src/lib/confirm';
 import { FeedItem, PostEngagement, Profile, PublicProfile } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
@@ -17,12 +18,13 @@ function typeLabel(pt: Profile['profile_type']): string {
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { profile: me, refresh } = useAuth();
+  const { profile: me, refresh, signOut } = useAuth();
 
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
   const [activity, setActivity] = useState<FeedItem[]>([]);
   const [engagement, setEngagement] = useState<Record<string, PostEngagement>>({});
   const [requests, setRequests] = useState<Profile[]>([]);
+  const [blockedByMe, setBlockedByMe] = useState(false);
 
   const isOwn = !!me && me.id === id;
 
@@ -34,6 +36,9 @@ export default function ProfileScreen() {
       setEngagement(await api.postEngagement(me?.id ?? null, a));
     });
     if (me && me.id === id) api.listFollowRequests(id).then(setRequests);
+    if (me && me.id !== id) {
+      api.listBlockedIds(me.id).then((ids) => setBlockedByMe(ids.includes(id)));
+    }
   }, [id, me]);
 
   useFocusEffect(useCallback(() => reload(), [reload]));
@@ -78,6 +83,54 @@ export default function ProfileScreen() {
     reload();
   };
 
+  const toggleBlock = () => {
+    if (!me) return;
+    if (blockedByMe) {
+      api.unblockUser(me.id, profile.id).then(reload);
+      return;
+    }
+    confirmAction(
+      `Block ${profile.display_name}?`,
+      'They won’t be able to message you, and you won’t see each other’s activity. Any follow between you is removed.',
+      async () => {
+        await api.blockUser(me.id, profile.id);
+        reload();
+      }
+    );
+  };
+
+  const report = () => {
+    if (!me) {
+      router.push('/auth');
+      return;
+    }
+    confirmAction(
+      `Report ${profile.display_name}?`,
+      'This sends the profile to the host for review.',
+      async () => {
+        await api.reportContent({
+          reporterId: me.id,
+          kind: 'profile',
+          subjectUserId: profile.id,
+          reason: 'Profile reported from the app',
+        });
+      }
+    );
+  };
+
+  const deleteAccount = () => {
+    if (!me) return;
+    confirmAction(
+      'Delete your account?',
+      'This permanently removes your profile, posts, comments, likes and messages. There is no undo.',
+      async () => {
+        await api.deleteAccount(me.id);
+        await signOut();
+        router.replace('/(tabs)');
+      }
+    );
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
@@ -103,7 +156,7 @@ export default function ProfileScreen() {
           <Stat label="LOGGED" value={profile.visit_count} />
         </View>
 
-        {!isOwn && (
+        {!isOwn && !blockedByMe && (
           <View style={{ flexDirection: 'row', gap: space.l, marginTop: space.m }}>
             <MonoLink
               label={
@@ -125,6 +178,17 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {!isOwn && me && (
+          <View style={{ flexDirection: 'row', gap: space.l, marginTop: space.m }}>
+            <MonoLink
+              label={blockedByMe ? 'BLOCKED — TAP TO UNBLOCK' : 'BLOCK'}
+              color={colors.red}
+              onPress={toggleBlock}
+            />
+            {!blockedByMe && <MonoLink label="REPORT" color={colors.red} onPress={report} />}
+          </View>
+        )}
+
         {isOwn && (
           <View style={styles.privacyRow}>
             <View style={{ flex: 1 }}>
@@ -138,6 +202,17 @@ export default function ProfileScreen() {
               onValueChange={setPrivacy}
               trackColor={{ true: colors.ink, false: colors.dim }}
               thumbColor={colors.white}
+            />
+          </View>
+        )}
+
+        {isOwn && (
+          <View style={{ marginTop: space.l }}>
+            <MonoLink
+              label="DELETE ACCOUNT"
+              color={colors.red}
+              onPress={deleteAccount}
+              style={{ alignSelf: 'flex-start' }}
             />
           </View>
         )}
@@ -167,7 +242,9 @@ export default function ProfileScreen() {
       <View style={styles.sectionHead}>
         <Text style={styles.sectionTitle}>{isOwn ? 'YOUR ACTIVITY' : 'ACTIVITY'}</Text>
       </View>
-      {!profile.can_view_activity ? (
+      {blockedByMe ? (
+        <Text style={styles.private}>You’ve blocked this person, so their activity is hidden.</Text>
+      ) : !profile.can_view_activity ? (
         <Text style={styles.private}>
           This profile is private. Follow to see what {profile.display_name.split(' ')[0]} logs.
         </Text>

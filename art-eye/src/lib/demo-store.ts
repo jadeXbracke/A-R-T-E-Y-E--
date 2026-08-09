@@ -64,6 +64,22 @@ interface DemoLike {
 // Stored without display_name — joined from users at read time.
 type DemoComment = Omit<PostComment, 'display_name'>;
 
+interface DemoBlock {
+  blocker_id: string;
+  blocked_id: string;
+}
+
+interface DemoReport {
+  id: string;
+  reporter_id: string;
+  kind: 'post' | 'comment' | 'profile';
+  subject_user_id: string;
+  exhibition_id: string | null;
+  comment_id: string | null;
+  reason: string;
+  created_at: string;
+}
+
 interface DemoState {
   users: DemoUser[];
   venues: Venue[];
@@ -74,12 +90,14 @@ interface DemoState {
   likes: DemoLike[];
   comments: DemoComment[];
   messages: DirectMessage[];
+  blocks: DemoBlock[];
+  reports: DemoReport[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v16';
+const KEY = 'arteye.demo.v17';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -243,6 +261,8 @@ function seedState(): DemoState {
         read_at: null,
       },
     ],
+    blocks: [],
+    reports: [],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
@@ -283,6 +303,13 @@ function withVenue(e: Exhibition, venues: Venue[]): Exhibition {
   return { ...e, venue: venues.find((v) => v.id === e.venue_id) };
 }
 
+// Ids the viewer has blocked — kept out of social reads.
+function blockedOf(s: DemoState, viewerId: string | null): Set<string> {
+  return new Set(
+    (s.blocks ?? []).filter((b) => b.blocker_id === viewerId).map((b) => b.blocked_id)
+  );
+}
+
 // The viewer's relationship to a target user, from the follow graph.
 function followStateFor(s: DemoState, viewerId: string | null, targetId: string): FollowState {
   if (!viewerId || viewerId === targetId) return 'none';
@@ -307,6 +334,7 @@ function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
     rating: v.rating,
     reflection: v.reflection,
     visit_date: v.visit_date,
+    photo_urls: v.photo_urls ?? [],
     video_url: v.video_url ?? null,
   };
 }
@@ -516,8 +544,28 @@ export const demoApi: Api = {
     const connected = new Set(
       s.follows.filter((f) => f.follower_id === viewerId).map((f) => f.followee_id)
     );
+    const blocked = blockedOf(s, viewerId);
     return s.users
-      .filter((u) => u.id !== viewerId && !connected.has(u.id) && u.role !== 'admin')
+      .filter(
+        (u) => u.id !== viewerId && !connected.has(u.id) && !blocked.has(u.id) && u.role !== 'admin'
+      )
+      .map(stripUser);
+  },
+
+  async searchPeople(query, viewerId) {
+    const s = await load();
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) return [];
+    const blocked = blockedOf(s, viewerId);
+    return s.users
+      .filter(
+        (u) =>
+          u.id !== viewerId &&
+          u.role !== 'admin' &&
+          !blocked.has(u.id) &&
+          u.display_name.toLowerCase().includes(q)
+      )
+      .slice(0, 20)
       .map(stripUser);
   },
 
@@ -651,18 +699,23 @@ export const demoApi: Api = {
         body: c.body,
         created_at: c.created_at,
       }));
-    return [...likes, ...comments].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    const blocked = blockedOf(s, userId);
+    return [...likes, ...comments]
+      .filter((e) => !blocked.has(e.actor_id))
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   },
 
   // ---- direct messages -----------------------------------------------------
   async listConversations(userId) {
     const s = await load();
+    const blocked = blockedOf(s, userId);
     const mine = (s.messages ?? [])
       .filter((m) => m.sender_id === userId || m.recipient_id === userId)
       .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
     const byPeer = new Map<string, { last: DirectMessage; unread: number }>();
     for (const m of mine) {
       const peerId = m.sender_id === userId ? m.recipient_id : m.sender_id;
+      if (blocked.has(peerId)) continue;
       const entry = byPeer.get(peerId) ?? { last: m, unread: 0 };
       if (m.recipient_id === userId && !m.read_at) entry.unread += 1;
       byPeer.set(peerId, entry);
@@ -689,6 +742,13 @@ export const demoApi: Api = {
 
   async sendMessage(senderId, recipientId, body) {
     const s = await load();
+    // a block in either direction stops messages, matching the live RLS
+    const stopped = (s.blocks ?? []).some(
+      (b) =>
+        (b.blocker_id === recipientId && b.blocked_id === senderId) ||
+        (b.blocker_id === senderId && b.blocked_id === recipientId)
+    );
+    if (stopped) throw new Error('You can’t message this person.');
     s.messages = s.messages ?? [];
     s.messages.push({
       id: uid('m'),
@@ -947,6 +1007,71 @@ export const demoApi: Api = {
     if (!p) throw new Error('Proposal not found.');
     p.status = 'rejected';
     p.review_note = note.trim() || null;
+    await persist();
+  },
+
+  // ---- safety --------------------------------------------------------------
+  async listBlockedIds(viewerId) {
+    const s = await load();
+    return (s.blocks ?? []).filter((b) => b.blocker_id === viewerId).map((b) => b.blocked_id);
+  },
+
+  async blockUser(viewerId, targetId) {
+    const s = await load();
+    s.blocks = s.blocks ?? [];
+    if (!s.blocks.some((b) => b.blocker_id === viewerId && b.blocked_id === targetId)) {
+      s.blocks.push({ blocker_id: viewerId, blocked_id: targetId });
+    }
+    // blocking severs the follow relationship in both directions
+    s.follows = s.follows.filter(
+      (f) =>
+        !(f.follower_id === viewerId && f.followee_id === targetId) &&
+        !(f.follower_id === targetId && f.followee_id === viewerId)
+    );
+    await persist();
+  },
+
+  async unblockUser(viewerId, targetId) {
+    const s = await load();
+    s.blocks = (s.blocks ?? []).filter(
+      (b) => !(b.blocker_id === viewerId && b.blocked_id === targetId)
+    );
+    await persist();
+  },
+
+  async reportContent(input) {
+    const s = await load();
+    s.reports = s.reports ?? [];
+    s.reports.push({
+      id: uid('r'),
+      reporter_id: input.reporterId,
+      kind: input.kind,
+      subject_user_id: input.subjectUserId,
+      exhibition_id: input.exhibitionId ?? null,
+      comment_id: input.commentId ?? null,
+      reason: input.reason.trim(),
+      created_at: new Date().toISOString(),
+    });
+    await persist();
+  },
+
+  async deleteAccount(userId) {
+    const s = await load();
+    s.users = s.users.filter((u) => u.id !== userId);
+    s.visits = s.visits.filter((v) => v.user_id !== userId);
+    s.watchlist = s.watchlist.filter((w) => w.user_id !== userId);
+    s.follows = s.follows.filter((f) => f.follower_id !== userId && f.followee_id !== userId);
+    s.likes = (s.likes ?? []).filter((l) => l.user_id !== userId && l.post_user_id !== userId);
+    s.comments = (s.comments ?? []).filter(
+      (c) => c.user_id !== userId && c.post_user_id !== userId
+    );
+    s.messages = (s.messages ?? []).filter(
+      (m) => m.sender_id !== userId && m.recipient_id !== userId
+    );
+    s.blocks = (s.blocks ?? []).filter(
+      (b) => b.blocker_id !== userId && b.blocked_id !== userId
+    );
+    if (s.sessionUserId === userId) s.sessionUserId = null;
     await persist();
   },
 

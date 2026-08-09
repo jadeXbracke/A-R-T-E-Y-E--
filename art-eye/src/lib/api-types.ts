@@ -67,6 +67,7 @@ export interface Api {
   respondFollowRequest(userId: string, requesterId: string, accept: boolean): Promise<void>;
   setProfilePrivacy(userId: string, isPrivate: boolean): Promise<void>;
   discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
+  searchPeople(query: string, viewerId: string | null): Promise<Profile[]>; // find people by name
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows
   userActivity(userId: string, viewerId: string | null): Promise<FeedItem[]>;
 
@@ -84,6 +85,20 @@ export interface Api {
   sendMessage(senderId: string, recipientId: string, body: string): Promise<void>;
   markThreadRead(userId: string, peerId: string): Promise<void>;
   unreadMessageCount(userId: string): Promise<number>;
+
+  // safety — blocking, reporting, account deletion (app-store requirements)
+  listBlockedIds(viewerId: string): Promise<string[]>;
+  blockUser(viewerId: string, targetId: string): Promise<void>; // also severs follows both ways
+  unblockUser(viewerId: string, targetId: string): Promise<void>;
+  reportContent(input: {
+    reporterId: string;
+    kind: 'post' | 'comment' | 'profile';
+    subjectUserId: string; // whose content/profile is being reported
+    exhibitionId?: string; // kind 'post'
+    commentId?: string; // kind 'comment'
+    reason: string;
+  }): Promise<void>;
+  deleteAccount(userId: string): Promise<void>; // removes the account and all its content
 
   // media
   uploadImage(localUri: string): Promise<string>;

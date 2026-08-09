@@ -39,6 +39,7 @@ function toFeedItem(row: unknown): FeedItem {
     rating: number;
     reflection: string;
     visit_date: string;
+    photo_urls?: string[] | null;
     video_url?: string | null;
     actor?: { display_name?: string } | null;
     exhibition?: { title?: string; venue?: { name?: string } | null } | null;
@@ -53,8 +54,15 @@ function toFeedItem(row: unknown): FeedItem {
     rating: r.rating,
     reflection: r.reflection,
     visit_date: r.visit_date,
+    photo_urls: r.photo_urls ?? [],
     video_url: r.video_url ?? null,
   };
+}
+
+// Ids the viewer has blocked — used to keep blocked people out of social reads.
+async function blockedSet(viewerId: string): Promise<Set<string>> {
+  const { data } = await supabase().from('blocks').select('blocked_id').eq('blocker_id', viewerId);
+  return new Set((data ?? []).map((r) => (r as { blocked_id: string }).blocked_id));
 }
 
 async function fetchProfile(userId: string, email: string): Promise<Profile> {
@@ -539,11 +547,30 @@ export const supabaseApi: Api = {
 
   async discoverPeople(viewerId) {
     const sb = supabase();
-    const { data: mine } = await sb.from('follows').select('followee_id').eq('follower_id', viewerId);
-    const exclude = new Set([viewerId, ...((mine ?? []).map((r) => (r as { followee_id: string }).followee_id))]);
+    const [{ data: mine }, blocked] = await Promise.all([
+      sb.from('follows').select('followee_id').eq('follower_id', viewerId),
+      blockedSet(viewerId),
+    ]);
+    const exclude = new Set([viewerId, ...blocked, ...((mine ?? []).map((r) => (r as { followee_id: string }).followee_id))]);
     const { data, error } = await sb.from('profiles').select('*').neq('role', 'admin').limit(50);
     if (error) throw new Error(error.message);
     return (data ?? []).filter((p) => !exclude.has((p as Profile).id)) as Profile[];
+  },
+
+  async searchPeople(query, viewerId) {
+    const q = query.trim();
+    if (q.length < 2) return [];
+    const [{ data, error }, blocked] = await Promise.all([
+      supabase()
+        .from('profiles')
+        .select('*')
+        .ilike('display_name', `%${q}%`)
+        .neq('role', 'admin')
+        .limit(20),
+      viewerId ? blockedSet(viewerId) : Promise.resolve(new Set<string>()),
+    ]);
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as Profile[]).filter((p) => p.id !== viewerId && !blocked.has(p.id));
   },
 
   async friendsFeed(viewerId) {
@@ -715,7 +742,10 @@ export const supabaseApi: Api = {
       body: r.body,
       created_at: r.created_at,
     }));
-    return [...likes, ...comments].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    const blocked = await blockedSet(userId);
+    return [...likes, ...comments]
+      .filter((e) => !blocked.has(e.actor_id))
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   },
 
   // ---- direct messages -----------------------------------------------------
@@ -728,9 +758,11 @@ export const supabaseApi: Api = {
       .order('created_at', { ascending: false })
       .limit(500);
     if (error) throw new Error(error.message);
+    const blocked = await blockedSet(userId);
     const byPeer = new Map<string, { last: DirectMessage; unread: number }>();
     for (const row of (data ?? []) as DirectMessage[]) {
       const peerId = row.sender_id === userId ? row.recipient_id : row.sender_id;
+      if (blocked.has(peerId)) continue;
       const entry = byPeer.get(peerId) ?? { last: row, unread: 0 };
       if (row.recipient_id === userId && !row.read_at) entry.unread += 1;
       byPeer.set(peerId, entry);
@@ -790,6 +822,55 @@ export const supabaseApi: Api = {
       .is('read_at', null);
     if (error) throw new Error(error.message);
     return count ?? 0;
+  },
+
+  // ---- safety --------------------------------------------------------------
+  async listBlockedIds(viewerId) {
+    const { data, error } = await supabase()
+      .from('blocks')
+      .select('blocked_id')
+      .eq('blocker_id', viewerId);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => (r as { blocked_id: string }).blocked_id);
+  },
+
+  async blockUser(viewerId, targetId) {
+    const sb = supabase();
+    const { error } = await sb
+      .from('blocks')
+      .upsert({ blocker_id: viewerId, blocked_id: targetId });
+    if (error) throw new Error(error.message);
+    // blocking severs the follow relationship in both directions
+    await sb.from('follows').delete().eq('follower_id', viewerId).eq('followee_id', targetId);
+    await sb.from('follows').delete().eq('follower_id', targetId).eq('followee_id', viewerId);
+  },
+
+  async unblockUser(viewerId, targetId) {
+    const { error } = await supabase()
+      .from('blocks')
+      .delete()
+      .eq('blocker_id', viewerId)
+      .eq('blocked_id', targetId);
+    if (error) throw new Error(error.message);
+  },
+
+  async reportContent(input) {
+    const { error } = await supabase().from('reports').insert({
+      reporter_id: input.reporterId,
+      kind: input.kind,
+      subject_user_id: input.subjectUserId,
+      exhibition_id: input.exhibitionId ?? null,
+      comment_id: input.commentId ?? null,
+      reason: input.reason.trim(),
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async deleteAccount(_userId) {
+    const sb = supabase();
+    const { error } = await sb.rpc('delete_account');
+    if (error) throw new Error(error.message);
+    await sb.auth.signOut();
   },
 
   async uploadImage(localUri) {

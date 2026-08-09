@@ -45,7 +45,18 @@ export default function MessageThread() {
   useEffect(() => {
     if (!me) return;
     reload();
-  }, [me, reload]);
+    // Keep the thread live while it's open: poll for new messages so a
+    // reply appears without leaving the screen. Cheap in both backends.
+    const timer = setInterval(async () => {
+      const ms = await api.listMessages(me.id, peerId);
+      setMessages((prev) => {
+        if (prev && prev.length === ms.length) return prev; // nothing new
+        return ms;
+      });
+      await api.markThreadRead(me.id, peerId);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [me, peerId, reload]);
 
   const send = async () => {
     if (!me || !draft.trim()) return;
