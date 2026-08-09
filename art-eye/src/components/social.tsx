@@ -6,6 +6,7 @@ import { fmtDay } from '../lib/dates';
 import { FeedItem, FollowState, PostEngagement, Profile } from '../lib/types';
 import { PROFILE_TYPES } from '../lib/types';
 import { colors, fonts, space, type } from '../theme';
+import { Avatar } from './avatar';
 import { Lift, MonoLink, RatingDots } from './ui';
 import { LiveArt } from './live-art';
 
@@ -26,9 +27,13 @@ export function ActivityRow({
   return (
     <View style={styles.activity}>
       <View style={styles.activityHead}>
-        <Text style={styles.person} onPress={() => router.push(`/profile/${item.user_id}`)}>
-          {item.display_name.toUpperCase()}
-        </Text>
+        <Pressable
+          onPress={() => router.push(`/profile/${item.user_id}`)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+        >
+          <Avatar name={item.display_name} uri={item.avatar_url} size={28} />
+          <Text style={styles.person}>{item.display_name.toUpperCase()}</Text>
+        </Pressable>
         <Text style={styles.date}>{fmtDay(item.visit_date, true).toUpperCase()}</Text>
       </View>
       <Lift onPress={() => router.push(`/exhibition/${item.exhibition_id}`)}>
@@ -106,13 +111,18 @@ export function PersonRow({
   return (
     <View style={styles.personRow}>
       <Lift style={{ flex: 1 }} onPress={() => router.push(`/profile/${person.id}`)}>
-        <Text style={styles.personName} numberOfLines={1}>
-          {person.display_name}
-        </Text>
-        <Text style={styles.personMeta} numberOfLines={1}>
-          {typeLabel(person.profile_type)}
-          {person.is_private ? '  ·  PRIVATE' : ''}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+          <Avatar name={person.display_name} uri={person.avatar_url} size={36} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.personName} numberOfLines={1}>
+              {person.display_name}
+            </Text>
+            <Text style={styles.personMeta} numberOfLines={1}>
+              {typeLabel(person.profile_type)}
+              {person.is_private ? '  ·  PRIVATE' : ''}
+            </Text>
+          </View>
+        </View>
       </Lift>
       {onMessage && <MonoLink label="MESSAGE" onPress={onMessage} />}
       {state === 'following' ? (

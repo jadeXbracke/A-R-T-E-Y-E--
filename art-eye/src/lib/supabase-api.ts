@@ -41,13 +41,14 @@ function toFeedItem(row: unknown): FeedItem {
     visit_date: string;
     photo_urls?: string[] | null;
     video_url?: string | null;
-    actor?: { display_name?: string } | null;
+    actor?: { display_name?: string; avatar_url?: string | null } | null;
     exhibition?: { title?: string; venue?: { name?: string } | null } | null;
   };
   return {
     id: `${r.user_id}:${r.exhibition_id}`,
     user_id: r.user_id,
     display_name: r.actor?.display_name ?? 'Someone',
+    avatar_url: r.actor?.avatar_url ?? null,
     exhibition_id: r.exhibition_id,
     exhibition_title: r.exhibition?.title ?? 'a show',
     venue_name: r.exhibition?.venue?.name ?? null,
@@ -195,6 +196,16 @@ export const supabaseApi: Api = {
     const { error } = await supabase().from('user_visits').upsert(visit);
     if (error) throw new Error(error.message);
     await supabaseApi.removeFromWatchlist(visit.user_id, visit.exhibition_id);
+  },
+
+  async deleteVisit(userId, exhibitionId) {
+    // likes and comments on the post go with it via FK cascade
+    const { error } = await supabase()
+      .from('user_visits')
+      .delete()
+      .eq('user_id', userId)
+      .eq('exhibition_id', exhibitionId);
+    if (error) throw new Error(error.message);
   },
 
   async submitExhibition(draft: ExhibitionDraft, _userId) {
@@ -547,6 +558,11 @@ export const supabaseApi: Api = {
     if (error) throw new Error(error.message);
   },
 
+  async setAvatar(userId, url) {
+    const { error } = await supabase().from('profiles').update({ avatar_url: url }).eq('id', userId);
+    if (error) throw new Error(error.message);
+  },
+
   async discoverPeople(viewerId) {
     const sb = supabase();
     const [{ data: mine }, blocked] = await Promise.all([
@@ -586,7 +602,7 @@ export const supabaseApi: Api = {
     const ids = [viewerId, ...(following ?? []).map((r) => (r as { followee_id: string }).followee_id)];
     const { data, error } = await sb
       .from('user_visits')
-      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .select('*, actor:profiles!user_visits_user_id_fkey(display_name, avatar_url), exhibition:exhibitions(title, venue:venues(name))')
       .in('user_id', ids)
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
@@ -597,7 +613,7 @@ export const supabaseApi: Api = {
     // RLS enforces visibility — a hidden profile simply returns no rows.
     const { data, error } = await supabase()
       .from('user_visits')
-      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .select('*, actor:profiles!user_visits_user_id_fkey(display_name, avatar_url), exhibition:exhibitions(title, venue:venues(name))')
       .eq('user_id', userId)
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
@@ -663,19 +679,22 @@ export const supabaseApi: Api = {
   async listComments(postUserId, exhibitionId) {
     const { data, error } = await supabase()
       .from('post_comments')
-      .select('*, commenter:profiles!post_comments_user_id_fkey(display_name)')
+      .select('*, commenter:profiles!post_comments_user_id_fkey(display_name, avatar_url)')
       .eq('post_user_id', postUserId)
       .eq('exhibition_id', exhibitionId)
       .order('created_at');
     if (error) throw new Error(error.message);
     return (data ?? []).map((row) => {
-      const r = row as PostComment & { commenter?: { display_name?: string } | null };
+      const r = row as PostComment & {
+        commenter?: { display_name?: string; avatar_url?: string | null } | null;
+      };
       return {
         id: r.id,
         post_user_id: r.post_user_id,
         exhibition_id: r.exhibition_id,
         user_id: r.user_id,
         display_name: r.commenter?.display_name ?? 'Someone',
+        avatar_url: r.commenter?.avatar_url ?? null,
         body: r.body,
         created_at: r.created_at,
       };

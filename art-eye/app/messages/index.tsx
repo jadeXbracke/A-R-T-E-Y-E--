@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '../../src/components/avatar';
 import { EmptyState, Hairline, Kicker, Lift, Loading, RedDot } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
@@ -59,6 +60,7 @@ export default function MessagesInbox() {
         conversations.map((c) => (
           <Lift key={c.peer.id} onPress={() => router.push(`/messages/${c.peer.id}`)}>
             <View style={styles.row}>
+              <Avatar name={c.peer.display_name} uri={c.peer.avatar_url} size={40} />
               <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text style={styles.name} numberOfLines={1}>

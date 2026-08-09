@@ -27,6 +27,7 @@ export interface Api {
   removeFromWatchlist(userId: string, exhibitionId: string): Promise<void>;
   listVisits(userId: string): Promise<Visit[]>;
   saveVisit(visit: Visit): Promise<void>;
+  deleteVisit(userId: string, exhibitionId: string): Promise<void>; // removes the post and its engagement
 
   // submissions
   submitExhibition(draft: ExhibitionDraft, userId: string | null): Promise<void>;
@@ -66,6 +67,7 @@ export interface Api {
   listFollowRequests(userId: string): Promise<Profile[]>; // pending requests to approve
   respondFollowRequest(userId: string, requesterId: string, accept: boolean): Promise<void>;
   setProfilePrivacy(userId: string, isPrivate: boolean): Promise<void>;
+  setAvatar(userId: string, url: string | null): Promise<void>; // url from uploadImage, or null to clear
   discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
   searchPeople(query: string, viewerId: string | null): Promise<Profile[]>; // find people by name
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows

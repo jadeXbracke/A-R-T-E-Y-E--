@@ -328,6 +328,7 @@ function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
     id: `${v.user_id}:${v.exhibition_id}`,
     user_id: v.user_id,
     display_name: user.display_name,
+    avatar_url: user.avatar_url ?? null,
     exhibition_id: ex.id,
     exhibition_title: ex.title,
     venue_name: venue?.name ?? null,
@@ -449,6 +450,21 @@ export const demoApi: Api = {
     await persist();
   },
 
+  async deleteVisit(userId, exhibitionId) {
+    const s = await load();
+    s.visits = s.visits.filter(
+      (v) => !(v.user_id === userId && v.exhibition_id === exhibitionId)
+    );
+    // mirror the DB cascade: the post's engagement goes with it
+    s.likes = (s.likes ?? []).filter(
+      (l) => !(l.post_user_id === userId && l.exhibition_id === exhibitionId)
+    );
+    s.comments = (s.comments ?? []).filter(
+      (c) => !(c.post_user_id === userId && c.exhibition_id === exhibitionId)
+    );
+    await persist();
+  },
+
   // ---- social layer -------------------------------------------------------
   async getPublicProfile(userId, viewerId) {
     const s = await load();
@@ -535,6 +551,14 @@ export const demoApi: Api = {
     const u = s.users.find((x) => x.id === userId);
     if (!u) throw new Error('Profile not found.');
     u.is_private = isPrivate;
+    await persist();
+  },
+
+  async setAvatar(userId, url) {
+    const s = await load();
+    const u = s.users.find((x) => x.id === userId);
+    if (!u) throw new Error('Profile not found.');
+    u.avatar_url = url;
     await persist();
   },
 
@@ -644,10 +668,14 @@ export const demoApi: Api = {
     return (s.comments ?? [])
       .filter((c) => c.post_user_id === postUserId && c.exhibition_id === exhibitionId)
       .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
-      .map((c) => ({
-        ...c,
-        display_name: s.users.find((u) => u.id === c.user_id)?.display_name ?? 'Someone',
-      }));
+      .map((c) => {
+        const u = s.users.find((x) => x.id === c.user_id);
+        return {
+          ...c,
+          display_name: u?.display_name ?? 'Someone',
+          avatar_url: u?.avatar_url ?? null,
+        };
+      });
   },
 
   async addComment(viewerId, postUserId, exhibitionId, body) {

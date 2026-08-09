@@ -63,6 +63,7 @@ export interface Profile {
   display_name: string;
   city: string;
   is_private?: boolean; // closed profile — activity only visible to accepted followers
+  avatar_url?: string | null; // profile picture; monogram fallback when unset
 }
 
 // ---- social layer (Strava-style follow + activity feed) ---------------------
@@ -89,6 +90,7 @@ export interface FeedItem {
   id: string;
   user_id: string;
   display_name: string;
+  avatar_url?: string | null;
   exhibition_id: string;
   exhibition_title: string;
   venue_name: string | null;
@@ -113,6 +115,7 @@ export interface PostComment {
   exhibition_id: string;
   user_id: string; // the commenter
   display_name: string;
+  avatar_url?: string | null;
   body: string;
   created_at: string;
 }

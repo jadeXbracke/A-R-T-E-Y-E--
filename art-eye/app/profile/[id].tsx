@@ -1,7 +1,9 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
+import * as ImagePicker from 'expo-image-picker';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '../../src/components/avatar';
 import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
 import { ActivityRow, PersonRow } from '../../src/components/social';
 import { PROFILE_TYPES } from '../../src/lib/types';
@@ -118,6 +120,21 @@ export default function ProfileScreen() {
     );
   };
 
+  const changePhoto = async () => {
+    if (!isOwn || !me) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.85,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const url = await api.uploadImage(result.assets[0].uri);
+    await api.setAvatar(me.id, url);
+    reload();
+    refresh();
+  };
+
   const deleteAccount = () => {
     if (!me) return;
     confirmAction(
@@ -144,11 +161,23 @@ export default function ProfileScreen() {
       </View>
 
       <View style={{ paddingHorizontal: space.page }}>
-        <Text style={type.serifHeading}>{profile.display_name}</Text>
-        <Text style={styles.city}>
-          {profile.city.toUpperCase()}
-          {profile.is_private ? '  ·  PRIVATE' : '  ·  PUBLIC'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+          <Avatar name={profile.display_name} uri={profile.avatar_url} size={64} />
+          <View style={{ flex: 1 }}>
+            <Text style={type.serifHeading}>{profile.display_name}</Text>
+            <Text style={styles.city}>
+              {profile.city.toUpperCase()}
+              {profile.is_private ? '  ·  PRIVATE' : '  ·  PUBLIC'}
+            </Text>
+            {isOwn && (
+              <Pressable onPress={changePhoto} hitSlop={8}>
+                <Text style={styles.changePhoto}>
+                  {profile.avatar_url ? 'CHANGE PHOTO' : 'ADD A PROFILE PHOTO'}
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
 
         <View style={styles.stats}>
           <Stat label="FOLLOWERS" value={profile.followers} />
@@ -296,6 +325,13 @@ const styles = StyleSheet.create({
   },
   back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.ink },
   city: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, color: colors.ink, marginTop: 6 },
+  changePhoto: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    color: colors.red,
+    marginTop: 8,
+  },
   stats: { flexDirection: 'row', gap: space.xl, marginTop: space.l },
   stat: {},
   statValue: { fontFamily: fonts.sansMedium, fontSize: 22, color: colors.ink },

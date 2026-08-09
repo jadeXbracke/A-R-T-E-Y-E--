@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar } from '../../../src/components/avatar';
 import { ActivityRow } from '../../../src/components/social';
 import { EmptyState, Kicker, Loading, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
@@ -92,6 +93,23 @@ export default function PostScreen() {
         <View style={styles.head}>
           <Kicker>POST</Kicker>
           <View style={{ flexDirection: 'row', gap: space.l }}>
+            {post && me && post.user_id === me.id ? (
+              <Pressable
+                onPress={() =>
+                  confirmAction(
+                    'Delete this post?',
+                    'This removes the post, its likes and its comments. The show stays in your record only if you log it again.',
+                    async () => {
+                      await api.deleteVisit(me.id, post.exhibition_id);
+                      router.back();
+                    }
+                  )
+                }
+                hitSlop={12}
+              >
+                <Text style={[styles.back, { color: colors.red }]}>DELETE</Text>
+              </Pressable>
+            ) : null}
             {post && me && post.user_id !== me.id ? (
               <Pressable
                 onPress={() =>
@@ -147,16 +165,19 @@ export default function PostScreen() {
               comments.map((c) => (
                 <View key={c.id} style={styles.comment}>
                   <View style={styles.commentHead}>
-                    <Text
-                      style={styles.commentName}
+                    <Pressable
                       onPress={() => router.push(`/profile/${c.user_id}`)}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}
                     >
-                      {c.display_name.toUpperCase()}
-                      <Text style={styles.commentDate}>
-                        {'   '}
-                        {fmtOpening(c.created_at).toUpperCase()}
+                      <Avatar name={c.display_name} uri={c.avatar_url} size={22} />
+                      <Text style={styles.commentName} numberOfLines={1}>
+                        {c.display_name.toUpperCase()}
+                        <Text style={styles.commentDate}>
+                          {'   '}
+                          {fmtOpening(c.created_at).toUpperCase()}
+                        </Text>
                       </Text>
-                    </Text>
+                    </Pressable>
                     <View style={{ flexDirection: 'row', gap: space.m }}>
                       {me && c.user_id !== me.id && (
                         <MonoLink
