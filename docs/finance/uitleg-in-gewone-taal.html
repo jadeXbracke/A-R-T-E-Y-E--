@@ -1,0 +1,390 @@
+<title>ART EYE — het plan in gewone taal</title>
+<style>
+  :root {
+    --ground: #FFFFFF;
+    --ink: #131211;
+    --grey: #7B766D;
+    --hairline: #E4E1DB;
+    --accent: #C22F1E;
+    --panel: #F8F6F2;
+    --panel-ink: #131211;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #161514;
+      --ink: #F2EFEA;
+      --grey: #A29B90;
+      --hairline: #33302C;
+      --accent: #E25441;
+      --panel: #1E1C1A;
+      --panel-ink: #F2EFEA;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #161514;
+    --ink: #F2EFEA;
+    --grey: #A29B90;
+    --hairline: #33302C;
+    --accent: #E25441;
+    --panel: #1E1C1A;
+    --panel-ink: #F2EFEA;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 0 20px;
+  }
+  .page { max-width: 44rem; margin: 0 auto; padding: 56px 0 80px; }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--grey);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: none;
+  }
+  h1 {
+    font-size: clamp(30px, 6vw, 44px);
+    line-height: 1.12;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    margin: 14px 0 18px;
+    text-wrap: balance;
+  }
+  .lede {
+    font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+    font-style: italic;
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+  .lede-sub { color: var(--grey); font-size: 15px; margin: 0; }
+
+  section { border-top: 1px solid var(--hairline); margin-top: 44px; padding-top: 34px; }
+  h2 {
+    font-size: 15px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  h2 .num {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    color: var(--accent);
+    font-weight: 500;
+    margin-right: 10px;
+  }
+  .h2-sub {
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-size: 19px;
+    color: var(--grey);
+    margin: 0 0 22px;
+  }
+  p { margin: 0 0 16px; max-width: 42rem; }
+  strong { font-weight: 600; }
+  em { font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.08em; }
+
+  /* stappen (het idee) */
+  .steps { display: flex; flex-direction: column; gap: 0; margin: 8px 0 4px; counter-reset: stap; }
+  .step {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .step:last-child { border-bottom: none; }
+  .step::before {
+    counter-increment: stap;
+    content: counter(stap, decimal-leading-zero);
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+  .step b { display: block; margin-bottom: 2px; }
+  .step span { color: var(--grey); font-size: 15px; }
+
+  /* bronnen */
+  .bron { background: var(--panel); color: var(--panel-ink); padding: 22px 24px; margin: 0 0 14px; }
+  .bron-kop {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .bron-kop::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+  .bron ul { margin: 0; padding-left: 18px; }
+  .bron li { margin-bottom: 8px; font-size: 15px; }
+  .bron li:last-child { margin-bottom: 0; }
+  .bron .zacht { color: var(--grey); }
+
+  .kader {
+    border-left: 2px solid var(--accent);
+    padding: 4px 0 4px 20px;
+    margin: 24px 0 8px;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-style: italic;
+    font-size: 20px;
+    line-height: 1.5;
+  }
+
+  /* trechter */
+  .funnel { display: flex; flex-direction: column; margin: 10px 0 6px; }
+  .frow {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 18px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .frow:last-child { border-bottom: none; }
+  .fnum {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 26px;
+    text-align: right;
+  }
+  .frow.hi .fnum { color: var(--accent); }
+  .flabel b { display: block; font-size: 15px; }
+  .flabel span { color: var(--grey); font-size: 14px; }
+  .fbar { height: 4px; background: var(--hairline); margin-top: 7px; }
+  .fbar i { display: block; height: 100%; background: var(--accent); }
+
+  /* tabellen */
+  .tabelwrap { overflow-x: auto; margin: 6px 0 10px; }
+  table { border-collapse: collapse; width: 100%; min-width: 540px; font-size: 15px; }
+  th {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--grey);
+    text-align: left;
+    padding: 10px 14px 10px 0;
+    border-bottom: 1px solid var(--ink);
+  }
+  td { padding: 12px 14px 12px 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+  td.mono, th.mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tag {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid var(--hairline);
+    white-space: nowrap;
+  }
+  .tag.rood { border-color: var(--accent); color: var(--accent); }
+
+  /* woordenlijst */
+  dl { margin: 6px 0 0; display: grid; grid-template-columns: 1fr; gap: 0; }
+  .defrow { display: grid; grid-template-columns: 130px 1fr; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--hairline); }
+  .defrow:last-child { border-bottom: none; }
+  dt {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    padding-top: 2px;
+  }
+  dd { margin: 0; font-size: 15px; color: var(--ink); }
+  dd .vb { color: var(--grey); }
+
+  /* onthouden */
+  .onthoud { margin: 6px 0 0; padding: 0; list-style: none; counter-reset: ont; }
+  .onthoud li {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--hairline);
+    font-size: 15.5px;
+  }
+  .onthoud li:last-child { border-bottom: none; }
+  .onthoud li::before {
+    counter-increment: ont;
+    content: counter(ont, decimal-leading-zero);
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    color: var(--accent);
+    padding-top: 3px;
+  }
+
+  footer {
+    border-top: 1px solid var(--ink);
+    margin-top: 56px;
+    padding-top: 18px;
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 12.5px;
+    color: var(--grey);
+    line-height: 1.8;
+  }
+  footer code { color: var(--ink); }
+  a { color: inherit; }
+
+  @media (max-width: 560px) {
+    .defrow { grid-template-columns: 1fr; gap: 2px; }
+    .frow { grid-template-columns: 70px 1fr; }
+    .fnum { font-size: 21px; }
+  }
+</style>
+
+<div class="page">
+  <header>
+    <p class="eyebrow">Art Eye &middot; Financieel plan</p>
+    <h1>Het plan, in gewone taal</h1>
+    <p class="lede">Je hoeft geen cijfermens te zijn om dit plan te snappen. Deze pagina legt uit wat er in de Excel en het strategiedocument staat, en — belangrijker — waar elk getal vandaan komt.</p>
+    <p class="lede-sub">Alle bedragen in Australische dollar (A$). Grofweg: A$1 &asymp; &euro;0,60 — dus A$45 is ongeveer &euro;27.</p>
+  </header>
+
+  <section>
+    <h2><span class="num">01</span>Het idee in &eacute;&eacute;n minuut</h2>
+    <p class="h2-sub">Wie betaalt er uiteindelijk, en in welke volgorde?</p>
+    <div class="steps">
+      <div class="step"><div><b>De app is gratis voor kunstliefhebbers.</b><span>Mensen betalen niet voor het ontdekken van gratis tentoonstellingen — dat hoeft ook niet. Zij zijn niet de klant; zij zijn het publiek.</span></div></div>
+      <div class="step"><div><b>Publiek opbouwen rond het fair-weekend.</b><span>Sydney Contemporary (10&ndash;13 september) brengt tienduizenden kunstliefhebbers vier dagen op &eacute;&eacute;n plek. Dat is h&eacute;t moment om de app te lanceren zonder marketingbudget.</span></div></div>
+      <div class="step"><div><b>Bewijs verzamelen.</b><span>De app meet hoeveel mensen een galerie bekijken, een show opslaan en doorklikken naar de website. Dat is informatie die een galerie nu nergens kan krijgen.</span></div></div>
+      <div class="step"><div><b>Galeries betalen — A$45 per maand.</b><span>Niet voor &ldquo;in de app staan&rdquo; (dat blijft gratis), maar voor uitgelichte plaatsing, eigen foto&rsquo;s en video, en een maandrapport met die cijfers. Pas verkopen vanaf maand 7, m&eacute;t bewijs in de hand.</span></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">02</span>Waar komen de cijfers vandaan?</h2>
+    <p class="h2-sub">Elk getal in het model valt in &eacute;&eacute;n van drie categorie&euml;n.</p>
+
+    <div class="bron">
+      <p class="bron-kop">A &middot; Feiten uit je eigen app</p>
+      <ul>
+        <li><b>143 venues</b> staan in je eigen venue-register (104 galeries, 23 musea, 16 artist-run spaces). Daarvan zijn er ongeveer <b>70 commerci&euml;le galeries</b> — het soort dat realistisch kan betalen.</li>
+        <li><b>De vaste kosten liggen vast:</b> Supabase (database) ~A$60/mnd, Apple-ontwikkelaarslicentie A$150/jr, de AI-pijplijn die het register vers houdt ~A$80/mnd, e-mail en domein ~A$70/mnd. Samen zo&rsquo;n <b>A$450 per maand</b> — dat is alles wat de app je nu kost.</li>
+        <li><b>De launchdatum</b> volgt uit je eigen fairs-register: Sydney Contemporary staat er al in, met datum en locatie.</li>
+      </ul>
+    </div>
+
+    <div class="bron">
+      <p class="bron-kop">B &middot; Openbare feiten en vergelijkbare bedrijven</p>
+      <ul>
+        <li><b>Galeries betalen nu al voor vermeldingen</b> bij Art Guide Australia en Art Almanac. Dit is het belangrijkste bewijs in het hele plan: je vraagt galeries niet iets nieuws te doen, alleen een bestaand budget te verleggen.</li>
+        <li><b>Apple houdt 15% in</b> op alles wat je via de App Store verkoopt (het lagere tarief voor kleine ontwikkelaars).</li>
+        <li><b>Sydney Contemporary trekt ~25.000&ndash;30.000 bezoekers</b> — precies jouw doelgroep, vier dagen lang.</li>
+        <li><b>Bij vergelijkbare apps</b> (zoals Letterboxd, de film-log-app) betaalt 1&ndash;5% van de gebruikers voor een premium-versie, en is na &eacute;&eacute;n maand nog maar 10&ndash;15% van de nieuwe gebruikers actief. Die percentages zijn als uitgangspunt overgenomen.</li>
+      </ul>
+    </div>
+
+    <div class="bron">
+      <p class="bron-kop">C &middot; Aannames — eerlijke schattingen</p>
+      <ul>
+        <li><b>900 downloads in de launchmaand</b> — dat is ~3% van de fairbezoekers. Een schatting, geen feit.</li>
+        <li><b>55% maakt een account aan</b> en slaat iets op na het downloaden.</li>
+        <li><b>1 op de 8 galeries zegt ja</b> als je er langsgaat met een rapport; <b>2,5% van de betalende galeries zegt per maand op</b>.</li>
+        <li class="zacht">Al deze schattingen staan in <b>gele cellen</b> op het tabblad &ldquo;Aannames&rdquo;. Verander je er &eacute;&eacute;n, dan rekent de hele Excel automatisch door.</li>
+      </ul>
+    </div>
+
+    <p class="kader">Het model voorspelt de toekomst niet. Het is een rekenmachine die laat zien wat er gebeurt <em>als</em> de aannames kloppen. Omdat je dat niet zeker weet, is alles drie keer doorgerekend: tegenvaller, verwacht, meevaller.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">03</span>De rekensom die alles draagt</h2>
+    <p class="h2-sub">Van elke 100 mensen die de app installeren, in het verwachte scenario:</p>
+    <div class="funnel">
+      <div class="frow"><div class="fnum">100</div><div class="flabel"><b>installeren de app</b><span>bijvoorbeeld tijdens het fair-weekend</span><div class="fbar"><i style="width:100%"></i></div></div></div>
+      <div class="frow"><div class="fnum">55</div><div class="flabel"><b>maken een account en slaan een show op</b><span>&ldquo;activatie&rdquo; — de rest haakt meteen af</span><div class="fbar"><i style="width:55%"></i></div></div></div>
+      <div class="frow"><div class="fnum">22</div><div class="flabel"><b>zijn er na &eacute;&eacute;n maand nog</b><span>normaal voor apps; geen reden tot paniek</span><div class="fbar"><i style="width:22%"></i></div></div></div>
+      <div class="frow"><div class="fnum">13</div><div class="flabel"><b>zijn er na drie maanden nog</b><span>dit getal beslist het hele plan &mdash; zie punt 05</span><div class="fbar"><i style="width:13%"></i></div></div></div>
+      <div class="frow hi"><div class="fnum">~5</div><div class="flabel"><b>blijven hangen als vaste gebruikers</b><span>de kern die shows blijft loggen &mdash; hierop is alles gebouwd</span><div class="fbar"><i style="width:5%"></i></div></div></div>
+    </div>
+    <p>Dit klinkt somber, maar is de <strong>normale werkelijkheid van vrijwel elke app</strong>. Het plan is er juist omheen ontworpen: omdat maar ~5% blijft hangen, moet het geld van galeries komen — niet van gebruikers. E&eacute;n vaste gebruiker levert via een eventueel premium-abonnement gemiddeld maar <strong>A$0,51</strong> op in z&rsquo;n hele leven. E&eacute;n betalende galerie levert circa <strong>A$1.700</strong> op. Daarom is de keuze zo eenduidig.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">04</span>Drie scenario&rsquo;s, drie uitkomsten</h2>
+    <p class="h2-sub">Zelfde rekenmachine, drie sets aannames. Na 36 maanden:</p>
+    <div class="tabelwrap">
+      <table>
+        <tr><th></th><th>Tegenvaller</th><th>Verwacht</th><th>Meevaller</th></tr>
+        <tr><td>Maandelijkse gebruikers</td><td class="mono">~200</td><td class="mono">~3.200</td><td class="mono">~14.400</td></tr>
+        <tr><td>Betalende galeries</td><td class="mono">11</td><td class="mono">51 <span class="tag">2 steden</span></td><td class="mono">112</td></tr>
+        <tr><td>Omzet per maand</td><td class="mono">A$436</td><td class="mono">A$2.605</td><td class="mono">A$9.108</td></tr>
+        <tr><td>Meer omzet dan kosten vanaf</td><td><span class="tag rood">nooit</span></td><td class="mono">maand 13</td><td class="mono">maand 12</td></tr>
+        <tr><td>Totaal na 3 jaar</td><td class="mono">&minus;A$3.409</td><td class="mono">+A$36.062</td><td class="mono">+A$136.586</td></tr>
+      </table>
+    </div>
+    <p>Twee dingen om vast te houden. <strong>Eerste:</strong> zelfs in de tegenvaller verlies je maximaal zo&rsquo;n <strong>A$4.800</strong> (&plusmn;&euro;2.900) over drie jaar — dat is het hele financi&euml;le risico, en de reden dat je geen investeerder nodig hebt. <strong>Tweede:</strong> zelfs de meevaller maakt je niet rijk. Sydney alleen kan maximaal ~24 betalende galeries opleveren (&asymp; A$1.100/mnd). Een salaris wordt dit pas met meerdere steden — en dat mag pas als Sydney zes concrete doelen haalt (die staan in het strategiedocument, deel 4).</p>
+  </section>
+
+  <section>
+    <h2><span class="num">05</span>Hoe lees je de Excel?</h2>
+    <p class="h2-sub">Je hoeft maar twee plekken echt te begrijpen.</p>
+    <div class="tabelwrap">
+      <table>
+        <tr><th>Tabblad</th><th>Wat het is</th><th>Voor jou?</th></tr>
+        <tr><td class="mono">LeesMij</td><td>Korte handleiding en conclusies.</td><td><span class="tag rood">begin hier</span></td></tr>
+        <tr><td class="mono">Aannames</td><td>Alle schattingen op &eacute;&eacute;n rij, met per regel de reden. De <b>gele cellen</b> zijn de knoppen waar je aan mag draaien.</td><td><span class="tag rood">ja</span></td></tr>
+        <tr><td class="mono">Retentie</td><td>Hoe snel gebruikers afhaken (de trechter van punt 03, per maand).</td><td>alleen kijken</td></tr>
+        <tr><td class="mono">ModelBasis</td><td>Het verwachte scenario, maand voor maand. <b>Onderaan staat het KPI-blok</b>: de tien getallen die ertoe doen, waaronder &ldquo;break-even: maand 13&rdquo;.</td><td><span class="tag rood">ja &mdash; het KPI-blok</span></td></tr>
+        <tr><td class="mono">ModelBear / ModelBull</td><td>Zelfde opbouw voor tegenvaller en meevaller.</td><td>alleen KPI-blok</td></tr>
+        <tr><td class="mono">Cohort&hellip;</td><td>Het rekenwerk achter het gebruikersaantal (elke maandgroep apart gevolgd). Bewijsmateriaal.</td><td>overslaan</td></tr>
+        <tr><td class="mono">Sensitiviteit</td><td>Wat-als-tabellen: wat gebeurt er bij een andere prijs of meer opzeggingen.</td><td>leuk om te zien</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="num">06</span>Woordenlijst</h2>
+    <p class="h2-sub">De vaktermen uit de bestanden, in normale woorden.</p>
+    <dl>
+      <div class="defrow"><dt>MAU</dt><dd>Aantal mensen dat de app minstens &eacute;&eacute;n keer per maand opent. <span class="vb">De belangrijkste maat voor &ldquo;hoeveel publiek heb ik&rdquo;.</span></dd></div>
+      <div class="defrow"><dt>cohort</dt><dd>Alle nieuwe gebruikers van &eacute;&eacute;n bepaalde maand, als groep gevolgd. <span class="vb">Zo zie je of de septembergroep het beter doet dan de oktobergroep.</span></dd></div>
+      <div class="defrow"><dt>retentie</dt><dd>Welk deel van een groep na 1, 3, 12 maanden n&oacute;g actief is. <span class="vb">H&eacute;t getal waar dit plan op staat of valt.</span></dd></div>
+      <div class="defrow"><dt>activatie</dt><dd>Deel van de downloaders dat echt begint: account + eerste show opgeslagen.</dd></div>
+      <div class="defrow"><dt>churn</dt><dd>Opzeggers. 2,5% churn per maand = van elke 40 betalende galeries stopt er elke maand &eacute;&eacute;n.</dd></div>
+      <div class="defrow"><dt>MRR</dt><dd>Vaste maandomzet uit abonnementen (galeries + premium samen).</dd></div>
+      <div class="defrow"><dt>CAC</dt><dd>Wat het kost om &eacute;&eacute;n nieuwe klant of gebruiker binnen te halen.</dd></div>
+      <div class="defrow"><dt>LTV</dt><dd>Wat &eacute;&eacute;n klant in totaal oplevert, van begin tot opzegging. <span class="vb">Gezond bedrijf: LTV ruim boven CAC. Galeries: A$1.700 tegenover A$120 — uitstekend.</span></dd></div>
+      <div class="defrow"><dt>break-even</dt><dd>De maand waarin je alles wat je ooit in de app stak, terugverdiend hebt.</dd></div>
+      <div class="defrow"><dt>burn</dt><dd>Geld dat er per maand netto uitgaat zolang de kosten hoger zijn dan de omzet.</dd></div>
+    </dl>
+  </section>
+
+  <section>
+    <h2><span class="num">07</span>Als je maar vijf dingen onthoudt</h2>
+    <ol class="onthoud">
+      <li><b>Gebruikers betalen nooit genoeg — galeries wel.</b> Een gebruiker is A$0,51 waard, een galerie A$1.700. De app is gratis voor publiek; galeries zijn de klant.</li>
+      <li><b>Dat galeries betalen is geen hoop, maar gedrag dat al bestaat:</b> ze betalen vandaag al voor vermeldingen bij Art Guide en Art Almanac.</li>
+      <li><b>Het maximale risico is klein: ~A$5.000 over drie jaar.</b> Daarom: geen investeerder, geen lening. Je grootste investering is je avonduren.</li>
+      <li><b>Alles hangt op terugkomers.</b> Downloads zijn ijdelheid; de vraag is wie er na drie maanden nog is. Daarom is week 1 van het 90-dagenplan: meten inbouwen (dat ontbreekt nu in de app).</li>
+      <li><b>Er liggen harde afspraken met jezelf klaar</b> — met datums en getallen (bijv. &ldquo;minder dan 8 betalende galeries op 1 juli 2027 na 60 gesprekken &rarr; stoppen met het verdienmodel&rdquo;). Zo beslist het bewijs, niet je enthousiasme.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <p>De volledige stukken staan in de repo op branch <code>claude/art-eye-financial-strategy-ug6uyq</code>:<br>
+    <code>docs/finance/ART-EYE-financieel-model.xlsx</code> — de rekenmachine (36 maanden, 3 scenario&rsquo;s)<br>
+    <code>docs/finance/ART-EYE-financieel-strategieplan.md</code> — de volledige redenering (7 delen)<br>
+    <code>docs/finance/UITLEG-in-gewone-taal.md</code> — deze uitleg, als tekstbestand</p>
+  </footer>
+</div>
