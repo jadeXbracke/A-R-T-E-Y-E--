@@ -179,4 +179,24 @@ Low-frequency use case: van elk maandcohort geactiveerden is in het basisscenari
 
 ---
 
+## 8 · Upside — waarom het basisscenario bescheiden oogt, en welke hefbomen dat veranderen
+
+Het basisscenario is bewust streng: het rekent alleen met **bewezen betaalgedrag** (galeries die nu al voor listings betalen) tegen een instapprijs, met seriële expansie op solo-avondtempo. Drie structurele oorzaken van het bescheiden beeld: (1) het plafond per stad is klein (~24 betalende galeries × A$45 ≈ A$1.100 MRR in Sydney); (2) de consumentenkant levert per definitie bijna niets op; (3) stad 2 komt pas op M18 en stad 3 helemaal niet voor in het model. Dat is geen somberheid maar prijsstelling van onzekerheid: wat nog niet bewezen is, staat op nul.
+
+De hefbomen hieronder staan daarom **niet** in het basismodel — elk wordt pas realiteit met een specifiek bewijsstuk. Gerangschikt op realisme:
+
+| # | Hefboom | Rekensom | Wat er eerst bewezen moet zijn |
+|---|---|---|---|
+| 1 | **Jaarcontracten i.p.v. maandelijks** (A$450/jr vooruit) | Churn 2,5%→1,5%/mnd tilt venue-LTV van A$1.692 naar **A$2.820**; cash komt vooruit binnen | ≥12 maandklanten die verlengen (Art Guide verkoopt óók per jaar — bestaand gedrag) |
+| 2 | **Fair-seizoenspakket** | ~100 exposanten op Sydney Contemporary (deels niet-Sydney-galeries) × A$150 tijdelijke featured-plek × 20% afname ≈ **+A$3k per fair-editie**, bovenop de partnership | Eén september met aantoonbare doorkliks naar exposanten |
+| 3 | **Museum-tier (A$150–300/mnd)** | Het register telt 23 musea; die hebben échte marketingbudgetten (blockbusters worden nu via Time Out/out-of-home gepromoot). 6 musea × A$200 = **+A$1.200 MRR** — verdubbelt het Sydney-plafond | 2 pilot-musea + een case ("X app-gebruikers kochten via de doorklik een ticket") |
+| 4 | **Prijs omhoog met bewijs** (A$45→A$75–95) | Zelfde 24 galeries → plafond A$1.100→**A$1.800–2.300 MRR** per stad; nog steeds onder Art Guide-print | 6 maanden churn ≤2% en rapporten die galeries intern doorsturen |
+| 5 | **Parallelle i.p.v. seriële expansie** | Het bedrijf is lineair in steden: 5 steden × A$2–3k (met hefboom 1–4) ≈ **A$10–15k MRR ≈ A$120–180k/jr** tegen ~90% marge — een echt founder-salaris, zonder investeerder | De zes Sydney-gates (§4) + een playbook dat een stad in ≤2 weken seedt; eventueel een kleine angel-ronde om 2–3 steden tegelijk te doen |
+
+Twee dingen die het beeld óók verbeteren zonder nieuwe omzetregel: de kostenkant is al bijna niets (A$450/mnd), en de neerwaartse kant is gedekt (max ~A$5k verlies). **Het basisscenario is dus geen voorspelling van een klein bedrijf — het is de goedkoopst mogelijke toegangsprijs tot de tabel hierboven.** Elke hefboom heeft een datum in het bestaande plan: jaarcontracten en fair-pakket kunnen vanaf M7 (verkoopstart), museum-pilot vanaf M10, prijsverhoging vanaf M13, parallelle expansie na de gates.
+
+Wat het beeld níét verbetert: paid advertising (CAC vernietigt de marge bij deze ARPU), een betaalmuur voor gebruikers (doodt de dichtheid waar galeries voor betalen), en meer features bouwen vóór de retentie bewezen is.
+
+---
+
 *Model: `docs/finance/ART-EYE-financieel-model.xlsx` — draai eerst aan de gele cellen (launch-downloads, activatie, retentieplateau via blad Retentie, close rate, churn). Het strengste dat je jezelf kunt aandoen: zet de Bear-kolom naast je eigen verwachting en noteer vandaag welk bewijs je in december moet zien om niet in Bear te leven.*
