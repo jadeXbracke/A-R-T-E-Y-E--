@@ -15,9 +15,10 @@ const FAIRS: Fair[] = [
     address: '245 Wilson Street, Eveleigh NSW 2015, Australia',
     latitude: -33.8946,
     longitude: 151.1935,
-    start_date: '2026-09-10',
-    end_date: '2026-09-13',
-    dates_estimated: true,
+    // Confirmed 2026-08-10 against sydneycontemporary.com.au (VIP preview 2 Sep).
+    start_date: '2026-09-03',
+    end_date: '2026-09-06',
+    dates_estimated: false,
     description:
       "Australasia's largest international art fair, held at Carriageworks with over 90 galleries across painting, sculpture, installation and performance.",
     website: 'https://www.sydneycontemporary.com.au',

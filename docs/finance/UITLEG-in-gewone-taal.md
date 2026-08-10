@@ -7,7 +7,7 @@
 ## 1 · Het idee in één minuut
 
 1. **De app is gratis voor kunstliefhebbers.** Mensen betalen niet voor het ontdekken van gratis tentoonstellingen — dat hoeft ook niet. Zij zijn niet de klant; zij zijn het publiek.
-2. **Publiek opbouwen rond het fair-weekend.** Sydney Contemporary (10–13 september) brengt tienduizenden kunstliefhebbers vier dagen op één plek. Dát is het moment om te lanceren zonder marketingbudget.
+2. **Publiek opbouwen rond het fair-weekend.** Sydney Contemporary (3–6 september, VIP-preview 2 september) brengt tienduizenden kunstliefhebbers vier dagen op één plek. Dát is het moment om te lanceren zonder marketingbudget.
 3. **Bewijs verzamelen.** De app meet hoeveel mensen een galerie bekijken, een show opslaan en doorklikken. Die informatie kan een galerie nu nergens krijgen.
 4. **Galeries betalen — A$45 per maand.** Niet om "in de app te staan" (dat blijft gratis), maar voor uitgelichte plaatsing, eigen foto's/video en een maandrapport met die cijfers. Pas verkopen vanaf maand 7, mét bewijs in de hand.
 

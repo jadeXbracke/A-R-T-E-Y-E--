@@ -1,6 +1,6 @@
 # ART EYE — Financieel strategieplan
 
-*Status: 9 augustus 2026 · Solo founder, avondwerk naast freelance, geen kapitaal · Beta: Sydney, rond Sydney Contemporary (10–13 sep 2026, Carriageworks) · Alle bedragen in A$ tenzij anders vermeld.*
+*Status: 9 augustus 2026 · Solo founder, avondwerk naast freelance, geen kapitaal · Beta: Sydney, rond Sydney Contemporary (3–6 sep 2026, VIP-preview 2 sep, Carriageworks — geverifieerd 10 aug 2026) · Alle bedragen in A$ tenzij anders vermeld.*
 
 Dit document hoort bij **`ART-EYE-financieel-model.xlsx`** (zelfde map): 36 maanden, maandelijks, drie scenario's, cohort-gebaseerde retentie, volledig formule-gedreven. Draai daar aan de gele cellen; hier staat de redenering.
 
@@ -161,18 +161,18 @@ Low-frequency use case: van elk maandcohort geactiveerden is in het basisscenari
 
 | Wk | Datums | Focus | **Meetbaar resultaat** |
 |---|---|---|---|
-| 1 | 10–16 aug | Analytics-instrumentatie (PostHog o.i.d.): events voor install→signup→save→seen-funnel + per-venue doorkliks | Dashboard live met de volledige funnel |
-| 2 | 17–23 aug | TestFlight-beta naar 20 mensen úit de doelgroep van §3 (staf, studenten, ARI-kring) | 20 actieve testers, 0 crashes, top-5 frictielijst |
-| 3 | 24–30 aug | September-agenda 100%: elke actieve venue met een sept-show gelist, hours geverifieerd | Coverage ≥95%, gecheckt tegen Art Guide |
-| 4 | 31 aug–6 sep | App Store-release + venue-launchpakket (poster+QR) naar 30 venues | App **live vóór 5 sep**; ≥10 venues bevestigen poster |
-| 5 | 7–13 sep | **Launch — fairweek.** Guerrilla rond Carriageworks, dagelijkse "vandaag zien"-push in-app | ≥600 downloads cumulatief |
-| 6 | 14–20 sep | Activatie-analyse; onboarding-frictie fixen (eerste save ≤60 sec) | Activatie ≥50% op het septembercohort |
-| 7 | 21–27 sep | Wekelijkse e-maildigest live (Resend staat er al); eerste W1-retentiemeting | W1-retentie gemeten + digest open rate ≥35% |
-| 8 | 28 sep–4 okt | Log-loop verkorten: seen+rating+reflectie in ≤30 sec; "opening week"-badge v1 | ≥25% van actieven heeft ≥1 log |
-| 9 | 5–11 okt | Vohra-survey uit naar iedereen met ≥2 sessies/30 dgn | n ≥ 40 respons binnen |
-| 10 | 12–18 okt | Survey-analyse; top-3 fricties van het "zeer teleurgesteld"-segment gefixt | PMF-score gepubliceerd (voor jezelf) + 3 fixes live |
-| 11 | 19–25 okt | Venue-rapport v0: per venue een A4 (views, saves, doorkliks) uit analytics | 10 rapporten verstuurd aan de 10 meest bekeken venues |
-| 12 | 26 okt–1 nov | Venue-gesprekken met rapport in de hand (nog niets verkopen; pilot peilen voor jan) | ≥5 gesprekken gevoerd, ≥2 schriftelijke pilot-toezeggingen |
+| 1 | 10–16 aug | Analytics-instrumentatie (install→signup→save→seen-funnel + per-venue doorkliks) **én** TestFlight naar 20 doelgroep-testers — samengevoegd: de fair is maar 3 weken weg | Dashboard live + 20 actieve testers |
+| 2 | 17–23 aug | September-agenda 100% (elke actieve venue met sept-show gelist, hours geverifieerd) + **App Store-build ingediend** (reviewbuffer!) | Coverage ≥95% + build in review |
+| 3 | 24–30 aug | Release live + venue-launchpakket (poster+QR) naar 30 venues | App **live vóór 1 sep**; ≥10 venues bevestigen poster |
+| 4 | 31 aug–6 sep | **Launch — fairweek** (VIP-preview 2 sep, fair 3–6 sep). Guerrilla rond Carriageworks, dagelijkse "vandaag zien"-push in-app | ≥600 downloads cumulatief |
+| 5 | 7–13 sep | Activatie-analyse; onboarding-frictie fixen (eerste save ≤60 sec) | Activatie ≥50% op het septembercohort |
+| 6 | 14–20 sep | Wekelijkse e-maildigest live (Resend staat er al); eerste W1-retentiemeting | W1-retentie gemeten + digest open rate ≥35% |
+| 7 | 21–27 sep | Log-loop verkorten: seen+rating+reflectie in ≤30 sec; "opening week"-badge v1 | ≥25% van actieven heeft ≥1 log |
+| 8 | 28 sep–4 okt | Vohra-survey uit naar iedereen met ≥2 sessies/30 dgn | n ≥ 40 respons binnen |
+| 9 | 5–11 okt | Survey-analyse; top-3 fricties van het "zeer teleurgesteld"-segment gefixt | PMF-score gepubliceerd (voor jezelf) + 3 fixes live |
+| 10 | 12–18 okt | Venue-rapport v0: per venue een A4 (views, saves, doorkliks) uit analytics | 10 rapporten verstuurd aan de 10 meest bekeken venues |
+| 11 | 19–25 okt | Venue-gesprekken met rapport in de hand (nog niets verkopen; pilot peilen voor jan) | ≥5 gesprekken gevoerd |
+| 12 | 26 okt–1 nov | Tweede ronde venue-gesprekken + bufferweek voor wat uitliep | ≥2 schriftelijke pilot-toezeggingen |
 | 13 | 2–8 nov | 90-dagen-review tegen de kill-criteria van §6 | Go/no-go-memo geschreven, besluit genomen |
 
 **Wat bewust níét in de 90 dagen zit:** betaalfunctie (te vroeg), stad 2-voorbereiding (gates eerst), fairs-tab uitbreiden (§3: reduceren juist), en elke vorm van paid acquisition.
