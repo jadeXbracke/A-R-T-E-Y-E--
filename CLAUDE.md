@@ -2,24 +2,25 @@
 
 ## Which version is "the website"? (read this first)
 
-- **GitHub Pages deploys from the branch `claude/art-eye-app-updates-bsvrl8`,
-  NOT from `main`.** What is live at https://jadexbracke.github.io/D-I-S-APP-/
-  is that branch's `docs/` export. Before making any statement about "the
-  website" (its logo, header, fonts, features), fetch and inspect that branch —
-  `main` may be far behind it.
-- `main` last ended at the Montserrat "rebrand" (PRs #15–17), which was
-  **abandoned** and never deployed. Do not treat `main`'s wordmark styling as
-  the brand.
+- **`main` is the source of truth.** It was brought level with the deployed
+  site in PR #19 (Aug 2026), after drifting 50 commits behind for weeks.
+- What is live at https://jadexbracke.github.io/D-I-S-APP-/ is the `docs/`
+  export served by GitHub Pages. The Pages setting should point at
+  **`main` + `/docs`**; if the live site ever differs from `main`'s `docs/`,
+  check Settings → Pages first — it previously pointed at the side branch
+  `claude/art-eye-app-updates-bsvrl8` (now retired, do not build on it).
+- The Montserrat "rebrand" (PRs #15–17) was **abandoned** and never deployed.
+  Do not resurrect its wordmark styling.
 
 ## The logo (source of truth)
 
 - The ARTEYE wordmark is **an image asset, not a font**:
-  `art-eye/assets/logo-arteye.png` on the deployed branch (custom extra-wide
-  letterforms). A copy plus 1:1 vectorised SVG variants live in `branding/`
-  (see `branding/README.md`). Never re-render the wordmark from Montserrat or
-  any other font.
-- The SYDNEY subline under the wordmark is Archivo Medium (`fonts.monoMedium`
-  on the deployed branch), letter-spaced caps.
+  `art-eye/assets/logo-arteye.png` (custom extra-wide letterforms). A copy
+  plus 1:1 vectorised SVG variants live in `branding/` (see
+  `branding/README.md`). Never re-render the wordmark from Montserrat or any
+  other font.
+- The SYDNEY subline under the wordmark is Archivo Medium
+  (`fonts.monoMedium`), letter-spaced caps.
 - Ink `#131211` on white; thin hairlines; no other colours.
 
 ## Repo layout
