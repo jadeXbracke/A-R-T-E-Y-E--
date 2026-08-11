@@ -4,13 +4,14 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts } from '../../src/theme';
 
+// The five visible tabs. Every other route in this group (venue/exhibition/
+// fair pages, search, submit, fairs list…) renders WITH the tab bar but gets
+// no button — fairs lives inside the agenda, submit inside the profile.
 const LABELS: Record<string, string> = {
   index: 'AGENDA',
   venues: 'VENUES',
-  fairs: 'FAIRS',
   feed: 'FEED',
   saved: 'SAVED',
-  submit: 'SUBMIT',
   curator: 'CURATOR',
 };
 
@@ -27,6 +28,7 @@ function MonoTabBar({ state, navigation }: TabBarProps) {
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
       {state.routes.map((route, index) => {
+        if (!LABELS[route.name]) return null; // hidden route: page shows, no button
         const focused = state.index === index;
         return (
           <Pressable
@@ -44,10 +46,10 @@ function MonoTabBar({ state, navigation }: TabBarProps) {
             }}
           >
             <Text style={[styles.label, focused && { color: colors.ink }]}>
-              {LABELS[route.name] ?? route.name.toUpperCase()}
+              {LABELS[route.name]}
             </Text>
             <View
-              style={[styles.rule, focused && { backgroundColor: colors.red }]}
+              style={[styles.rule, focused && { backgroundColor: colors.ink }]}
             />
           </Pressable>
         );
@@ -67,10 +69,8 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="venues" />
-      <Tabs.Screen name="fairs" />
       <Tabs.Screen name="feed" />
       <Tabs.Screen name="saved" />
-      <Tabs.Screen name="submit" />
       <Tabs.Screen name="curator" />
     </Tabs>
   );

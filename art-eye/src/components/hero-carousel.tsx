@@ -55,24 +55,23 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
             style={{ width }}
             onPress={() => router.push(`/exhibition/${e.id}`)}
           >
-            <View style={{ paddingHorizontal: space.page }}>
+            <View>
               <LiveArt
                 videoUrl={e.video_url}
                 uri={e.image_url}
-                venueUri={e.venue?.image_url}
                 fallbackId={e.id}
                 active={i === active}
-                style={{ width: width - space.page * 2, backgroundColor: colors.dim }}
-                aspectRatio={4 / 3}
+                style={{ width, backgroundColor: colors.hairline }}
+                aspectRatio={4 / 5}
               />
+              <View style={styles.overlay}>
+                <Text style={styles.overlayArtist}>{e.artists.toUpperCase()}</Text>
+                <Text style={styles.overlayTitle}>{e.title}</Text>
+              </View>
             </View>
-            <View style={styles.caption}>
-              <Text style={styles.captionTitle}>{e.title}</Text>
-              <Text style={styles.captionArtist}>{e.artists.toUpperCase()}</Text>
-              <Text style={styles.metaLine}>
-                {e.venue?.name.toUpperCase()} · {fmtRange(e.start_date, e.end_date)}
-              </Text>
-            </View>
+            <Text style={styles.metaLine}>
+              {e.venue?.name.toUpperCase()} · {fmtRange(e.start_date, e.end_date)}
+            </Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -88,7 +87,7 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
             <View
               style={[
                 styles.tabRule,
-                { backgroundColor: i === active ? colors.ink : colors.dim },
+                { backgroundColor: i === active ? colors.ink : colors.hairline },
               ]}
             />
           </Pressable>
@@ -99,29 +98,35 @@ export function HeroCarousel({ exhibitions }: { exhibitions: Exhibition[] }) {
 }
 
 const styles = StyleSheet.create({
-  caption: {
-    paddingHorizontal: space.page,
-    paddingTop: space.l,
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.scrim,
+    paddingHorizontal: space.l,
   },
-  captionTitle: {
-    ...type.serifHeading,
-    fontSize: 21,
-    lineHeight: 33,
+  overlayArtist: {
+    ...type.artistCapsLarge,
+    textAlign: 'center',
     marginBottom: space.s,
   },
-  captionArtist: {
-    fontFamily: fonts.sans,
-    fontSize: 11,
-    letterSpacing: 2.4,
-    color: colors.ink,
-    textTransform: 'uppercase',
-    marginBottom: 6,
+  overlayTitle: {
+    ...type.serifHero,
+    fontSize: 38,
+    lineHeight: 44,
+    textAlign: 'center',
   },
   metaLine: {
-    fontFamily: fonts.sansLight,
-    fontSize: 10,
-    letterSpacing: 1.6,
-    color: colors.grey,
+    fontFamily: fonts.mono,
+    fontSize: 11,
+    letterSpacing: 0.8,
+    color: colors.ink,
+    paddingHorizontal: space.page,
+    paddingTop: space.m,
   },
   tabs: {
     flexDirection: 'row',

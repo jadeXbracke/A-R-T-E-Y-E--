@@ -1,9 +1,10 @@
 import {
-  Montserrat_200ExtraLight,
-  Montserrat_300Light,
-  Montserrat_400Regular,
-  Montserrat_500Medium,
-} from '@expo-google-fonts/montserrat';
+  Archivo_300Light,
+  Archivo_400Regular,
+  Archivo_500Medium,
+  Archivo_600SemiBold,
+  Archivo_700Bold,
+} from '@expo-google-fonts/archivo';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -15,18 +16,21 @@ import { colors } from '../src/theme';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    Montserrat_200ExtraLight,
-    Montserrat_300Light,
-    Montserrat_400Regular,
-    Montserrat_500Medium,
+  const [fontsLoaded, fontError] = useFonts({
+    Archivo_300Light,
+    Archivo_400Regular,
+    Archivo_500Medium,
+    Archivo_600SemiBold,
+    Archivo_700Bold,
   });
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded]);
+    if (fontsLoaded || fontError) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded) return null;
+  // A failed font download must not blank the whole app — fall back to the
+  // system face and render (the standard Expo pattern).
+  if (!fontsLoaded && !fontError) return null;
 
   return (
     <AuthProvider>

@@ -9,30 +9,39 @@ import { useAuth } from '../../src/lib/auth';
 import { FeedItem, Profile } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
+type FeedTab = 'discover' | 'friends';
+
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const [feed, setFeed] = useState<FeedItem[] | null>(null);
+  const [tab, setTab] = useState<FeedTab>('discover');
+  const [discover, setDiscover] = useState<FeedItem[] | null>(null);
+  const [friends, setFriends] = useState<FeedItem[] | null>(null);
   const [people, setPeople] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<number>(0);
 
   const reload = useCallback(() => {
     if (!profile) {
-      setFeed([]);
+      setDiscover([]);
+      setFriends([]);
       return;
     }
     Promise.all([
+      api.discoverFeed(profile.id),
       api.friendsFeed(profile.id),
       api.discoverPeople(profile.id),
       api.listFollowRequests(profile.id),
-    ]).then(([f, p, r]) => {
-      setFeed(f);
+    ]).then(([d, f, p, r]) => {
+      setDiscover(d);
+      setFriends(f);
       setPeople(p);
       setRequests(r.length);
     });
   }, [profile]);
 
   useFocusEffect(useCallback(() => reload(), [reload]));
+
+  const feed = tab === 'discover' ? discover : friends;
 
   const follow = async (id: string) => {
     if (!profile) return;
@@ -48,7 +57,9 @@ export default function FeedScreen() {
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
-            <Text style={styles.kicker}>WHAT YOUR CIRCLE IS SEEING</Text>
+            <Text style={styles.kicker}>
+              {tab === 'discover' ? 'EVERYONE ON ART EYE' : 'WHAT YOUR CIRCLE IS SEEING'}
+            </Text>
             <Text style={type.serifHeading}>Feed</Text>
           </View>
           {profile && (
@@ -57,6 +68,20 @@ export default function FeedScreen() {
             </Pressable>
           )}
         </View>
+        {profile && (
+          <View style={styles.tabs}>
+            <Pressable onPress={() => setTab('discover')} hitSlop={8}>
+              <Text style={[styles.tabLabel, tab === 'discover' && styles.tabLabelActive]}>
+                DISCOVER
+              </Text>
+            </Pressable>
+            <Pressable onPress={() => setTab('friends')} hitSlop={8}>
+              <Text style={[styles.tabLabel, tab === 'friends' && styles.tabLabelActive]}>
+                FRIENDS
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
       <Hairline />
 
@@ -82,12 +107,16 @@ export default function FeedScreen() {
           )}
 
           {feed.length === 0 ? (
-            <EmptyState>No activity yet. Follow a few people below to fill your feed.</EmptyState>
+            <EmptyState>
+              {tab === 'discover'
+                ? 'Nothing logged publicly yet. Be the first — mark a show as seen and it lands here.'
+                : "Your friends aren't here yet. Follow people on the Discover tab, or share the app so they can join — then every visit, save and comment lands here."}
+            </EmptyState>
           ) : (
             feed.map((item) => <ActivityRow key={item.id} item={item} />)
           )}
 
-          {people.length > 0 && (
+          {tab === 'friends' && people.length > 0 && (
             <>
               <View style={styles.sectionHead}>
                 <Text style={styles.sectionTitle}>PEOPLE TO FOLLOW</Text>
@@ -113,14 +142,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   you: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.2, color: colors.ink },
-  signIn: { fontFamily: fonts.monoMedium, fontSize: 12, letterSpacing: 1.6, color: colors.red },
+  tabs: { flexDirection: 'row', gap: space.l, marginTop: space.l },
+  tabLabel: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    color: colors.ink,
+    opacity: 0.4,
+    paddingBottom: 8,
+  },
+  tabLabelActive: { opacity: 1, borderBottomWidth: 1, borderBottomColor: colors.ink },
+  signIn: { fontFamily: fonts.monoMedium, fontSize: 12, letterSpacing: 1.6, color: colors.ink },
   requests: {
     paddingHorizontal: space.page,
     paddingVertical: space.m,
     borderBottomWidth: 1,
     borderBottomColor: colors.hairline,
   },
-  requestsText: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.2, color: colors.red },
+  requestsText: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.2, color: colors.ink },
   sectionHead: {
     paddingHorizontal: space.page,
     paddingTop: space.l,

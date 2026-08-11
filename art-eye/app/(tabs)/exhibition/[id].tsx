@@ -2,16 +2,17 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArtImage } from '../../src/components/exhibition';
-import { LiveArt } from '../../src/components/live-art';
-import { ActionBar, Hairline, Kicker, Loading, MonoLink, RedDot } from '../../src/components/ui';
-import { api } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth';
-import { fmtOpening, fmtRange } from '../../src/lib/dates';
-import { directionsUrl } from '../../src/lib/maps';
-import { ReelLink } from '../../src/components/reel-link';
-import { Exhibition, Visit } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+import { ArtImage } from '../../../src/components/exhibition';
+import { LiveArt } from '../../../src/components/live-art';
+import { ActionBar, Hairline, Kicker, Loading, MonoLink, RedDot } from '../../../src/components/ui';
+import { api } from '../../../src/lib/api';
+import { useAuth } from '../../../src/lib/auth';
+import { fmtOpening, fmtRange } from '../../../src/lib/dates';
+import { directionsUrl } from '../../../src/lib/maps';
+import { ReelLink } from '../../../src/components/reel-link';
+import { shareExhibition } from '../../../src/lib/share';
+import { Exhibition, Visit } from '../../../src/lib/types';
+import { colors, fonts, space, type } from '../../../src/theme';
 
 function openLink(url: string) {
   Linking.openURL(url).catch(() => {});
@@ -40,7 +41,7 @@ function SpecRow({
   const row = (
     <View style={styles.specRow}>
       <Text style={styles.specLabel}>{label}</Text>
-      <Text style={[styles.specValue, accent && { color: colors.red }]}>{value}</Text>
+      <Text style={[styles.specValue, accent && { color: colors.ink }]}>{value}</Text>
     </View>
   );
   return (
@@ -127,7 +128,15 @@ export default function ExhibitionDetail() {
           <Pressable onPress={() => router.back()} hitSlop={12}>
             <Text style={styles.backLabel}>← BACK</Text>
           </Pressable>
-          {visit && <RedDot size={10} />}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+            <Pressable
+              onPress={() => shareExhibition(e.id, e.title, e.venue?.name)}
+              hitSlop={12}
+            >
+              <Text style={styles.backLabel}>INVITE A FRIEND →</Text>
+            </Pressable>
+            {visit && <RedDot size={10} />}
+          </View>
         </View>
         <View style={{ paddingHorizontal: space.page }}>
           <LiveArt
@@ -142,6 +151,9 @@ export default function ExhibitionDetail() {
         <View style={styles.caption}>
           <Text style={styles.captionTitle}>{e.title}</Text>
           <Text style={styles.captionArtist}>{e.artists.toUpperCase()}</Text>
+          {((e.image_url && /^https?:/.test(e.image_url)) || e.venue?.image_url) && e.venue?.name ? (
+            <Text style={styles.courtesy}>COURTESY {e.venue.name.toUpperCase()}</Text>
+          ) : null}
         </View>
 
         <View style={{ paddingHorizontal: space.page, paddingTop: space.l }}>
@@ -195,14 +207,14 @@ export default function ExhibitionDetail() {
                 />
                 {e.venue.website && (
                   <MonoLink
-                    label="WEBSITE ↗"
+                    label="WEBSITE ●"
                     active
                     onPress={() => openLink(webUrl(e.venue!.website!))}
                   />
                 )}
                 {e.venue.instagram && (
                   <MonoLink
-                    label="INSTAGRAM ↗"
+                    label="INSTAGRAM ●"
                     active
                     onPress={() => openLink(instaUrl(e.venue!.instagram!))}
                   />
@@ -257,6 +269,14 @@ const styles = StyleSheet.create({
   },
   caption: { paddingHorizontal: space.page, paddingTop: space.l },
   captionTitle: { ...type.serifHeading, fontSize: 23, lineHeight: 35, marginBottom: space.s },
+  courtesy: {
+    fontFamily: fonts.mono,
+    fontSize: 8,
+    letterSpacing: 1.4,
+    color: colors.ink,
+    opacity: 0.6,
+    marginTop: 6,
+  },
   captionArtist: {
     fontFamily: fonts.sans,
     fontSize: 11,
@@ -274,7 +294,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.6,
-    color: colors.red,
+    color: colors.ink,
     marginBottom: space.m,
   },
   specRow: {

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PhotoPicker } from '../../../src/components/image-upload';
-import { Field, Hairline, InkBar, Kicker, MonoLink } from '../../../src/components/ui';
+import { confirmDialog, Field, Hairline, InkBar, Kicker, MonoLink } from '../../../src/components/ui';
 import { api } from '../../../src/lib/api';
 import { useAuth } from '../../../src/lib/auth';
 import { VENUE_TYPES, VenueDraft, VenueType } from '../../../src/lib/types';
@@ -112,26 +112,19 @@ export default function VenueEditor() {
   };
 
   const confirmDelete = () => {
-    Alert.alert(
+    confirmDialog(
       'Delete this venue?',
       'This also removes every exhibition at this venue. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setBusy(true);
-            try {
-              await api.deleteVenue(id);
-              router.back();
-            } catch (err) {
-              setError(err instanceof Error ? err.message : 'Something went wrong.');
-              setBusy(false);
-            }
-          },
-        },
-      ]
+      async () => {
+        setBusy(true);
+        try {
+          await api.deleteVenue(id);
+          router.back();
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Something went wrong.');
+          setBusy(false);
+        }
+      }
     );
   };
 
@@ -234,7 +227,7 @@ export default function VenueEditor() {
           <MonoLink
             label={hidden ? 'HIDDEN FROM PUBLIC ·' : 'VISIBLE — TAP TO HIDE FROM PUBLIC'}
             active={hidden}
-            color={hidden ? colors.red : undefined}
+            color={hidden ? colors.ink : undefined}
             onPress={() => setHidden(!hidden)}
           />
         </View>
@@ -248,7 +241,7 @@ export default function VenueEditor() {
             <Hairline style={{ marginVertical: space.l }} />
             <MonoLink
               label="DELETE THIS VENUE"
-              color={colors.red}
+              color={colors.ink}
               onPress={confirmDelete}
               style={{ alignSelf: 'flex-start' }}
             />
@@ -282,5 +275,5 @@ const styles = StyleSheet.create({
     color: colors.ink,
     marginTop: space.m,
   },
-  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.red, marginBottom: space.m },
+  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.ink, marginBottom: space.m },
 });

@@ -6,8 +6,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { CuratedList, CuratorRole, Exhibition, ExhibitionDraft, FeedItem, Follow, FollowState, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { Comment, CuratedList, CuratorRole, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, Follow, FollowState, ImageCandidate, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
+import { todayStr } from './dates';
 
 let client: SupabaseClient | null = null;
 
@@ -21,7 +22,8 @@ export function supabase(): SupabaseClient {
           storage: AsyncStorage,
           autoRefreshToken: true,
           persistSession: true,
-          detectSessionInUrl: false,
+          // Web only: lets the emailed password-recovery link sign in.
+          detectSessionInUrl: typeof window !== 'undefined',
         },
       }
     );
@@ -54,7 +56,34 @@ function toFeedItem(row: unknown): FeedItem {
     reflection: r.reflection,
     visit_date: r.visit_date,
     video_url: r.video_url ?? null,
+    like_count: 0,
+    liked_by_me: false,
+    comment_count: 0,
   };
+}
+
+// Fill like/comment counts (and the viewer's liked state) onto a set of feed items.
+async function withReactions(items: FeedItem[], viewerId: string | null): Promise<FeedItem[]> {
+  if (items.length === 0) return items;
+  const exIds = [...new Set(items.map((i) => i.exhibition_id))];
+  const ownerIds = [...new Set(items.map((i) => i.user_id))];
+  const [{ data: likes }, { data: comments }] = await Promise.all([
+    supabase().from('post_likes').select('user_id, post_user_id, exhibition_id').in('post_user_id', ownerIds).in('exhibition_id', exIds),
+    supabase().from('post_comments').select('post_user_id, exhibition_id').in('post_user_id', ownerIds).in('exhibition_id', exIds),
+  ]);
+  const key = (u: string, e: string) => `${u}:${e}`;
+  const likeRows = (likes ?? []) as { user_id: string; post_user_id: string; exhibition_id: string }[];
+  const commentRows = (comments ?? []) as { post_user_id: string; exhibition_id: string }[];
+  return items.map((it) => {
+    const k = key(it.user_id, it.exhibition_id);
+    const postLikes = likeRows.filter((l) => key(l.post_user_id, l.exhibition_id) === k);
+    return {
+      ...it,
+      like_count: postLikes.length,
+      liked_by_me: !!viewerId && postLikes.some((l) => l.user_id === viewerId),
+      comment_count: commentRows.filter((c) => key(c.post_user_id, c.exhibition_id) === k).length,
+    };
+  });
 }
 
 async function fetchProfile(userId: string, email: string): Promise<Profile> {
@@ -91,6 +120,19 @@ export const supabaseApi: Api = {
     });
     if (error) throw new Error(error.message);
     if (!data.user) throw new Error('Check your inbox to confirm your email, then sign in.');
+    // An existing, already-confirmed email comes back as a user with no
+    // identities and no session — Supabase's way of not revealing which
+    // emails are taken. Give that its own message instead of a database error.
+    if (!data.session && data.user.identities?.length === 0) {
+      throw new Error('An account with this email already exists — sign in instead.');
+    }
+    // Email confirmation is required: there is no session yet, so profiles
+    // (readable only when signed in) can't be fetched until the link is
+    // clicked. The profile row itself already exists (a database trigger
+    // created it), so this is not an error — just not signed in yet.
+    if (!data.session) {
+      throw new Error('Check your inbox to confirm your email, then sign in.');
+    }
     if (input.role === 'venue_owner' && input.venue) {
       await supabase().from('venues').insert({
         name: input.venue.name.trim(),
@@ -108,11 +150,14 @@ export const supabaseApi: Api = {
   },
 
   async listApprovedExhibitions() {
+    // Only shows you can still go and see: finished shows drop out of the
+    // whole public app, shows without a known end date stay (dates TBA).
     const { data, error } = await supabase()
       .from('exhibitions')
       .select(EXHIBITION_SELECT)
       .eq('status', 'approved')
       .eq('is_fixture', false) // fixture venues are already filtered by RLS
+      .or(`end_date.gte.${todayStr()},end_date.is.null`)
       .order('start_date');
     if (error) throw new Error(error.message);
     return (data ?? []) as Exhibition[];
@@ -437,6 +482,102 @@ export const supabaseApi: Api = {
     if (error) throw new Error(error.message);
   },
 
+  // ---- shows inbox --------------------------------------------------------
+  // Everything here runs as the signed-in user, so RLS on
+  // exhibition_review_queue ("admin all") decides — any non-admin account
+  // gets empty lists and refused writes no matter what the client requests.
+  async listExhibitionProposals() {
+    const { data, error } = await supabase()
+      .from('exhibition_review_queue')
+      .select('*, venues(name)')
+      .eq('status', 'pending')
+      .order('confidence', { ascending: false })
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((row) => {
+      const { venues, ...rest } = row as Record<string, unknown> & { venues: { name: string } | null };
+      return { ...rest, venue_name: venues?.name ?? 'Unknown venue' } as ExhibitionProposal;
+    });
+  },
+
+  async approveExhibitionProposal(id) {
+    // The RPC re-checks is_admin() server-side before inserting the show.
+    const { error } = await supabase().rpc('approve_exhibition_proposal', { qid: id });
+    if (error) throw new Error(error.message);
+  },
+
+  async rejectExhibitionProposal(id) {
+    const { error } = await supabase().from('exhibition_review_queue')
+      .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  async listImageCandidates(exhibitionId) {
+    // functions.invoke has no query-string support, so call the function URL.
+    const base = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+    const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+    const url = `${base}/functions/v1/image-candidates?exhibition_id=${encodeURIComponent(exhibitionId)}`;
+    const res = await fetch(url, { headers: { apikey: key } });
+    if (!res.ok) {
+      throw new Error(
+        res.status === 404
+          ? 'The image-candidates function is not deployed yet.'
+          : `Could not read the venue site (${res.status}).`
+      );
+    }
+    const body = (await res.json()) as { ok?: boolean; error?: string; candidates?: ImageCandidate[] };
+    if (body?.ok === false) throw new Error(body.error ?? 'Could not read the venue site.');
+    return body?.candidates ?? [];
+  },
+
+  async setExhibitionImage(exhibitionId, imageUrl) {
+    // Plain admin update — RLS decides whether this account may do it.
+    const { error } = await supabase()
+      .from('exhibitions')
+      .update({ image_url: imageUrl })
+      .eq('id', exhibitionId);
+    if (error) throw new Error(error.message);
+  },
+
+  async listVenueImageCandidates(venueId) {
+    const base = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+    const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+    const url = `${base}/functions/v1/image-candidates?venue_id=${encodeURIComponent(venueId)}`;
+    const res = await fetch(url, { headers: { apikey: key } });
+    if (!res.ok) {
+      throw new Error(
+        res.status === 404
+          ? 'The image-candidates function is not deployed yet.'
+          : `Could not read the venue site (${res.status}).`
+      );
+    }
+    const body = (await res.json()) as { ok?: boolean; error?: string; candidates?: ImageCandidate[] };
+    if (body?.ok === false) throw new Error(body.error ?? 'Could not read the venue site.');
+    return body?.candidates ?? [];
+  },
+
+  async setVenueImage(venueId, imageUrl) {
+    const { error } = await supabase()
+      .from('venues')
+      .update({ image_url: imageUrl })
+      .eq('id', venueId);
+    if (error) throw new Error(error.message);
+  },
+
+  async requestPasswordReset(email) {
+    const redirectTo = typeof location !== 'undefined'
+      ? location.origin + location.pathname
+      : undefined;
+    const { error } = await supabase().auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    if (error) throw new Error(error.message);
+  },
+
+  async updatePassword(password) {
+    const { error } = await supabase().auth.updateUser({ password });
+    if (error) throw new Error(error.message);
+  },
+
   // ---- social layer -------------------------------------------------------
   async getPublicProfile(userId, viewerId) {
     const sb = supabase();
@@ -537,6 +678,11 @@ export const supabaseApi: Api = {
     if (error) throw new Error(error.message);
   },
 
+  async updateOwnProfile(userId, patch) {
+    const { error } = await supabase().from('profiles').update(patch).eq('id', userId);
+    if (error) throw new Error(error.message);
+  },
+
   async discoverPeople(viewerId) {
     const sb = supabase();
     const { data: mine } = await sb.from('follows').select('followee_id').eq('follower_id', viewerId);
@@ -544,6 +690,19 @@ export const supabaseApi: Api = {
     const { data, error } = await sb.from('profiles').select('*').neq('role', 'admin').limit(50);
     if (error) throw new Error(error.message);
     return (data ?? []).filter((p) => !exclude.has((p as Profile).id)) as Profile[];
+  },
+
+  // Everyone (except the app owner and yourself), for the people search — the
+  // caller filters by name locally, same pattern as the venue/show search.
+  async searchPeople(viewerId) {
+    const { data, error } = await supabase()
+      .from('profiles')
+      .select('*')
+      .neq('role', 'admin')
+      .neq('id', viewerId)
+      .limit(200);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Profile[];
   },
 
   async friendsFeed(viewerId) {
@@ -561,10 +720,27 @@ export const supabaseApi: Api = {
       .in('user_id', ids)
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []).map(toFeedItem);
+    return withReactions((data ?? []).map(toFeedItem), viewerId);
   },
 
-  async userActivity(userId, _viewerId) {
+  // Every public profile's activity, not just people you follow — how new
+  // visitors find people to follow in the first place.
+  async discoverFeed(viewerId) {
+    const sb = supabase();
+    const { data: pub } = await sb.from('profiles').select('id').eq('is_private', false).neq('role', 'admin');
+    const ids = (pub ?? []).map((r) => (r as { id: string }).id);
+    if (ids.length === 0) return [];
+    const { data, error } = await sb
+      .from('user_visits')
+      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .in('user_id', ids)
+      .order('visit_date', { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    return withReactions((data ?? []).map(toFeedItem), viewerId);
+  },
+
+  async userActivity(userId, viewerId) {
     // RLS enforces visibility — a hidden profile simply returns no rows.
     const { data, error } = await supabase()
       .from('user_visits')
@@ -572,10 +748,111 @@ export const supabaseApi: Api = {
       .eq('user_id', userId)
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []).map(toFeedItem);
+    return withReactions((data ?? []).map(toFeedItem), viewerId);
+  },
+
+  async getPost(postUserId, exhibitionId, viewerId) {
+    const { data, error } = await supabase()
+      .from('user_visits')
+      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .eq('user_id', postUserId)
+      .eq('exhibition_id', exhibitionId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) return null;
+    return (await withReactions([toFeedItem(data)], viewerId))[0];
+  },
+
+  async likePost(likerId, postUserId, exhibitionId) {
+    const { error } = await supabase()
+      .from('post_likes')
+      .upsert({ user_id: likerId, post_user_id: postUserId, exhibition_id: exhibitionId });
+    if (error) throw new Error(error.message);
+  },
+
+  async unlikePost(likerId, postUserId, exhibitionId) {
+    const { error } = await supabase()
+      .from('post_likes')
+      .delete()
+      .eq('user_id', likerId)
+      .eq('post_user_id', postUserId)
+      .eq('exhibition_id', exhibitionId);
+    if (error) throw new Error(error.message);
+  },
+
+  async listComments(postUserId, exhibitionId) {
+    const { data, error } = await supabase()
+      .from('post_comments')
+      .select('*, author:profiles!post_comments_author_id_fkey(display_name)')
+      .eq('post_user_id', postUserId)
+      .eq('exhibition_id', exhibitionId)
+      .order('created_at', { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => {
+      const row = r as unknown as {
+        id: string; post_user_id: string; exhibition_id: string; author_id: string;
+        text: string; created_at: string; author?: { display_name?: string } | null;
+      };
+      return {
+        id: row.id,
+        post_user_id: row.post_user_id,
+        exhibition_id: row.exhibition_id,
+        author_id: row.author_id,
+        author_name: row.author?.display_name ?? 'Someone',
+        text: row.text,
+        created_at: row.created_at,
+      };
+    });
+  },
+
+  async addComment(authorId, postUserId, exhibitionId, text) {
+    const { data, error } = await supabase()
+      .from('post_comments')
+      .insert({ author_id: authorId, post_user_id: postUserId, exhibition_id: exhibitionId, text: text.trim() })
+      .select('*, author:profiles!post_comments_author_id_fkey(display_name)')
+      .single();
+    if (error) throw new Error(error.message);
+    const row = data as unknown as {
+      id: string; post_user_id: string; exhibition_id: string; author_id: string;
+      text: string; created_at: string; author?: { display_name?: string } | null;
+    };
+    return {
+      id: row.id,
+      post_user_id: row.post_user_id,
+      exhibition_id: row.exhibition_id,
+      author_id: row.author_id,
+      author_name: row.author?.display_name ?? 'Someone',
+      text: row.text,
+      created_at: row.created_at,
+    };
   },
 
   async uploadImage(localUri) {
+    const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    // Web: the picker hands back a blob:/data: uri — read it as a Blob.
+    if (localUri.startsWith('blob:') || localUri.startsWith('data:')) {
+      const blob = await (await fetch(localUri)).blob();
+      const mime = blob.type || 'image/jpeg';
+      const ext = mime.includes('png')
+        ? 'png'
+        : mime.includes('webp')
+          ? 'webp'
+          : mime.includes('mp4')
+            ? 'mp4'
+            : mime.includes('quicktime')
+              ? 'mov'
+              : 'jpg';
+      const path = `submissions/${stamp}.${ext}`;
+      const { error } = await supabase()
+        .storage.from('exhibition-images')
+        .upload(path, blob, { contentType: mime });
+      if (error) throw new Error(error.message);
+      const { data } = supabase().storage.from('exhibition-images').getPublicUrl(path);
+      return data.publicUrl;
+    }
+
+    // Native: read the file from disk as base64.
     const ext = localUri.split('.').pop()?.toLowerCase() ?? 'jpg';
     const contentType =
       ext === 'png'
@@ -585,7 +862,7 @@ export const supabaseApi: Api = {
           : ext === 'mov'
             ? 'video/quicktime'
             : 'image/jpeg';
-    const path = `submissions/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const path = `submissions/${stamp}.${ext}`;
     const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
     const { error } = await supabase()
       .storage.from('exhibition-images')

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api } from './api';
+import { router } from 'expo-router';
+import { api, DEMO_MODE } from './api';
 import { SignUpInput } from './api-types';
 import { Profile } from './types';
 
@@ -35,6 +36,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refresh().finally(() => setLoading(false));
+  }, [refresh]);
+
+  // A password-recovery email signs the user in via the URL; send them
+  // straight to the new-password screen. Live mode only.
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    const { supabase } = require('./supabase-api') as typeof import('./supabase-api');
+    const { data: sub } = supabase().auth.onAuthStateChange((event: string) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        refresh();
+        router.push('/reset');
+      }
+    });
+    return () => sub.subscription.unsubscribe();
   }, [refresh]);
 
   const value = useMemo<AuthState>(

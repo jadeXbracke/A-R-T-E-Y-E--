@@ -20,7 +20,7 @@ function statusLine(e: Exhibition): { text: string; color: string } {
   if (e.status === 'approved') return { text: 'IN THE AGENDA', color: colors.ink };
   if (e.status === 'rejected') {
     const reason = REJECTION_REASONS.find((r) => r.value === e.rejection_reason)?.label ?? 'OTHER';
-    return { text: `NOT ACCEPTED — ${reason}`, color: colors.red };
+    return { text: `NOT ACCEPTED — ${reason}`, color: colors.ink };
   }
   return { text: 'IN REVIEW', color: colors.ink };
 }

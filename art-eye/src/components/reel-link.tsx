@@ -18,7 +18,7 @@ export function ReelLink({ url, style }: { url: string; style?: StyleProp<ViewSt
       hitSlop={6}
     >
       <Text style={styles.glyph}>▶</Text>
-      <Text style={styles.label}>{platformLabel(url)} ↗</Text>
+      <Text style={styles.label}>{platformLabel(url)} ●</Text>
     </Pressable>
   );
 }
@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     alignSelf: 'flex-start',
   },
-  glyph: { fontSize: 11, color: colors.red },
+  glyph: { fontSize: 11, color: colors.ink },
   label: {
     fontFamily: fonts.monoMedium,
     fontSize: 10,

@@ -2,11 +2,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Hairline, Kicker, MonoLink } from '../../src/components/ui';
-import { fmtRange } from '../../src/lib/dates';
-import { getFair } from '../../src/lib/fairs';
-import { directionsUrl, mapsSearchUrl } from '../../src/lib/maps';
-import { colors, fonts, space, type } from '../../src/theme';
+import { Hairline, Kicker, MonoLink } from '../../../src/components/ui';
+import { fmtRange } from '../../../src/lib/dates';
+import { getFair } from '../../../src/lib/fairs';
+import { directionsUrl, mapsSearchUrl } from '../../../src/lib/maps';
+import { colors, fonts, space, type } from '../../../src/theme';
 
 function openLink(url: string) {
   Linking.openURL(url).catch(() => {});
@@ -68,9 +68,9 @@ export default function FairDetail() {
         <Text style={styles.body}>{fair.description}</Text>
 
         <View style={styles.links}>
-          <MonoLink label="WEBSITE ↗" active onPress={() => openLink(fair.website)} />
-          <MonoLink label="GOOGLE MAPS ↗" active onPress={() => openLink(mapUrl)} />
-          <MonoLink label="ROUTE ↗" active onPress={() => openLink(directionsUrl(fair))} />
+          <MonoLink label="WEBSITE ●" active onPress={() => openLink(fair.website)} />
+          <MonoLink label="GOOGLE MAPS ●" active onPress={() => openLink(mapUrl)} />
+          <MonoLink label="ROUTE ●" active onPress={() => openLink(directionsUrl(fair))} />
         </View>
       </View>
     </ScrollView>

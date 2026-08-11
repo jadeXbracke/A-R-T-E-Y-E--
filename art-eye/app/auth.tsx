@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Field, Hairline, InkBar, Kicker, MonoLink, Wordmark } from '../src/components/ui';
-import { DEMO_MODE } from '../src/lib/api';
+import { api, DEMO_MODE } from '../src/lib/api';
 import { useAuth } from '../src/lib/auth';
 import { ProfileType, PROFILE_TYPES, VenueType } from '../src/lib/types';
 import { colors, fonts, space, type } from '../src/theme';
@@ -28,6 +28,7 @@ export default function AuthScreen() {
   const [venueAddress, setVenueAddress] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState(false);
 
   const submit = async () => {
     setError(null);
@@ -175,12 +176,38 @@ export default function AuthScreen() {
         )}
 
         {error && <Text style={styles.error}>{error}</Text>}
+        {resetSent && (
+          <Text style={styles.error}>
+            Check your inbox — we sent a link to set a new password.
+          </Text>
+        )}
 
         <InkBar
           label={mode === 'in' ? 'SIGN IN' : 'CREATE YOUR ACCOUNT'}
           onPress={submit}
           busy={busy}
         />
+
+        {mode === 'in' && !DEMO_MODE && (
+          <Pressable
+            hitSlop={8}
+            onPress={async () => {
+              setError(null);
+              if (!email.trim()) {
+                setError('Fill in your email first, then tap forgot password.');
+                return;
+              }
+              try {
+                await api.requestPasswordReset(email);
+                setResetSent(true);
+              } catch (e) {
+                setError(e instanceof Error ? e.message : String(e));
+              }
+            }}
+          >
+            <Text style={styles.forgot}>FORGOT PASSWORD?</Text>
+          </Pressable>
+        )}
 
         {DEMO_MODE && (
           <Text style={styles.demoNote}>
@@ -219,10 +246,18 @@ const styles = StyleSheet.create({
     gap: space.m,
     marginBottom: space.l,
   },
+  forgot: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    color: colors.ink,
+    marginTop: 14,
+    textDecorationLine: 'underline',
+  },
   error: {
     fontFamily: fonts.mono,
     fontSize: 11,
-    color: colors.red,
+    color: colors.ink,
     marginBottom: space.m,
   },
   demoNote: {

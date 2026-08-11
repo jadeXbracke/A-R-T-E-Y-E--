@@ -1,6 +1,8 @@
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtImage } from '../../src/components/exhibition';
 import { EmptyState, Hairline, Kicker, Loading, MonoLink, RatingDots } from '../../src/components/ui';
@@ -9,6 +11,39 @@ import { useAuth } from '../../src/lib/auth';
 import { fmtDay } from '../../src/lib/dates';
 import { Exhibition, PROFILE_TYPES, Visit } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
+
+const BIO_LIMIT = 160;
+
+function Avatar({
+  uri,
+  name,
+  size,
+  onPress,
+  busy,
+}: {
+  uri?: string | null;
+  name: string;
+  size: number;
+  onPress?: () => void;
+  busy?: boolean;
+}) {
+  const inner = uri ? (
+    <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2 }} contentFit="cover" />
+  ) : (
+    <View style={[styles.avatarFallback, { width: size, height: size, borderRadius: size / 2 }]}>
+      <Text style={[styles.avatarInitial, { fontSize: size * 0.38 }]}>
+        {(name.trim()[0] ?? '?').toUpperCase()}
+      </Text>
+    </View>
+  );
+  if (!onPress) return inner;
+  return (
+    <Pressable onPress={onPress} disabled={busy} hitSlop={4}>
+      {inner}
+      <Text style={styles.avatarEdit}>{busy ? '…' : 'EDIT'}</Text>
+    </Pressable>
+  );
+}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -21,10 +56,47 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 export default function CuratorScreen() {
   const insets = useSafeAreaInsets();
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, refresh } = useAuth();
   const [visits, setVisits] = useState<Visit[] | null>(null);
   const [watchCount, setWatchCount] = useState(0);
   const [exhibitions, setExhibitions] = useState<Map<string, Exhibition>>(new Map());
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [bio, setBio] = useState('');
+  const [bioDirty, setBioDirty] = useState(false);
+  const [bioBusy, setBioBusy] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (profile && !bioDirty) setBio(profile.bio ?? '');
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [profile])
+  );
+
+  const changeAvatar = async () => {
+    if (!profile) return;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+    if (result.canceled || !result.assets[0]) return;
+    setAvatarBusy(true);
+    try {
+      const url = await api.uploadImage(result.assets[0].uri);
+      await api.updateOwnProfile(profile.id, { avatar_url: url });
+      refresh();
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const saveBio = async () => {
+    if (!profile) return;
+    setBioBusy(true);
+    try {
+      await api.updateOwnProfile(profile.id, { bio: bio.trim() || null });
+      setBioDirty(false);
+      refresh();
+    } finally {
+      setBioBusy(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -101,10 +173,33 @@ export default function CuratorScreen() {
     >
       <View style={{ paddingHorizontal: space.page, paddingBottom: space.l }}>
         <Kicker style={{ marginBottom: 10 }}>CURATOR</Kicker>
-        <Text style={[type.serifHeading, { marginBottom: 8 }]}>{profile.display_name}</Text>
-        <Text style={styles.profileType}>
-          {typeLabel} — {profile.city.toUpperCase()}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginBottom: space.m }}>
+          <Avatar uri={profile.avatar_url} name={profile.display_name} size={64} onPress={changeAvatar} busy={avatarBusy} />
+          <View style={{ flex: 1 }}>
+            <Text style={[type.serifHeading, { marginBottom: 4 }]}>{profile.display_name}</Text>
+            <Text style={styles.profileType}>
+              {typeLabel} — {profile.city.toUpperCase()}
+            </Text>
+          </View>
+        </View>
+        <TextInput
+          value={bio}
+          onChangeText={(t) => {
+            setBio(t.slice(0, BIO_LIMIT));
+            setBioDirty(true);
+          }}
+          onBlur={() => bioDirty && saveBio()}
+          placeholder="Add a short bio — what you collect, what you're drawn to…"
+          placeholderTextColor={colors.grey}
+          multiline
+          style={styles.bioInput}
+        />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={styles.bioCount}>{bio.length}/{BIO_LIMIT}</Text>
+          {bioDirty && (
+            <MonoLink label={bioBusy ? 'SAVING…' : 'SAVE BIO'} active onPress={saveBio} />
+          )}
+        </View>
       </View>
 
       <Hairline />
@@ -166,6 +261,12 @@ export default function CuratorScreen() {
       )}
 
       <View style={styles.footerLinks}>
+        <MonoLink
+          label="SUBMIT A SHOW"
+          active
+          onPress={() => router.push('/submit')}
+          style={{ alignSelf: 'flex-start' }}
+        />
         {profile.role === 'admin' && (
           <MonoLink
             label="HOST CONTROL — MANAGE THE APP"
@@ -198,6 +299,30 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
     color: colors.ink,
   },
+  avatarFallback: {
+    backgroundColor: colors.dim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: { fontFamily: fonts.serifMedium, color: colors.ink },
+  avatarEdit: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 8,
+    letterSpacing: 1,
+    color: colors.ink,
+    textAlign: 'center',
+    marginTop: 4,
+    opacity: 0.6,
+  },
+  bioInput: {
+    ...type.serifBody,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.ink,
+    minHeight: 44,
+    paddingVertical: 6,
+  },
+  bioCount: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 0.6, color: colors.ink, opacity: 0.4 },
   stats: { flexDirection: 'row', paddingVertical: space.l },
   stat: { flex: 1, alignItems: 'center' },
   statDivider: { width: 1, backgroundColor: colors.hairline },

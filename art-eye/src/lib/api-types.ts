@@ -1,4 +1,4 @@
-import { CuratedList, Exhibition, ExhibitionDraft, FeedItem, FollowState, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { Comment, CuratedList, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, FollowState, ImageCandidate, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -57,6 +57,27 @@ export interface Api {
   approveProposal(proposal: VenueProposal, payload: Record<string, unknown>): Promise<void>;
   rejectProposal(id: string, note: string): Promise<void>;
 
+  // shows inbox — exhibitions the discovery pipeline found. Owner-only, same
+  // double guard: the UI hides it for everyone but the admin, and the
+  // database (RLS + the is_admin() check inside the approval RPC) refuses
+  // any other account regardless of what the client asks.
+  listExhibitionProposals(): Promise<ExhibitionProposal[]>;
+  approveExhibitionProposal(id: string): Promise<void>;
+  rejectExhibitionProposal(id: string): Promise<void>;
+
+  // photo picking: read candidate photographs off the venue's own pages so
+  // the owner chooses the image (setImage is a normal admin write, still
+  // guarded by RLS).
+  listImageCandidates(exhibitionId: string): Promise<ImageCandidate[]>;
+  setExhibitionImage(exhibitionId: string, imageUrl: string | null): Promise<void>;
+  listVenueImageCandidates(venueId: string): Promise<ImageCandidate[]>;
+  setVenueImage(venueId: string, imageUrl: string | null): Promise<void>;
+
+  // password recovery (live mode only): Supabase mails a sign-in link that
+  // returns to the app, after which updatePassword sets the new one.
+  requestPasswordReset(email: string): Promise<void>;
+  updatePassword(password: string): Promise<void>;
+
   // social layer — follow graph, privacy and the friends activity feed
   getPublicProfile(userId: string, viewerId: string | null): Promise<PublicProfile>;
   followUser(viewerId: string, targetId: string): Promise<FollowState>;
@@ -66,9 +87,19 @@ export interface Api {
   listFollowRequests(userId: string): Promise<Profile[]>; // pending requests to approve
   respondFollowRequest(userId: string, requesterId: string, accept: boolean): Promise<void>;
   setProfilePrivacy(userId: string, isPrivate: boolean): Promise<void>;
+  updateOwnProfile(userId: string, patch: { display_name?: string; bio?: string | null; avatar_url?: string | null }): Promise<void>;
   discoverPeople(viewerId: string): Promise<Profile[]>; // people the viewer can follow
+  searchPeople(viewerId: string): Promise<Profile[]>; // everyone (except self), for name search
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows
+  discoverFeed(viewerId: string): Promise<FeedItem[]>; // activity from every public profile
   userActivity(userId: string, viewerId: string | null): Promise<FeedItem[]>;
+
+  // reactions on posts (Letterboxd-style) — a post is (postUserId, exhibitionId)
+  getPost(postUserId: string, exhibitionId: string, viewerId: string | null): Promise<FeedItem | null>;
+  likePost(likerId: string, postUserId: string, exhibitionId: string): Promise<void>;
+  unlikePost(likerId: string, postUserId: string, exhibitionId: string): Promise<void>;
+  listComments(postUserId: string, exhibitionId: string): Promise<Comment[]>;
+  addComment(authorId: string, postUserId: string, exhibitionId: string, text: string): Promise<Comment>;
 
   // media
   uploadImage(localUri: string): Promise<string>;

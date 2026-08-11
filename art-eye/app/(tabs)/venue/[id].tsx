@@ -2,16 +2,32 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ExhibitionRow } from '../../src/components/exhibition';
-import { LiveArt } from '../../src/components/live-art';
-import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
-import { api } from '../../src/lib/api';
-import { isOnNow, todayStr } from '../../src/lib/dates';
-import { directionsUrl, mapsSearchUrl } from '../../src/lib/maps';
-import { venueFacts } from '../../src/lib/venue-meta';
-import { ReelLink } from '../../src/components/reel-link';
-import { Exhibition, Venue } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+import { ExhibitionRow } from '../../../src/components/exhibition';
+import { LiveArt } from '../../../src/components/live-art';
+import { Hairline, Kicker, Loading, MonoLink } from '../../../src/components/ui';
+import { api } from '../../../src/lib/api';
+import { isOnNow, todayStr } from '../../../src/lib/dates';
+import { directionsUrl, mapsSearchUrl } from '../../../src/lib/maps';
+import { venueFacts } from '../../../src/lib/venue-meta';
+import { ReelLink } from '../../../src/components/reel-link';
+import { Exhibition, Venue } from '../../../src/lib/types';
+import { colors, fonts, space, type } from '../../../src/theme';
+import { Platform } from 'react-native';
+
+// A real map (OpenStreetMap embed) — web only; native builds keep the link.
+function VenueMapEmbed({ lat, lng }: { lat: number; lng: number }) {
+  if (Platform.OS !== 'web') return null;
+  const d = 0.006;
+  const src =
+    `https://www.openstreetmap.org/export/embed.html?bbox=${lng - d},${lat - d * 0.7},${lng + d},${lat + d * 0.7}` +
+    `&layer=mapnik&marker=${lat},${lng}`;
+  return React.createElement('iframe', {
+    src,
+    style: { width: '100%', height: 240, border: 0, marginTop: 12, marginBottom: 4, filter: 'grayscale(1)' },
+    loading: 'lazy',
+    title: 'Map',
+  });
+}
 
 function openLink(url: string) {
   Linking.openURL(url).catch(() => {});
@@ -27,17 +43,9 @@ function VenueDescription({ venue }: { venue: Venue }) {
     facts.entry === 'free' ? 'FREE ENTRY' : facts.entry === 'paid' ? 'PAID ENTRY' : null,
   ].filter(Boolean);
 
-  const unknown = [
-    facts.foundedYear ? null : 'founding year',
-    facts.entry ? null : 'entry',
-  ].filter(Boolean);
-
   return (
     <View style={{ marginBottom: space.m }}>
       <Text style={styles.facts}>{known.join('  ·  ')}</Text>
-      {unknown.length > 0 && (
-        <Text style={styles.factsFlag}>{unknown.join(' & ').toUpperCase()} NOT YET VERIFIED</Text>
-      )}
     </View>
   );
 }
@@ -56,6 +64,7 @@ export default function VenueDetail() {
   const insets = useSafeAreaInsets();
   const [venue, setVenue] = useState<Venue | null | undefined>(undefined);
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+  const [heroFailed, setHeroFailed] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -129,13 +138,16 @@ export default function VenueDetail() {
         <VenueDescription venue={venue} />
       </View>
 
-      {(venue.image_url || venue.video_url) && (
-        <LiveArt
-          videoUrl={venue.video_url}
-          uri={venue.image_url}
-          fallbackId={venue.id}
-          style={styles.photo}
-        />
+      {(venue.image_url || venue.video_url) && !heroFailed && (
+        <View onLayout={() => {}}>
+          <LiveArt
+            videoUrl={venue.video_url}
+            uri={venue.image_url}
+            fallbackId={venue.id}
+            style={styles.photo}
+            onImageError={() => setHeroFailed(true)}
+          />
+        </View>
       )}
 
       <View style={{ paddingHorizontal: space.page, paddingTop: space.m }}>
@@ -143,6 +155,9 @@ export default function VenueDetail() {
           <Pressable onPress={() => openLink(venue.google_maps_url ?? mapsSearchUrl(venue))} hitSlop={6}>
             <Text style={styles.address}>{venue.address}  → MAP</Text>
           </Pressable>
+        )}
+        {venue.latitude != null && venue.longitude != null && (
+          <VenueMapEmbed lat={venue.latitude} lng={venue.longitude} />
         )}
         {venue.opening_hours && (
           <Text style={styles.hours}>
@@ -154,17 +169,17 @@ export default function VenueDetail() {
 
         <View style={styles.links}>
           {venue.website && (
-            <MonoLink label="WEBSITE ↗" active onPress={() => openLink(webUrl(venue.website!))} />
+            <MonoLink label="WEBSITE ●" active onPress={() => openLink(webUrl(venue.website!))} />
           )}
           {venue.instagram && (
-            <MonoLink label="INSTAGRAM ↗" active onPress={() => openLink(instaUrl(venue.instagram!))} />
+            <MonoLink label="INSTAGRAM ●" active onPress={() => openLink(instaUrl(venue.instagram!))} />
           )}
           <MonoLink
-            label="GOOGLE MAPS ↗"
+            label="GOOGLE MAPS ●"
             active
             onPress={() => openLink(venue.google_maps_url ?? mapsSearchUrl(venue))}
           />
-          <MonoLink label="ROUTE ↗" active onPress={() => openLink(directionsUrl(venue))} />
+          <MonoLink label="ROUTE ●" active onPress={() => openLink(directionsUrl(venue))} />
         </View>
 
         {venue.reel_url && <ReelLink url={venue.reel_url} style={{ marginBottom: space.l }} />}
@@ -225,7 +240,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     opacity: 0.55,
   },
-  photo: { width: '100%', aspectRatio: 3 / 2, backgroundColor: colors.dim },
+  photo: { width: '100%', aspectRatio: 3 / 2, backgroundColor: colors.bg },
   address: {
     fontFamily: fonts.mono,
     fontSize: 11,

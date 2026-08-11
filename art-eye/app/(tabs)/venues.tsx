@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 9,
     letterSpacing: 1.2,
-    color: colors.red,
+    color: colors.ink,
   },
   upcomingTag: {
     fontFamily: fonts.monoMedium,
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.4,
-    color: colors.red,
+    color: colors.ink,
   },
   mapHint: {
     fontFamily: fonts.serifItalic, letterSpacing: 1.8, textTransform: 'uppercase',

@@ -35,6 +35,7 @@ export default function HostDesk() {
     venues: number;
     shows: number;
     inbox: number;
+    discovered: number;
   } | null>(null);
 
   useFocusEffect(
@@ -46,10 +47,17 @@ export default function HostDesk() {
           api.listVenues(),
           api.listAllExhibitions(),
           api.listProposals(),
+          api.listExhibitionProposals().catch(() => []),
         ]).then(
-          ([p, v, e, q]) =>
+          ([p, v, e, q, d]) =>
             alive &&
-            setCounts({ pending: p.length, venues: v.length, shows: e.length, inbox: q.length })
+            setCounts({
+              pending: p.length,
+              venues: v.length,
+              shows: e.length,
+              inbox: q.length,
+              discovered: d.length,
+            })
         );
       }
       return () => {
@@ -120,6 +128,16 @@ export default function HostDesk() {
         meta={counts ? (counts.inbox > 0 ? `${counts.inbox} WAITING` : 'CLEAR') : '…'}
         onPress={() => router.push('/admin/inbox')}
       />
+      <DeskRow
+        label="PHOTOS — PICK EACH SHOW'S PICTURE"
+        meta={counts ? `${counts.shows} SHOWS` : '…'}
+        onPress={() => router.push('/admin/photos')}
+      />
+      <DeskRow
+        label="SHOWS INBOX — DISCOVERED EXHIBITIONS"
+        meta={counts ? (counts.discovered > 0 ? `${counts.discovered} WAITING` : 'CLEAR') : '…'}
+        onPress={() => router.push('/admin/shows-inbox')}
+      />
     </ScrollView>
   );
 }
@@ -171,5 +189,5 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   rowMeta: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink },
-  arrow: { fontFamily: fonts.mono, fontSize: 18, color: colors.red },
+  arrow: { fontFamily: fonts.mono, fontSize: 18, color: colors.ink },
 });

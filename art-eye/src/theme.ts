@@ -1,41 +1,37 @@
-// ART EYE design tokens — M.A.P-inspired rebrand.
-// White ground, black text, thin black rules, generous whitespace.
-// One geometric sans (Jost) set in caps with wide letter-spacing throughout.
-// Fully monochrome: the former red accent now renders in ink.
+// ART EYE design tokens — extracted from the prototype visual spec.
+// White ground, black text, hairline rules, one red accent (graphic only).
+// Square corners everywhere; the only circles are the dots.
 
 export const colors = {
   bg: '#FFFFFF',
   ink: '#131211', // the single text colour — all type is black
-  grey: '#9B9B9B', // secondary type (M.A.P-style grey) + input placeholders
-  hairline: '#131211', // rules are thin and black now
-  dim: '#E8E6E2', // image placeholders, inactive dots/tracks — quiet, not black
-  red: '#131211', // former accent — monochrome now; key kept so styles resolve
+  dim: '#131211', // merged-in screens use this for secondary text; house rule says black
+  grey: '#7B766D', // retained for input placeholders + graphic borders only
+  hairline: '#E4E1DB',
+  red: '#C22F1E', // graphic accent: active underline, dots, bars
   white: '#FFFFFF',
   scrim: 'rgba(19,18,17,0.28)',
 };
 
 // ── Typography system ───────────────────────────────────────────────────────
-// One family, one voice: Montserrat (wide geometric grotesque) everywhere —
-// every heading, label, caption, date, button and body block. Display and
-// body copy render in caps with wide tracking, M.A.P-style: headings solid
-// and wide, body/meta feather-light. The former serif/mono roles are kept
-// as aliases so existing styles keep working while resolving to the single
-// sans family.
+// One family across the whole app: ARCHIVO — a grotesque used the M.A.P
+// (mapltd.com) way: bold UPPERCASE titles, regular letter-spaced uppercase
+// labels, black on white, thin rules. Every former role (sans / serif / mono)
+// resolves to an Archivo weight. No italics anywhere.
 export const fonts = {
-  sansThin: 'Montserrat_200ExtraLight', // the wordmark's hairline weight
-  sansLight: 'Montserrat_300Light',
-  sans: 'Montserrat_400Regular',
-  sansMedium: 'Montserrat_400Regular',
-  // Slimmed a step for the editorial look: headings sit at medium, never bold.
-  sansSemi: 'Montserrat_500Medium',
-  // Serif retired — editorial body copy is now light, wide-tracked caps.
-  serif: 'Montserrat_300Light',
-  serifMedium: 'Montserrat_400Regular',
-  serifItalic: 'Montserrat_300Light',
-  serifMediumItalic: 'Montserrat_400Regular',
-  // "mono" role folded into the same family — the app is a one-font system.
-  mono: 'Montserrat_400Regular',
-  monoMedium: 'Montserrat_400Regular',
+  sansLight: 'Archivo_300Light',
+  display: 'Archivo_300Light', // headings: light, wide, uppercase
+  sans: 'Archivo_400Regular',
+  sansMedium: 'Archivo_500Medium',
+  sansSemi: 'Archivo_600SemiBold',
+  // "serif" role — body stays regular; titles/headings go bold (M.A.P style).
+  serif: 'Archivo_400Regular',
+  serifMedium: 'Archivo_700Bold',
+  serifItalic: 'Archivo_400Regular',
+  serifMediumItalic: 'Archivo_700Bold',
+  // "mono" role (labels, dates, filters, buttons, tab bar) — Archivo.
+  mono: 'Archivo_400Regular',
+  monoMedium: 'Archivo_500Medium',
 };
 
 export const space = {
@@ -48,25 +44,24 @@ export const space = {
   page: 20, // page gutter
 };
 
-// The single source of truth for the type scale. Every text colour here is ink.
-// Caps + tracking are baked in so content stays as-is but renders M.A.P-style.
+// The single source of truth for the type scale. M.A.P house style: bold
+// UPPERCASE titles, letter-spaced uppercase labels, regular body. All ink.
 export const type = {
-  // the ARTEYE wordmark — thin hairline weight, wide letter-spacing
-  wordmark: { fontFamily: fonts.sansThin, fontSize: 22, letterSpacing: 10, color: colors.ink },
-  artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
-  artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3.2, color: colors.white, textTransform: 'uppercase' },
-  // exhibition titles, reflections, large headings: bold geometric caps
-  serifTitle: { fontFamily: fonts.sansSemi, fontSize: 16, letterSpacing: 3, color: colors.ink, textTransform: 'uppercase' },
-  // big display headings run light with generous air — contemporary editorial
-  serifHeading: { fontFamily: fonts.sans, fontSize: 25, letterSpacing: 4.2, color: colors.ink, textTransform: 'uppercase' },
-  serifHero: { fontFamily: fonts.sans, fontSize: 25, letterSpacing: 4.2, color: colors.white, textTransform: 'uppercase' },
-  serifBody: { fontFamily: fonts.sansLight, fontSize: 13, lineHeight: 25, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
-  serifQuote: { fontFamily: fonts.sansLight, fontSize: 13, lineHeight: 24, letterSpacing: 2.6, color: colors.ink, textTransform: 'uppercase' },
-  // dates, venues, labels, filters, buttons, tab bar
-  mono: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 1.6, color: colors.ink, textTransform: 'uppercase' },
-  monoSmall: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.6, color: colors.ink, textTransform: 'uppercase' },
-  monoLabel: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 2, color: colors.ink, textTransform: 'uppercase' },
-  monoButton: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 2.2, color: colors.ink, textTransform: 'uppercase' },
+  wordmark: { fontFamily: fonts.sansMedium, fontSize: 16, letterSpacing: 4, color: colors.ink },
+  artistCaps: { fontFamily: fonts.sansMedium, fontSize: 12, letterSpacing: 2.2, color: colors.ink, textTransform: 'uppercase' },
+  artistCapsLarge: { fontFamily: fonts.sansMedium, fontSize: 14, letterSpacing: 3, color: colors.white, textTransform: 'uppercase' },
+  // exhibition/venue titles and page headings: Archivo Bold, UPPERCASE
+  serifTitle: { fontFamily: fonts.display, fontSize: 20, letterSpacing: 1.6, lineHeight: 26, color: colors.ink, textTransform: 'uppercase' },
+  serifHeading: { fontFamily: fonts.display, fontSize: 27, letterSpacing: 3, lineHeight: 34, color: colors.ink, textTransform: 'uppercase' },
+  serifHero: { fontFamily: fonts.display, fontSize: 27, letterSpacing: 3, lineHeight: 34, color: colors.white, textTransform: 'uppercase' },
+  // body / reflections: regular Archivo, sentence case for readability
+  serifBody: { fontFamily: fonts.serif, fontSize: 16, lineHeight: 24, color: colors.ink },
+  serifQuote: { fontFamily: fonts.serif, fontSize: 16, lineHeight: 24, color: colors.ink },
+  // labels, dates, filters, buttons, tab bar: letter-spaced UPPERCASE Archivo
+  mono: { fontFamily: fonts.mono, fontSize: 12, letterSpacing: 1, color: colors.ink, textTransform: 'uppercase' },
+  monoSmall: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1.4, color: colors.ink, textTransform: 'uppercase' },
+  monoLabel: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.8, color: colors.ink, textTransform: 'uppercase' },
+  monoButton: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 2, color: colors.ink, textTransform: 'uppercase' },
 } as const;
 
 export const hairline = {

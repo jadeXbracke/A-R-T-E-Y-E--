@@ -42,6 +42,8 @@ export interface Profile {
   display_name: string;
   city: string;
   is_private?: boolean; // closed profile — activity only visible to accepted followers
+  bio?: string | null; // short "about me", shown on the public profile
+  avatar_url?: string | null; // profile photo
 }
 
 // ---- social layer (Strava-style follow + activity feed) ---------------------
@@ -63,9 +65,10 @@ export interface PublicProfile extends Profile {
   can_view_activity: boolean; // public, own profile, or an accepted follower
 }
 
-// One entry in the activity feed — a friend logging a visit to a show.
+// One entry in the activity feed — a friend logging a visit to a show. A "post"
+// is a visit, keyed by (user_id, exhibition_id); likes and comments hang off it.
 export interface FeedItem {
-  id: string;
+  id: string; // `${user_id}:${exhibition_id}`
   user_id: string;
   display_name: string;
   exhibition_id: string;
@@ -75,6 +78,28 @@ export interface FeedItem {
   reflection: string;
   visit_date: string; // YYYY-MM-DD
   video_url?: string | null; // short clip attached to the post
+  like_count: number;
+  liked_by_me: boolean;
+  comment_count: number;
+}
+
+// A like on a post (Letterboxd-style). The post is (post_user_id, exhibition_id).
+export interface Like {
+  user_id: string; // who liked
+  post_user_id: string; // whose post
+  exhibition_id: string;
+  created_at: string;
+}
+
+// A comment on a post.
+export interface Comment {
+  id: string;
+  post_user_id: string; // whose post
+  exhibition_id: string;
+  author_id: string;
+  author_name: string;
+  text: string;
+  created_at: string;
 }
 
 export interface Venue {
@@ -229,6 +254,32 @@ export interface VenueProposal {
   reason: string;
   status: ProposalStatus;
   review_note?: string | null;
+  created_at: string;
+}
+
+// A photograph found on a venue's own page, offered for the owner to pick.
+export interface ImageCandidate {
+  url: string;
+  alt: string;
+  from: string; // the page it was found on
+  featured: boolean; // the page's own sharing image
+}
+
+// A show the discovery pipeline found on a venue's own website. Waits in
+// exhibition_review_queue until the owner approves it — approval is what
+// creates the real exhibition.
+export interface ExhibitionProposal {
+  id: string;
+  venue_id: string;
+  venue_name: string;
+  title: string;
+  artists: string;
+  start_date: string | null;
+  end_date: string | null;
+  description: string;
+  source_url: string | null;
+  confidence: number; // 0.9 = venue's own structured data, 0.65 = AI-read
+  status: ProposalStatus;
   created_at: string;
 }
 

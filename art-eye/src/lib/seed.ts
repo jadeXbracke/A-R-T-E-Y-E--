@@ -1079,4 +1079,72 @@ export const SEED_EXHIBITIONS: Exhibition[] = [
     is_featured: false,
     city: 'Sydney',
   },
+
+
+// Verified real AGNSW shows (source: artgallery.nsw.gov.au / Art Almanac, checked Jul 2026)
+  {
+    id: 'e-super-nature',
+    venue_id: 'v-agnsw',
+    title: 'Super Nature',
+    artists: 'Group Exhibition',
+    start_date: '2026-03-14',
+    end_date: '2027-02-01',
+    opening_datetime: null,
+    description:
+      'Four thematic spaces on the ties between people and the environment — gardens as memorials, the wild nature that lives alongside us, and the cultivation of nature for survival. Free entry.',
+    image_url: null,
+    status: 'approved',
+    rejection_reason: null,
+    is_featured: false,
+    city: 'Sydney',
+  },
+  {
+    id: 'e-avatar-vishnu',
+    venue_id: 'v-agnsw',
+    title: 'Avatar: Forms of Vishnu',
+    artists: 'South and Southeast Asian art',
+    start_date: '2026-06-20',
+    end_date: '2026-10-05',
+    opening_datetime: null,
+    description:
+      'Centuries of art and storytelling from South and Southeast Asia celebrating Vishnu, the Hindu deity believed to preserve order in the universe.',
+    image_url: null,
+    status: 'approved',
+    rejection_reason: null,
+    is_featured: false,
+    city: 'Sydney',
+  },
+  {
+    id: 'e-nolan-origins',
+    venue_id: 'v-agnsw',
+    title: 'Nolan: Origins',
+    artists: 'Sidney Nolan',
+    start_date: '2026-10-03',
+    end_date: '2027-02-07',
+    opening_datetime: null,
+    description:
+      'A major survey of Sidney Nolan\'s formative years in Australia — the making of one of the country\'s defining modern painters.',
+    image_url: null,
+    status: 'approved',
+    rejection_reason: null,
+    is_featured: false,
+    city: 'Sydney',
+  },
+
+  {
+    id: 'e-tony-albert-souvenir',
+    venue_id: 'v-mca',
+    title: 'Tony Albert: Not a Souvenir',
+    artists: 'Tony Albert',
+    start_date: '2026-05-21',
+    end_date: '2026-10-19',
+    opening_datetime: null,
+    description:
+      'A major survey across sculpture, photography, installation and painting — Albert turns The Rocks\' souvenir culture back on itself, confronting the commodification of Aboriginal people while celebrating survival and pride. Guest curated by Bruce Johnson McLean.',
+    image_url: null,
+    status: 'approved',
+    rejection_reason: null,
+    is_featured: false,
+    city: 'Sydney',
+  },
 ];

@@ -1,14 +1,15 @@
+import { Image } from 'expo-image';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Hairline, Kicker, Loading, MonoLink } from '../../src/components/ui';
-import { ActivityRow, PersonRow } from '../../src/components/social';
-import { PROFILE_TYPES } from '../../src/lib/types';
-import { api } from '../../src/lib/api';
-import { useAuth } from '../../src/lib/auth';
-import { FeedItem, Profile, PublicProfile } from '../../src/lib/types';
-import { colors, fonts, space, type } from '../../src/theme';
+import { Hairline, Kicker, Loading, MonoLink } from '../../../src/components/ui';
+import { ActivityRow, PersonRow } from '../../../src/components/social';
+import { PROFILE_TYPES } from '../../../src/lib/types';
+import { api } from '../../../src/lib/api';
+import { useAuth } from '../../../src/lib/auth';
+import { FeedItem, Profile, PublicProfile } from '../../../src/lib/types';
+import { colors, fonts, space, type } from '../../../src/theme';
 
 function typeLabel(pt: Profile['profile_type']): string {
   return PROFILE_TYPES.find((t) => t.value === pt)?.label ?? pt.toUpperCase();
@@ -87,15 +88,31 @@ export default function ProfileScreen() {
       </View>
 
       <View style={{ paddingHorizontal: space.page }}>
-        <Text style={type.serifHeading}>{profile.display_name}</Text>
-        <Text style={styles.city}>
-          {profile.city.toUpperCase()}
-          {profile.is_private ? '  ·  PRIVATE' : '  ·  PUBLIC'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, marginBottom: space.m }}>
+          {profile.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} contentFit="cover" />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarInitial}>{(profile.display_name.trim()[0] ?? '?').toUpperCase()}</Text>
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={type.serifHeading}>{profile.display_name}</Text>
+            <Text style={styles.city}>
+              {profile.city.toUpperCase()}
+              {profile.is_private ? '  ·  PRIVATE' : '  ·  PUBLIC'}
+            </Text>
+          </View>
+        </View>
+        {!!profile.bio && <Text style={styles.bio}>{profile.bio}</Text>}
 
         <View style={styles.stats}>
-          <Stat label="FOLLOWERS" value={profile.followers} />
-          <Stat label="FOLLOWING" value={profile.following} />
+          <Pressable onPress={() => router.push(`/connections/${profile.id}?type=followers`)}>
+            <Stat label="FOLLOWERS" value={profile.followers} />
+          </Pressable>
+          <Pressable onPress={() => router.push(`/connections/${profile.id}?type=following`)}>
+            <Stat label="FOLLOWING" value={profile.following} />
+          </Pressable>
           <Stat label="LOGGED" value={profile.visit_count} />
         </View>
 
@@ -149,7 +166,7 @@ export default function ProfileScreen() {
               </Text>
               <View style={{ flexDirection: 'row', gap: space.m }}>
                 <MonoLink label="ACCEPT" active onPress={() => respond(r.id, true)} />
-                <MonoLink label="DECLINE" color={colors.red} onPress={() => respond(r.id, false)} />
+                <MonoLink label="DECLINE" color={colors.ink} onPress={() => respond(r.id, false)} />
               </View>
             </View>
           ))}
@@ -191,6 +208,15 @@ const styles = StyleSheet.create({
     paddingBottom: space.m,
   },
   back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.ink },
+  avatar: { width: 64, height: 64, borderRadius: 32 },
+  avatarFallback: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: colors.dim,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarInitial: { fontFamily: fonts.serifMedium, fontSize: 24, color: colors.ink },
+  bio: { ...type.serifBody, fontSize: 15, lineHeight: 22, marginBottom: space.m },
   city: { fontFamily: fonts.mono, fontSize: 11, letterSpacing: 1, color: colors.ink, marginTop: 6 },
   stats: { flexDirection: 'row', gap: space.xl, marginTop: space.l },
   stat: {},

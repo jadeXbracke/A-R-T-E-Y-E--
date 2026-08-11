@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtImage } from '../../src/components/exhibition';
 import { Field, Hairline, InkBar, Kicker, MonoLink } from '../../src/components/ui';
+import { PhotoPicker } from '../../src/components/image-upload';
 import { api } from '../../src/lib/api';
 import { Exhibition, REJECTION_REASONS, RejectionReason } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
@@ -41,6 +42,22 @@ export default function AdminReview() {
     });
   }, [id]);
 
+  // The pickers put a local blob:/file: uri in state; turn those into real
+  // storage URLs at save time so the record only ever holds http addresses.
+  const resolveMedia = async () => {
+    let img = imageUrl.trim();
+    let vid = videoUrl.trim();
+    if (img && !/^https?:|^asset:/i.test(img)) {
+      img = await api.uploadImage(img);
+      setImageUrl(img);
+    }
+    if (vid && !/^https?:/i.test(vid)) {
+      vid = await api.uploadImage(vid);
+      setVideoUrl(vid);
+    }
+    return { img, vid };
+  };
+
   const patch = () => ({
     title: title.trim(),
     artists: artists.trim(),
@@ -71,7 +88,8 @@ export default function AdminReview() {
     if (!validate()) return;
     setBusy(true);
     try {
-      await api.adminUpdateExhibition(id, patch());
+      const { img, vid } = await resolveMedia();
+      await api.adminUpdateExhibition(id, { ...patch(), image_url: img || null, video_url: vid || null });
       await api.approveExhibition(id);
       router.back();
     } catch (err) {
@@ -83,7 +101,8 @@ export default function AdminReview() {
   const reject = async (reason: RejectionReason) => {
     setBusy(true);
     try {
-      await api.adminUpdateExhibition(id, patch());
+      const { img, vid } = await resolveMedia();
+      await api.adminUpdateExhibition(id, { ...patch(), image_url: img || null, video_url: vid || null });
       await api.rejectExhibition(id, reason);
       router.back();
     } catch (err) {
@@ -150,12 +169,23 @@ export default function AdminReview() {
           autoCapitalize="none"
           placeholder="https:// … or asset:slug"
         />
+        <PhotoPicker
+          uri={null}
+          onPick={setImageUrl}
+          addLabel="OR PICK A PHOTO FROM YOUR LIBRARY"
+        />
         <Field
           label="VIDEO URL — OPTIONAL"
           value={videoUrl}
           onChangeText={setVideoUrl}
           autoCapitalize="none"
           placeholder="https:// … short clip, plays as a muted moving background"
+        />
+        <PhotoPicker
+          uri={videoUrl && !/^https?:/i.test(videoUrl) ? videoUrl : null}
+          onPick={setVideoUrl}
+          media="video"
+          addLabel="OR PICK A VIDEO FROM YOUR LIBRARY"
         />
         <Field
           label="INSTAGRAM REEL OR TIKTOK — OPTIONAL"
@@ -191,7 +221,7 @@ export default function AdminReview() {
             <MonoLink
               key={r.value}
               label={r.label}
-              color={colors.red}
+              color={colors.ink}
               onPress={() => reject(r.value)}
             />
           ))}
@@ -239,7 +269,7 @@ const styles = StyleSheet.create({
   error: {
     fontFamily: fonts.mono,
     fontSize: 11,
-    color: colors.red,
+    color: colors.ink,
     marginBottom: space.m,
   },
   reasons: {

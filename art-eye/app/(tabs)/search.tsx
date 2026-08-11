@@ -9,12 +9,14 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ExhibitionRow } from '../src/components/exhibition';
-import { Hairline, Kicker, Lift } from '../src/components/ui';
-import { api } from '../src/lib/api';
-import { areaForSuburb } from '../src/lib/areas';
-import { Exhibition, Venue } from '../src/lib/types';
-import { colors, fonts, space, type } from '../src/theme';
+import { ExhibitionRow } from '../../src/components/exhibition';
+import { PersonRow } from '../../src/components/social';
+import { Hairline, Kicker, Lift } from '../../src/components/ui';
+import { api } from '../../src/lib/api';
+import { useAuth } from '../../src/lib/auth';
+import { areaForSuburb } from '../../src/lib/areas';
+import { Exhibition, Profile, Venue } from '../../src/lib/types';
+import { colors, fonts, space, type } from '../../src/theme';
 
 function norm(s: string) {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -22,9 +24,11 @@ function norm(s: string) {
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const { profile } = useAuth();
   const [query, setQuery] = useState('');
   const [venues, setVenues] = useState<Venue[]>([]);
   const [exhibitions, setExhibitions] = useState<Exhibition[]>([]);
+  const [people, setPeople] = useState<Profile[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -34,10 +38,15 @@ export default function SearchScreen() {
         setVenues(v.filter((x) => !x.is_fixture));
         setExhibitions(e);
       });
+      if (profile) {
+        api.searchPeople(profile.id).then((p) => alive && setPeople(p));
+      } else {
+        setPeople([]);
+      }
       return () => {
         alive = false;
       };
-    }, [])
+    }, [profile])
   );
 
   const q = norm(query.trim());
@@ -62,6 +71,11 @@ export default function SearchScreen() {
       .slice(0, 20);
   }, [exhibitions, q]);
 
+  const peopleHits = useMemo(() => {
+    if (q.length < 2) return [];
+    return people.filter((p) => norm(p.display_name).includes(q)).slice(0, 20);
+  }, [people, q]);
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
@@ -82,7 +96,7 @@ export default function SearchScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Artist, exhibition, venue or suburb…"
+          placeholder="Artist, exhibition, venue, suburb or person…"
           placeholderTextColor={colors.grey}
           autoFocus
           autoCorrect={false}
@@ -96,10 +110,22 @@ export default function SearchScreen() {
           Type at least two letters — search covers every venue in the register and every show in
           the agenda.
         </Text>
-      ) : venueHits.length === 0 && showHits.length === 0 ? (
+      ) : venueHits.length === 0 && showHits.length === 0 && peopleHits.length === 0 ? (
         <Text style={styles.hint}>Nothing found for “{query.trim()}”.</Text>
       ) : (
         <>
+          {peopleHits.length > 0 && (
+            <>
+              <View style={styles.sectionHead}>
+                <Text style={styles.sectionTitle}>PEOPLE</Text>
+                <Text style={styles.sectionCount}>{peopleHits.length}</Text>
+              </View>
+              {peopleHits.map((p) => (
+                <PersonRow key={p.id} person={p} />
+              ))}
+            </>
+          )}
+
           {showHits.length > 0 && (
             <>
               <View style={styles.sectionHead}>
@@ -211,6 +237,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.4,
-    color: colors.red,
+    color: colors.ink,
   },
 });

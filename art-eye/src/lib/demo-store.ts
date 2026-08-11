@@ -5,12 +5,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
+  Comment,
   CuratedList,
   Exhibition,
   ExhibitionDraft,
   FeedItem,
   Follow,
   FollowState,
+  Like,
   Profile,
   PublicProfile,
   RejectionReason,
@@ -21,8 +23,8 @@ import {
   WatchlistEntry,
 } from './types';
 
-// Demo curated lists — the demo personas' picks over real current shows.
-// In live mode these come from the public guides tables (migration 0007).
+// Editors' pick list over real current shows. In live mode these come from the
+// public guides tables (migration 0007).
 const SEED_CURATED: CuratedList[] = [
   {
     id: 'g-editors',
@@ -31,14 +33,6 @@ const SEED_CURATED: CuratedList[] = [
     curator_role: 'curator',
     intro: 'The week distilled — the rooms worth crossing the city for right now.',
     exhibition_ids: ['e-black-myth', 'e-archibald', 'e-salon-des-refuses', 'e-tamara-dean', 'e-primavera'],
-  },
-  {
-    id: 'g-gallerist',
-    title: 'A gallerist is watching',
-    curator_name: 'Roslyn Oxley9 (demo account)',
-    curator_role: 'gallerist',
-    intro: 'What the trade goes to see after closing time — sharp painting and one big survey.',
-    exhibition_ids: ['e-mitch-cairns', 'e-bartley', 'e-armanious', 'e-nsw-fellowship'],
   },
 ];
 import { todayStr } from './dates';
@@ -55,12 +49,14 @@ interface DemoState {
   watchlist: WatchlistEntry[];
   visits: Visit[];
   follows: Follow[];
+  likes: Like[];
+  comments: Comment[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v14';
+const KEY = 'arteye.demo.v19';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -92,88 +88,16 @@ function seedState(): DemoState {
         display_name: 'Roslyn Oxley9',
         city: 'Sydney',
       },
-      {
-        id: 'u-curator',
-        email: 'curator@arteye.demo',
-        password: 'arteye',
-        role: 'user',
-        profile_type: 'enthusiast',
-        display_name: 'Sam Curator',
-        city: 'Sydney',
-        is_private: false,
-      },
-      {
-        id: 'u-mara',
-        email: 'mara@arteye.demo',
-        password: 'arteye',
-        role: 'user',
-        profile_type: 'collector',
-        display_name: 'Mara Ellison',
-        city: 'Sydney',
-        is_private: false,
-      },
-      {
-        id: 'u-theo',
-        email: 'theo@arteye.demo',
-        password: 'arteye',
-        role: 'user',
-        profile_type: 'artist',
-        display_name: 'Theo Nguyen',
-        city: 'Sydney',
-        is_private: true,
-      },
     ],
     venues,
     exhibitions: SEED_EXHIBITIONS.map((e) => ({ ...e })),
-    watchlist: [
-      { user_id: 'u-curator', exhibition_id: 'e-crothers', created_at: new Date().toISOString() },
-    ],
-    visits: [
-      {
-        user_id: 'u-curator',
-        exhibition_id: 'e-murakami',
-        rating: 5,
-        reflection: 'The silver room — I stood there until the guard moved me on.',
-        visit_date: '2026-07-04',
-      },
-      {
-        user_id: 'u-curator',
-        exhibition_id: 'e-gabori-ledgerwood',
-        rating: 4,
-        reflection: 'Gabori’s blue holds the whole wall. Ledgerwood hums beside it.',
-        visit_date: '2026-07-10',
-      },
-      {
-        user_id: 'u-mara',
-        exhibition_id: 'e-archibald',
-        rating: 4,
-        reflection: 'Went in for one portrait, stayed two hours.',
-        visit_date: '2026-07-18',
-      },
-      {
-        user_id: 'u-mara',
-        exhibition_id: 'e-primavera',
-        rating: 5,
-        reflection: 'The most alive room in the city right now.',
-        visit_date: '2026-07-20',
-      },
-      {
-        user_id: 'u-theo',
-        exhibition_id: 'e-murakami',
-        rating: 5,
-        reflection: 'Studied the surface for the varnish. Immaculate.',
-        visit_date: '2026-07-15',
-      },
-    ],
-    // Follow graph: the admin (Jade) follows Sam and Mara; a pending request
-    // sits against Theo's private profile. Sam and Mara follow each other.
-    follows: [
-      { follower_id: 'u-admin', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-05T00:00:00.000Z' },
-      { follower_id: 'u-admin', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-06T00:00:00.000Z' },
-      { follower_id: 'u-admin', followee_id: 'u-theo', status: 'pending', created_at: '2026-07-19T00:00:00.000Z' },
-      { follower_id: 'u-curator', followee_id: 'u-mara', status: 'accepted', created_at: '2026-07-07T00:00:00.000Z' },
-      { follower_id: 'u-mara', followee_id: 'u-curator', status: 'accepted', created_at: '2026-07-08T00:00:00.000Z' },
-    ],
+    // No seeded social activity — the feed fills as real users sign up, follow
+    // each other and log visits. Nothing here is invented.
+    watchlist: [],
+    visits: [],
+    follows: [],
+    likes: [],
+    comments: [],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
@@ -222,12 +146,16 @@ function followStateFor(s: DemoState, viewerId: string | null, targetId: string)
   return f.status === 'accepted' ? 'following' : 'requested';
 }
 
-// Turn a Visit into a feed item by joining the actor and the exhibition/venue.
-function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
+// Turn a Visit into a feed item by joining the actor, exhibition, venue and
+// this post's like/comment reactions (from the viewer's perspective).
+function feedItemFrom(s: DemoState, v: Visit, viewerId: string | null): FeedItem | null {
   const user = s.users.find((u) => u.id === v.user_id);
   const ex = s.exhibitions.find((e) => e.id === v.exhibition_id);
   if (!user || !ex) return null;
   const venue = s.venues.find((vn) => vn.id === ex.venue_id);
+  const postLikes = s.likes.filter(
+    (l) => l.post_user_id === v.user_id && l.exhibition_id === v.exhibition_id
+  );
   return {
     id: `${v.user_id}:${v.exhibition_id}`,
     user_id: v.user_id,
@@ -239,6 +167,11 @@ function feedItemFrom(s: DemoState, v: Visit): FeedItem | null {
     reflection: v.reflection,
     visit_date: v.visit_date,
     video_url: v.video_url ?? null,
+    like_count: postLikes.length,
+    liked_by_me: !!viewerId && postLikes.some((l) => l.user_id === viewerId),
+    comment_count: s.comments.filter(
+      (c) => c.post_user_id === v.user_id && c.exhibition_id === v.exhibition_id
+    ).length,
   };
 }
 
@@ -298,8 +231,10 @@ export const demoApi: Api = {
   async listApprovedExhibitions() {
     const s = await load();
     const fixtureVenues = new Set(s.venues.filter((v) => v.is_fixture).map((v) => v.id));
+    const t = todayStr();
     return s.exhibitions
       .filter((e) => e.status === 'approved' && !e.is_fixture && !fixtureVenues.has(e.venue_id))
+      .filter((e) => (e.end_date ?? '9999') >= t) // finished shows drop out
       .map((e) => withVenue(e, s.venues));
   },
 
@@ -441,6 +376,14 @@ export const demoApi: Api = {
     await persist();
   },
 
+  async updateOwnProfile(userId, patch) {
+    const s = await load();
+    const u = s.users.find((x) => x.id === userId);
+    if (!u) throw new Error('Profile not found.');
+    Object.assign(u, patch);
+    await persist();
+  },
+
   async discoverPeople(viewerId) {
     const s = await load();
     // everyone the viewer isn't already connected to, excluding themselves
@@ -452,6 +395,11 @@ export const demoApi: Api = {
       .map(stripUser);
   },
 
+  async searchPeople(viewerId) {
+    const s = await load();
+    return s.users.filter((u) => u.id !== viewerId && u.role !== 'admin').map(stripUser);
+  },
+
   async friendsFeed(viewerId) {
     const s = await load();
     const following = new Set(
@@ -461,7 +409,19 @@ export const demoApi: Api = {
     );
     return s.visits
       .filter((v) => following.has(v.user_id))
-      .map((v) => feedItemFrom(s, v))
+      .map((v) => feedItemFrom(s, v, viewerId))
+      .filter((x): x is FeedItem => x !== null)
+      .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
+  },
+
+  async discoverFeed(viewerId) {
+    const s = await load();
+    const publicIds = new Set(
+      s.users.filter((u) => !u.is_private && u.role !== 'admin').map((u) => u.id)
+    );
+    return s.visits
+      .filter((v) => publicIds.has(v.user_id))
+      .map((v) => feedItemFrom(s, v, viewerId))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
   },
@@ -475,9 +435,60 @@ export const demoApi: Api = {
     if (!canView) return [];
     return s.visits
       .filter((v) => v.user_id === userId)
-      .map((v) => feedItemFrom(s, v))
+      .map((v) => feedItemFrom(s, v, viewerId))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
+  },
+
+  async getPost(postUserId, exhibitionId, viewerId) {
+    const s = await load();
+    const v = s.visits.find(
+      (x) => x.user_id === postUserId && x.exhibition_id === exhibitionId
+    );
+    return v ? feedItemFrom(s, v, viewerId) : null;
+  },
+
+  async likePost(likerId, postUserId, exhibitionId) {
+    const s = await load();
+    const exists = s.likes.some(
+      (l) => l.user_id === likerId && l.post_user_id === postUserId && l.exhibition_id === exhibitionId
+    );
+    if (!exists) {
+      s.likes.push({ user_id: likerId, post_user_id: postUserId, exhibition_id: exhibitionId, created_at: new Date().toISOString() });
+      await persist();
+    }
+  },
+
+  async unlikePost(likerId, postUserId, exhibitionId) {
+    const s = await load();
+    s.likes = s.likes.filter(
+      (l) => !(l.user_id === likerId && l.post_user_id === postUserId && l.exhibition_id === exhibitionId)
+    );
+    await persist();
+  },
+
+  async listComments(postUserId, exhibitionId) {
+    const s = await load();
+    return s.comments
+      .filter((c) => c.post_user_id === postUserId && c.exhibition_id === exhibitionId)
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+  },
+
+  async addComment(authorId, postUserId, exhibitionId, text) {
+    const s = await load();
+    const author = s.users.find((u) => u.id === authorId);
+    const comment: Comment = {
+      id: uid('c'),
+      post_user_id: postUserId,
+      exhibition_id: exhibitionId,
+      author_id: authorId,
+      author_name: author?.display_name ?? 'Someone',
+      text: text.trim(),
+      created_at: new Date().toISOString(),
+    };
+    s.comments.push(comment);
+    await persist();
+    return comment;
   },
 
   async submitExhibition(draft: ExhibitionDraft, userId) {
@@ -710,6 +721,46 @@ export const demoApi: Api = {
     p.status = 'rejected';
     p.review_note = note.trim() || null;
     await persist();
+  },
+
+  // The discovery pipeline only exists in live mode (it runs on Supabase), so
+  // the demo shows an empty shows inbox rather than pretending.
+  async listExhibitionProposals() {
+    return [];
+  },
+  async approveExhibitionProposal() {
+    throw new Error('The shows inbox needs the live database.');
+  },
+  async rejectExhibitionProposal() {
+    throw new Error('The shows inbox needs the live database.');
+  },
+  async listImageCandidates() {
+    return []; // reading venue sites needs the live backend
+  },
+  async setExhibitionImage(exhibitionId, imageUrl) {
+    const s = await load();
+    const e = s.exhibitions.find((x) => x.id === exhibitionId);
+    if (e) {
+      e.image_url = imageUrl;
+      await persist();
+    }
+  },
+  async listVenueImageCandidates() {
+    return []; // reading venue sites needs the live backend
+  },
+  async setVenueImage(venueId, imageUrl) {
+    const s = await load();
+    const v = s.venues.find((x) => x.id === venueId);
+    if (v) {
+      v.image_url = imageUrl;
+      await persist();
+    }
+  },
+  async requestPasswordReset() {
+    throw new Error('Password reset needs the live database.');
+  },
+  async updatePassword() {
+    throw new Error('Password reset needs the live database.');
   },
 
   async uploadImage(localUri) {

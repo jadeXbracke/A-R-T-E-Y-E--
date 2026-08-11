@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.monoMedium,
     fontSize: 10,
     letterSpacing: 1.4,
-    color: colors.red,
+    color: colors.ink,
     textDecorationLine: 'underline',
   },
 });

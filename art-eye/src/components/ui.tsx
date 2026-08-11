@@ -1,16 +1,15 @@
 import React, { useRef } from 'react';
-import {
-  ActivityIndicator,
+import {Platform, Alert, ActivityIndicator,
   Animated,
+  Image,
+  ImageStyle,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
   TextInputProps,
-  TextStyle,
   View,
-  ViewStyle,
-} from 'react-native';
+  ViewStyle,} from 'react-native';
 import { colors, fonts, space, type } from '../theme';
 
 /**
@@ -48,19 +47,22 @@ export function Kicker({ children, style }: { children: React.ReactNode; style?:
 }
 
 /**
- * The ARTEYE wordmark — the app's logo, rendered as thin, wide-tracked vector
- * text so it stays razor-sharp at every size. Single source of truth: change
- * it here and every header/splash reference updates.
+ * The ARTEYE wordmark — the app's logo, rendered from the supplied logo asset.
+ * `size` is the glyph height in px; width follows the artwork's aspect ratio.
+ * Single source of truth: swap the asset and every header/splash updates.
  */
-export function Wordmark({ size = 22, style }: { size?: number; style?: TextStyle }) {
+const WORDMARK = require('../../assets/logo-arteye.png');
+const WORDMARK_RATIO = 863 / 115; // artwork width / height
+
+export function Wordmark({ size = 22, style }: { size?: number; style?: ImageStyle }) {
+  const height = Math.round(size * 0.92);
   return (
-    <Text
-      style={[type.wordmark, { fontSize: size, letterSpacing: size * 0.55 }, style]}
-      accessibilityRole="header"
+    <Image
+      source={WORDMARK}
+      style={[{ width: height * WORDMARK_RATIO, height }, style]}
+      resizeMode="contain"
       accessibilityLabel="ARTEYE"
-    >
-      ARTEYE
-    </Text>
+    />
   );
 }
 
@@ -91,7 +93,7 @@ export function MonoLink({
       <View
         style={[
           styles.monoLinkRule,
-          { backgroundColor: active ? colors.ink : color ?? colors.dim },
+          { backgroundColor: active ? colors.ink : color ?? colors.hairline },
         ]}
       />
     </Pressable>
@@ -107,7 +109,7 @@ export function RedDot({ size = 7, style }: { size?: number; style?: ViewStyle }
   return (
     <View
       style={[
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.red },
+        { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.ink },
         style,
       ]}
     />
@@ -137,8 +139,8 @@ export function RatingDots({
               height: size,
               borderRadius: size / 2,
               borderWidth: 1,
-              borderColor: filled ? colors.red : colors.ink,
-              backgroundColor: filled ? colors.red : 'transparent',
+              borderColor: filled ? colors.ink : colors.ink,
+              backgroundColor: filled ? colors.ink : 'transparent',
             }}
           />
         );
@@ -197,7 +199,7 @@ export function ActionBar({
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             {a.dot && <RedDot />}
-            <Text style={[styles.actionLabel, a.accent && { color: colors.red }]}>{a.label}</Text>
+            <Text style={[styles.actionLabel, a.accent && { color: colors.ink }]}>{a.label}</Text>
           </View>
         </Pressable>
       ))}
@@ -285,9 +287,23 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.hairline,
   },
   empty: {
-    fontFamily: fonts.serifItalic, letterSpacing: 2.2, textTransform: 'uppercase',
-    fontSize: 16,
-    lineHeight: 26,
+    fontFamily: fonts.serifItalic,
+    fontSize: 20,
+    lineHeight: 30,
     color: colors.ink,
   },
 });
+
+// Alert.alert silently does nothing on web, so route confirmations through
+// window.confirm there — otherwise destructive buttons look dead in a browser.
+export function confirmDialog(title: string, message: string, onConfirm: () => void) {
+  if (Platform.OS === 'web') {
+    // eslint-disable-next-line no-alert
+    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete', style: 'destructive', onPress: onConfirm },
+  ]);
+}

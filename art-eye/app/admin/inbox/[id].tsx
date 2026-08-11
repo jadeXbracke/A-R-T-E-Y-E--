@@ -9,6 +9,10 @@ import { useAuth } from '../../../src/lib/auth';
 import { Venue, VenueProposal } from '../../../src/lib/types';
 import { colors, fonts, space, type } from '../../../src/theme';
 
+// Review-only accent: the owner needs to see at a glance what a proposal
+// would alter. Nothing public uses colour.
+const CHANGE = colors.red;
+
 const ACTION_LABEL = { add: 'NEW VENUE SUGGESTION', archive: 'ARCHIVE CANDIDATE', update: 'PROPOSED UPDATE' } as const;
 
 export default function ProposalDetail() {
@@ -118,11 +122,16 @@ export default function ProposalDetail() {
       </Text>
       <Text style={styles.reason}>{p.reason}</Text>
 
+      <Text style={styles.legend}>
+        Values shown in <Text style={{ color: CHANGE }}>red</Text> are what this proposal wants to
+        change. Everything else stays as it is.
+      </Text>
+
       <Kicker style={{ marginBottom: 8 }}>EVIDENCE — CHECK THE SOURCES YOURSELF</Kicker>
       {p.evidence.map((e, i) => (
         <Pressable key={i} style={styles.evidence} onPress={() => WebBrowser.openBrowserAsync(e.url)}>
           <Text style={styles.evidenceUrl} numberOfLines={1}>
-            {e.url} ↗
+            {e.url} ●
           </Text>
           <Text style={styles.evidenceSnippet}>{e.snippet}</Text>
         </Pressable>
@@ -140,21 +149,33 @@ export default function ProposalDetail() {
           <Kicker style={{ marginBottom: space.m }}>
             {p.action_type === 'update' ? 'CURRENT → PROPOSED (EDIT BEFORE APPROVING)' : 'PROPOSED RECORD (EDIT BEFORE APPROVING)'}
           </Kicker>
-          {payloadKeys.map((k) => (
-            <View key={k}>
-              {p.action_type === 'update' && venue && (
-                <Text style={styles.currentValue}>
-                  {k.toUpperCase()} NOW: {String((venue as unknown as Record<string, unknown>)[k] ?? '—')}
-                </Text>
-              )}
-              <Field
-                label={k.toUpperCase()}
-                value={edits[k] ?? ''}
-                onChangeText={(t) => setEdits((prev) => ({ ...prev, [k]: t }))}
-                autoCapitalize="none"
-              />
-            </View>
-          ))}
+          {payloadKeys.map((k) => {
+            const current =
+              venue ? String((venue as unknown as Record<string, unknown>)[k] ?? '') : '';
+            const proposed = String(p.proposed_payload[k] ?? '');
+            const changed = p.action_type !== 'update' || current.trim() !== proposed.trim();
+            return (
+              <View key={k} style={changed ? styles.changedBlock : undefined}>
+                {p.action_type === 'update' && venue && (
+                  <Text style={styles.currentValue}>
+                    {k.toUpperCase()} NOW: {current || '—'}
+                  </Text>
+                )}
+                {changed && (
+                  <Text style={styles.changedFlag}>
+                    {p.action_type === 'update' ? 'CHANGES TO' : 'NEW'}
+                  </Text>
+                )}
+                <Field
+                  label={k.toUpperCase()}
+                  value={edits[k] ?? ''}
+                  onChangeText={(t) => setEdits((prev) => ({ ...prev, [k]: t }))}
+                  autoCapitalize="none"
+                  inputStyle={changed ? { color: CHANGE } : undefined}
+                />
+              </View>
+            );
+          })}
           {payloadKeys.length === 0 && (
             <Text style={styles.archiveNote}>
               No concrete field changes proposed — read the evidence, then update the venue yourself
@@ -179,7 +200,7 @@ export default function ProposalDetail() {
         onChangeText={setNote}
         placeholder="Why this is wrong — snoozed for 90 days either way"
       />
-      <MonoLink label="REJECT — SNOOZE FOR 90 DAYS" color={colors.red} onPress={reject} style={{ alignSelf: 'flex-start' }} />
+      <MonoLink label="REJECT — SNOOZE FOR 90 DAYS" color={colors.ink} onPress={reject} style={{ alignSelf: 'flex-start' }} />
     </ScrollView>
   );
 }
@@ -189,11 +210,31 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: space.m },
   back: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, color: colors.ink },
   meta: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.4, color: colors.ink, marginBottom: space.m },
-  reason: { fontFamily: fonts.serifItalic, letterSpacing: 2, textTransform: 'uppercase', fontSize: 14, lineHeight: 22, color: colors.ink, marginBottom: space.l },
+  reason: { fontFamily: fonts.serifItalic, fontSize: 18, lineHeight: 26, color: colors.ink, marginBottom: space.l },
   evidence: { borderWidth: 1, borderColor: colors.hairline, padding: space.m, marginBottom: space.s },
   evidenceUrl: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 0.6, color: colors.ink, marginBottom: 6 },
-  evidenceSnippet: { fontFamily: fonts.serif, letterSpacing: 1.7, textTransform: 'uppercase', fontSize: 12, lineHeight: 19, color: colors.ink },
+  evidenceSnippet: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 22, color: colors.ink },
+  legend: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.ink,
+    marginBottom: space.m,
+  },
+  changedBlock: {
+    borderLeftWidth: 2,
+    borderLeftColor: CHANGE,
+    paddingLeft: space.s,
+    marginBottom: space.s,
+  },
+  changedFlag: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    color: CHANGE,
+    marginTop: 4,
+  },
   currentValue: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.8, color: colors.ink, marginBottom: 4 },
-  archiveNote: { fontFamily: fonts.serifItalic, letterSpacing: 2, textTransform: 'uppercase', fontSize: 14, lineHeight: 21, color: colors.ink, marginBottom: space.l },
-  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.red, marginBottom: space.m },
+  archiveNote: { fontFamily: fonts.serifItalic, fontSize: 17, lineHeight: 25, color: colors.ink, marginBottom: space.l },
+  error: { fontFamily: fonts.mono, fontSize: 11, color: colors.ink, marginBottom: space.m },
 });
