@@ -253,11 +253,31 @@ export default function ExhibitionDetail() {
               ]}
             />
           )}
+
+          <Pressable
+            onPress={() =>
+              router.push(
+                `/feedback?kind=exhibition&id=${e.id}&name=${encodeURIComponent(e.title)}`
+              )
+            }
+            hitSlop={8}
+            style={{ marginTop: space.l, alignSelf: 'center' }}
+          >
+            <Text style={feedbackLinkStyle}>SOMETHING MISSING OR WRONG? TELL THE OWNER →</Text>
+          </Pressable>
         </View>
       </ScrollView>
     </View>
   );
 }
+
+const feedbackLinkStyle = {
+  fontFamily: fonts.monoMedium,
+  fontSize: 10,
+  letterSpacing: 1.4,
+  color: colors.ink,
+  opacity: 0.65,
+} as const;
 
 const styles = StyleSheet.create({
   topBar: {

@@ -276,6 +276,11 @@ export default function CuratorScreen() {
           />
         )}
         <MonoLink
+          label="SEND FEEDBACK TO THE OWNER"
+          onPress={() => router.push('/feedback')}
+          style={{ alignSelf: 'flex-start' }}
+        />
+        <MonoLink
           label="SIGN OUT"
           onPress={() => signOut()}
           style={{ alignSelf: 'flex-start' }}

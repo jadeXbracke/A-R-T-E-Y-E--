@@ -9,6 +9,7 @@ import {
   Conversation,
   CuratedList,
   DirectMessage,
+  Feedback,
   Exhibition,
   ExhibitionDraft,
   FeedItem,
@@ -54,6 +55,7 @@ interface DemoState {
   likes: Like[];
   comments: Comment[];
   messages: DirectMessage[];
+  feedback: Feedback[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
@@ -102,6 +104,7 @@ function seedState(): DemoState {
     likes: [],
     comments: [],
     messages: [],
+    feedback: [],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
@@ -115,8 +118,9 @@ async function load(): Promise<DemoState> {
     const raw = await AsyncStorage.getItem(KEY);
     if (raw) {
       cache = JSON.parse(raw) as DemoState;
-      // Stores persisted before the messaging feature lack this array.
+      // Stores persisted before the messaging/feedback features lack these.
       cache.messages = cache.messages ?? [];
+      cache.feedback = cache.feedback ?? [];
       return cache;
     }
   } catch {
@@ -590,6 +594,41 @@ export const demoApi: Api = {
       .filter((u) => u.id !== userId && followsEachOther(s, userId, u.id))
       .map(stripUser)
       .sort((a, b) => a.display_name.localeCompare(b.display_name));
+  },
+
+  // ---- feedback -----------------------------------------------------------
+  async submitFeedback(draft, userId) {
+    const s = await load();
+    const body = draft.text.trim();
+    if (!body) throw new Error('Write your feedback first.');
+    const sender = userId ? s.users.find((u) => u.id === userId) : undefined;
+    s.feedback.push({
+      id: uid('fb'),
+      kind: draft.kind,
+      subject_id: draft.subject_id ?? null,
+      subject_name: draft.subject_name ?? null,
+      text: body,
+      sender_id: sender?.id ?? null,
+      sender_name: sender?.display_name ?? null,
+      created_at: new Date().toISOString(),
+      status: 'new',
+    });
+    await persist();
+  },
+
+  async listFeedback() {
+    const s = await load();
+    return [...s.feedback]
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .map((f) => ({ ...f }));
+  },
+
+  async setFeedbackStatus(id, status) {
+    const s = await load();
+    const f = s.feedback.find((x) => x.id === id);
+    if (!f) throw new Error('Feedback not found.');
+    f.status = status;
+    await persist();
   },
 
   async submitExhibition(draft: ExhibitionDraft, userId) {
