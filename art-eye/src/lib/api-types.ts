@@ -1,4 +1,4 @@
-import { Comment, CuratedList, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, FollowState, ImageCandidate, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { Comment, Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, FollowState, ImageCandidate, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -100,6 +100,15 @@ export interface Api {
   unlikePost(likerId: string, postUserId: string, exhibitionId: string): Promise<void>;
   listComments(postUserId: string, exhibitionId: string): Promise<Comment[]>;
   addComment(authorId: string, postUserId: string, exhibitionId: string, text: string): Promise<Comment>;
+
+  // direct messages — only between mutual follows (both accepted). The UI
+  // hides the composer otherwise and sendMessage double-checks server-side.
+  canMessage(viewerId: string, targetId: string): Promise<boolean>;
+  listConversations(userId: string): Promise<Conversation[]>;
+  listMessages(userId: string, peerId: string): Promise<DirectMessage[]>; // also marks the peer's messages as read
+  sendMessage(senderId: string, recipientId: string, text: string): Promise<DirectMessage>;
+  unreadMessageCount(userId: string): Promise<number>;
+  listMessageablePeople(userId: string): Promise<Profile[]>; // mutual follows, for starting a thread
 
   // media
   uploadImage(localUri: string): Promise<string>;

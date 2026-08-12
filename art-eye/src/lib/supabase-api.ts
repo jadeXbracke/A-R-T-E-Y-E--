@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Comment, CuratedList, CuratorRole, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, Follow, FollowState, ImageCandidate, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { Comment, Conversation, CuratedList, CuratorRole, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, Follow, FollowState, ImageCandidate, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 import { todayStr } from './dates';
 
@@ -825,6 +825,127 @@ export const supabaseApi: Api = {
       text: row.text,
       created_at: row.created_at,
     };
+  },
+
+  // ---- direct messages ----------------------------------------------------
+  // Allowed only between mutual follows; RLS enforces the same rule on insert.
+  async canMessage(viewerId, targetId) {
+    if (!viewerId || viewerId === targetId) return false;
+    const sb = supabase();
+    const [{ count: ab }, { count: ba }] = await Promise.all([
+      sb.from('follows').select('*', { count: 'exact', head: true })
+        .eq('follower_id', viewerId).eq('followee_id', targetId).eq('status', 'accepted'),
+      sb.from('follows').select('*', { count: 'exact', head: true })
+        .eq('follower_id', targetId).eq('followee_id', viewerId).eq('status', 'accepted'),
+    ]);
+    return (ab ?? 0) > 0 && (ba ?? 0) > 0;
+  },
+
+  async listConversations(userId) {
+    const sb = supabase();
+    const { data, error } = await sb
+      .from('direct_messages')
+      .select('*')
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: true });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as DirectMessage[];
+    const byPeer = new Map<string, DirectMessage[]>();
+    for (const m of rows) {
+      const peerId = m.sender_id === userId ? m.recipient_id : m.sender_id;
+      const list = byPeer.get(peerId) ?? [];
+      list.push(m);
+      byPeer.set(peerId, list);
+    }
+    if (byPeer.size === 0) return [];
+    const { data: peers, error: pErr } = await sb
+      .from('profiles')
+      .select('*')
+      .in('id', [...byPeer.keys()]);
+    if (pErr) throw new Error(pErr.message);
+    const conversations: Conversation[] = [];
+    for (const [peerId, msgs] of byPeer) {
+      const peer = ((peers ?? []) as Profile[]).find((p) => p.id === peerId);
+      if (!peer) continue;
+      conversations.push({
+        peer,
+        last_message: msgs[msgs.length - 1],
+        unread: msgs.filter((m) => m.recipient_id === userId && !m.read_at).length,
+      });
+    }
+    return conversations.sort((a, b) =>
+      a.last_message.created_at < b.last_message.created_at ? 1 : -1
+    );
+  },
+
+  async listMessages(userId, peerId) {
+    const sb = supabase();
+    const { data, error } = await sb
+      .from('direct_messages')
+      .select('*')
+      .or(
+        `and(sender_id.eq.${userId},recipient_id.eq.${peerId}),and(sender_id.eq.${peerId},recipient_id.eq.${userId})`
+      )
+      .order('created_at', { ascending: true });
+    if (error) throw new Error(error.message);
+    // Opening the thread marks the peer's messages as read.
+    const { error: rErr } = await sb
+      .from('direct_messages')
+      .update({ read_at: new Date().toISOString() })
+      .eq('recipient_id', userId)
+      .eq('sender_id', peerId)
+      .is('read_at', null);
+    if (rErr) throw new Error(rErr.message);
+    return (data ?? []) as DirectMessage[];
+  },
+
+  async sendMessage(senderId, recipientId, text) {
+    const body = text.trim();
+    if (!body) throw new Error('Write a message first.');
+    const { data, error } = await supabase()
+      .from('direct_messages')
+      .insert({ sender_id: senderId, recipient_id: recipientId, text: body })
+      .select('*')
+      .single();
+    if (error) {
+      // RLS refuses inserts outside a mutual follow — translate to a human line.
+      throw new Error(
+        error.message.includes('policy')
+          ? 'You can only message people who follow you back.'
+          : error.message
+      );
+    }
+    return data as DirectMessage;
+  },
+
+  async unreadMessageCount(userId) {
+    const { count, error } = await supabase()
+      .from('direct_messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', userId)
+      .is('read_at', null);
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  },
+
+  async listMessageablePeople(userId) {
+    const sb = supabase();
+    const [{ data: iFollow, error: e1 }, { data: followMe, error: e2 }] = await Promise.all([
+      sb.from('follows').select('followee_id').eq('follower_id', userId).eq('status', 'accepted'),
+      sb.from('follows').select('follower_id').eq('followee_id', userId).eq('status', 'accepted'),
+    ]);
+    if (e1) throw new Error(e1.message);
+    if (e2) throw new Error(e2.message);
+    const mine = new Set(((iFollow ?? []) as { followee_id: string }[]).map((r) => r.followee_id));
+    const mutual = ((followMe ?? []) as { follower_id: string }[])
+      .map((r) => r.follower_id)
+      .filter((id) => mine.has(id));
+    if (mutual.length === 0) return [];
+    const { data: people, error: e3 } = await sb.from('profiles').select('*').in('id', mutual);
+    if (e3) throw new Error(e3.message);
+    return ((people ?? []) as Profile[]).sort((a, b) =>
+      a.display_name.localeCompare(b.display_name)
+    );
   },
 
   async uploadImage(localUri) {

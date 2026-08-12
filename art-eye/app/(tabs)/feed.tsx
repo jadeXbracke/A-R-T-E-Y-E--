@@ -19,6 +19,7 @@ export default function FeedScreen() {
   const [friends, setFriends] = useState<FeedItem[] | null>(null);
   const [people, setPeople] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<number>(0);
+  const [unread, setUnread] = useState<number>(0);
 
   const reload = useCallback(() => {
     if (!profile) {
@@ -31,11 +32,13 @@ export default function FeedScreen() {
       api.friendsFeed(profile.id),
       api.discoverPeople(profile.id),
       api.listFollowRequests(profile.id),
-    ]).then(([d, f, p, r]) => {
+      api.unreadMessageCount(profile.id),
+    ]).then(([d, f, p, r, u]) => {
       setDiscover(d);
       setFriends(f);
       setPeople(p);
       setRequests(r.length);
+      setUnread(u);
     });
   }, [profile]);
 
@@ -63,9 +66,16 @@ export default function FeedScreen() {
             <Text style={type.serifHeading}>Feed</Text>
           </View>
           {profile && (
-            <Pressable onPress={() => router.push(`/profile/${profile.id}`)} hitSlop={8}>
-              <Text style={styles.you}>YOUR PROFILE →</Text>
-            </Pressable>
+            <View style={{ alignItems: 'flex-end', gap: 8 }}>
+              <Pressable onPress={() => router.push('/messages')} hitSlop={8}>
+                <Text style={styles.you}>
+                  {unread > 0 ? `MESSAGES (${unread}) →` : 'MESSAGES →'}
+                </Text>
+              </Pressable>
+              <Pressable onPress={() => router.push(`/profile/${profile.id}`)} hitSlop={8}>
+                <Text style={styles.you}>YOUR PROFILE →</Text>
+              </Pressable>
+            </View>
           )}
         </View>
         {profile && (
