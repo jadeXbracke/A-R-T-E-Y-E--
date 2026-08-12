@@ -1,8 +1,8 @@
 -- ART EYE — SETUP STEP 1 of 2: DATABASE SCHEMA.
 -- Paste this ENTIRE file into the Supabase SQL Editor and press Run.
--- Then run setup_2_venues.sql. Safe to run once on a fresh project.
+-- Then run setup_2_venues.sql. Safe to run repeatedly on the same project
+-- (every statement is written to skip work that's already been done).
 -- (Contains every migration except the optional auto-scheduler 0006.)
-
 
 -- ============================================================
 -- migrations/0001_init.sql
@@ -11,15 +11,29 @@
 -- City lives on venues and exhibitions from day one, so a second city is a
 -- data task, not a rebuild. Guides tables are a phase-2 stub (shared,
 -- ordered city guides) — present so follows/guides need no migration pain.
+--
+-- Every statement below is written to be safe to paste and run more than
+-- once on the same project (e.g. after a run that failed partway through).
 
-create type user_role as enum ('user', 'venue_owner', 'admin');
-create type profile_type as enum ('collector', 'enthusiast', 'student', 'artist', 'gallery_professional');
-create type venue_type as enum ('museum', 'gallery');
-create type exhibition_status as enum ('pending', 'approved', 'rejected');
-create type rejection_reason as enum ('outside_sydney', 'incomplete', 'no_image', 'other');
+-- CREATE TYPE has no IF NOT EXISTS in Postgres, so each is wrapped.
+do $$ begin
+  create type user_role as enum ('user', 'venue_owner', 'admin');
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create type profile_type as enum ('collector', 'enthusiast', 'student', 'artist', 'gallery_professional');
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create type venue_type as enum ('museum', 'gallery');
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create type exhibition_status as enum ('pending', 'approved', 'rejected');
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create type rejection_reason as enum ('outside_sydney', 'incomplete', 'no_image', 'other');
+exception when duplicate_object then null; end $$;
 
 -- profiles ("users" in the product spec): one row per auth user
-create table profiles (
+create table if not exists profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   role user_role not null default 'user',
   profile_type profile_type not null default 'enthusiast',
@@ -28,7 +42,7 @@ create table profiles (
   created_at timestamptz not null default now()
 );
 
-create table venues (
+create table if not exists venues (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   type venue_type not null default 'gallery',
@@ -39,7 +53,7 @@ create table venues (
   created_at timestamptz not null default now()
 );
 
-create table exhibitions (
+create table if not exists exhibitions (
   id uuid primary key default gen_random_uuid(),
   venue_id uuid not null references venues (id) on delete cascade,
   title text not null,
@@ -56,14 +70,14 @@ create table exhibitions (
   created_at timestamptz not null default now()
 );
 
-create table user_watchlist (
+create table if not exists user_watchlist (
   user_id uuid not null references profiles (id) on delete cascade,
   exhibition_id uuid not null references exhibitions (id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (user_id, exhibition_id)
 );
 
-create table user_visits (
+create table if not exists user_visits (
   user_id uuid not null references profiles (id) on delete cascade,
   exhibition_id uuid not null references exhibitions (id) on delete cascade,
   rating int not null check (rating between 1 and 5),
@@ -73,7 +87,7 @@ create table user_visits (
 );
 
 -- phase-2 stub: user-curated city guides
-create table guides (
+create table if not exists guides (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles (id) on delete cascade,
   title text not null,
@@ -81,7 +95,7 @@ create table guides (
   created_at timestamptz not null default now()
 );
 
-create table guide_items (
+create table if not exists guide_items (
   id uuid primary key default gen_random_uuid(),
   guide_id uuid not null references guides (id) on delete cascade,
   exhibition_id uuid references exhibitions (id) on delete set null,
@@ -114,6 +128,7 @@ exception when others then
 end;
 $$;
 
+drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
@@ -129,26 +144,34 @@ alter table guide_items enable row level security;
 
 -- profiles: owners see and edit themselves only; individual user rows are
 -- never exposed to venue accounts (aggregation happens server-side only).
+drop policy if exists "profiles: own read" on profiles;
 create policy "profiles: own read" on profiles for select using (id = auth.uid() or is_admin());
+drop policy if exists "profiles: own update" on profiles;
 create policy "profiles: own update" on profiles for update using (id = auth.uid());
 
 -- venues: public directory; anyone (incl. anon) may add one via submission;
 -- owners and admins may edit their own.
+drop policy if exists "venues: public read" on venues;
 create policy "venues: public read" on venues for select using (true);
+drop policy if exists "venues: anyone insert" on venues;
 create policy "venues: anyone insert" on venues for insert with check (true);
+drop policy if exists "venues: owner update" on venues;
 create policy "venues: owner update" on venues for update
   using (owner_user_id = auth.uid() or is_admin());
 
 -- exhibitions: approved rows are public; owners see their venue's rows;
 -- admins see all. Inserts (public or venue) must be pending, never featured.
+drop policy if exists "exhibitions: approved read" on exhibitions;
 create policy "exhibitions: approved read" on exhibitions for select
   using (
     status = 'approved'
     or is_admin()
     or exists (select 1 from venues v where v.id = venue_id and v.owner_user_id = auth.uid())
   );
+drop policy if exists "exhibitions: pending insert" on exhibitions;
 create policy "exhibitions: pending insert" on exhibitions for insert
   with check (status = 'pending' and is_featured = false and rejection_reason is null);
+drop policy if exists "exhibitions: owner or admin update" on exhibitions;
 create policy "exhibitions: owner or admin update" on exhibitions for update
   using (
     is_admin()
@@ -163,25 +186,33 @@ create policy "exhibitions: owner or admin update" on exhibitions for update
       and exists (select 1 from venues v where v.id = venue_id and v.owner_user_id = auth.uid())
     )
   );
+drop policy if exists "exhibitions: admin delete" on exhibitions;
 create policy "exhibitions: admin delete" on exhibitions for delete using (is_admin());
 
 -- watchlist & visits: strictly private to the user
+drop policy if exists "watchlist: own" on user_watchlist;
 create policy "watchlist: own" on user_watchlist for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "visits: own" on user_visits;
 create policy "visits: own" on user_visits for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- guides (phase 2): private to author for now; public sharing arrives with the feature
+drop policy if exists "guides: own" on guides;
 create policy "guides: own" on guides for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "guide_items: own" on guide_items;
 create policy "guide_items: own" on guide_items for all
   using (exists (select 1 from guides g where g.id = guide_id and g.user_id = auth.uid()))
   with check (exists (select 1 from guides g where g.id = guide_id and g.user_id = auth.uid()));
 
 -- storage: public-read bucket for exhibition images; anyone may upload a submission image
-insert into storage.buckets (id, name, public) values ('exhibition-images', 'exhibition-images', true);
+insert into storage.buckets (id, name, public) values ('exhibition-images', 'exhibition-images', true)
+  on conflict (id) do nothing;
+drop policy if exists "exhibition images read" on storage.objects;
 create policy "exhibition images read" on storage.objects for select
   using (bucket_id = 'exhibition-images');
+drop policy if exists "exhibition images insert" on storage.objects;
 create policy "exhibition images insert" on storage.objects for insert
   with check (bucket_id = 'exhibition-images');
 
@@ -452,8 +483,6 @@ drop policy if exists "validation runs: owner only" on validation_runs;
 create policy "validation runs: owner only" on validation_runs
   for all using (is_admin()) with check (is_admin());
 
--- (skipped 0006 — optional auto-scheduler, not needed here)
-
 -- ============================================================
 -- migrations/0007_curated_lists.sql
 -- ============================================================
@@ -531,9 +560,10 @@ alter type run_type add value if not exists 'enrich';
 alter table public.exhibitions
   add column if not exists image_source text;
 
--- Weekly press-image pass — Tuesdays 02:30, after Monday's validate run.
--- Uses the same Vault secrets (project_url, service_role_key) as 0006.
--- (cron.schedule removed — optional auto-scheduler, needs pg_cron/0006)
+-- The weekly cron schedule for this pipeline (Tuesdays 02:30) lives in
+-- 0006_pipeline_cron.sql alongside the other pipeline jobs — it needs
+-- pg_cron/pg_net enabled and the call_pipeline_function() helper that only
+-- exists once that (optional, manual-setup) migration has been run.
 
 -- ============================================================
 -- migrations/0011_reel_links.sql
@@ -562,11 +592,6 @@ alter table public.exhibitions
 
 alter table profiles
   add column if not exists is_private boolean not null default false;
-
--- A short "about me" and a profile photo, shown on the public profile.
-alter table profiles
-  add column if not exists bio text,
-  add column if not exists avatar_url text;
 
 create table if not exists follows (
   follower_id uuid not null references profiles (id) on delete cascade,
@@ -739,3 +764,89 @@ begin
   update exhibition_review_queue set status = 'approved', reviewed_at = now() where id = qid;
   return new_id;
 end $$;
+
+-- ============================================================
+-- migrations/0016_direct_messages.sql
+-- ============================================================
+-- 0016 — Direct messages between mutual follows.
+-- A thread is the pair (sender, recipient) in both directions; messaging is
+-- only possible when both directions of the follow are accepted, enforced by
+-- RLS so the client cannot bypass the rule.
+
+create table if not exists direct_messages (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid not null references profiles (id) on delete cascade,
+  recipient_id uuid not null references profiles (id) on delete cascade,
+  text text not null check (char_length(text) between 1 and 2000),
+  created_at timestamptz not null default now(),
+  read_at timestamptz,
+  check (sender_id <> recipient_id)
+);
+create index if not exists direct_messages_pair_idx
+  on direct_messages (sender_id, recipient_id, created_at);
+create index if not exists direct_messages_unread_idx
+  on direct_messages (recipient_id) where read_at is null;
+
+alter table direct_messages enable row level security;
+
+-- Both directions of the follow accepted — the mutual-follow gate.
+create or replace function follows_each_other(a uuid, b uuid)
+returns boolean language sql stable as $$
+  select exists (
+    select 1 from follows f
+    where f.follower_id = a and f.followee_id = b and f.status = 'accepted'
+  ) and exists (
+    select 1 from follows f
+    where f.follower_id = b and f.followee_id = a and f.status = 'accepted'
+  );
+$$;
+
+-- Only the two participants can read a thread.
+drop policy if exists "dm: participants read" on direct_messages;
+create policy "dm: participants read" on direct_messages for select
+  using (auth.uid() in (sender_id, recipient_id));
+
+-- You send as yourself, and only to someone who follows you back.
+drop policy if exists "dm: send to mutuals" on direct_messages;
+create policy "dm: send to mutuals" on direct_messages for insert
+  with check (sender_id = auth.uid() and follows_each_other(sender_id, recipient_id));
+
+-- The recipient may update (used to set read_at when opening the thread).
+drop policy if exists "dm: recipient marks read" on direct_messages;
+create policy "dm: recipient marks read" on direct_messages for update
+  using (recipient_id = auth.uid())
+  with check (recipient_id = auth.uid());
+
+-- ============================================================
+-- migrations/0017_feedback.sql
+-- ============================================================
+-- 0017 — Feedback to the app owner.
+-- Anyone (signed in or not) can write a note to the owner: general feedback,
+-- or a "something is missing/wrong" report attached to a venue or exhibition.
+-- Only the admin reads the inbox and marks items handled.
+
+create table if not exists feedback (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('general', 'venue', 'exhibition')),
+  subject_id uuid,          -- venue/exhibition id; no FK so reports survive deletes
+  subject_name text,        -- denormalised label for the inbox
+  text text not null check (char_length(text) between 1 and 4000),
+  sender_id uuid references profiles (id) on delete set null,
+  created_at timestamptz not null default now(),
+  status text not null default 'new' check (status in ('new', 'done'))
+);
+create index if not exists feedback_status_idx on feedback (status, created_at desc);
+
+alter table feedback enable row level security;
+
+-- Anyone may submit; you can only sign it as yourself (or leave it unsigned).
+drop policy if exists "feedback: anyone submits" on feedback;
+create policy "feedback: anyone submits" on feedback for insert
+  with check (sender_id is null or sender_id = auth.uid());
+
+-- Only the owner reads and updates the inbox.
+drop policy if exists "feedback: admin reads" on feedback;
+create policy "feedback: admin reads" on feedback for select using (is_admin());
+drop policy if exists "feedback: admin updates" on feedback;
+create policy "feedback: admin updates" on feedback for update
+  using (is_admin()) with check (is_admin());

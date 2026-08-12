@@ -5,7 +5,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtImage } from '../../src/components/exhibition';
-import { EmptyState, Hairline, Kicker, Loading, MonoLink, RatingDots } from '../../src/components/ui';
+import { BuildStamp, EmptyState, Hairline, Kicker, Loading, MonoLink, RatingDots } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { fmtDay } from '../../src/lib/dates';
@@ -159,6 +159,7 @@ export default function CuratorScreen() {
           onPress={() => router.push('/auth')}
           style={{ alignSelf: 'flex-start', marginTop: space.l }}
         />
+        <BuildStamp style={{ marginTop: space.xl }} />
       </View>
     );
   }
@@ -285,6 +286,7 @@ export default function CuratorScreen() {
           onPress={() => signOut()}
           style={{ alignSelf: 'flex-start' }}
         />
+        <BuildStamp style={{ marginTop: space.l }} />
       </View>
     </ScrollView>
   );

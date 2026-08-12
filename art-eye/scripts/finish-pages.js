@@ -2,6 +2,12 @@
 // - .nojekyll so Pages serves the _expo/ directory
 // - 404.html fallback so client-side routes resolve
 // - iOS home-screen meta tags for a full-screen feel
+// - no-cache hints on the HTML shell, so a redeploy is visible without users
+//   having to manually clear site data (GitHub Pages serves static files
+//   with no way for us to set real Cache-Control headers, so this is the
+//   best-effort mitigation; it does NOT reach an already-installed iOS
+//   "Add to Home Screen" icon, which keeps its own separate cache — that
+//   one has to be removed and re-added after a big change)
 const fs = require('fs');
 const path = require('path');
 
@@ -14,6 +20,9 @@ if (!html.includes('apple-mobile-web-app-capable')) {
   html = html.replace(
     '</title>',
     `</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />

@@ -1,7 +1,7 @@
 -- ============================================================================
 --  ART EYE — SYDNEY VENUE REGISTER  (seed / upsert)
 -- ============================================================================
---  54 real Sydney venues (galleries, museums, ARIs), verified July 2026.
+--  137 real Sydney venues (galleries, museums, ARIs), verified July 2026.
 --  Safe to run repeatedly: rows are matched on `slug`, so re-running updates
 --  existing venues instead of creating duplicates.
 --

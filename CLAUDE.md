@@ -23,10 +23,35 @@
   (`fonts.monoMedium`), letter-spaced caps.
 - Ink `#131211` on white; thin hairlines; no other colours.
 
+## Live mode vs. demo mode (read this before touching `docs/`)
+
+- The app has two backends selected at **build time**:
+  `DEMO_MODE = !process.env.EXPO_PUBLIC_SUPABASE_URL` (`art-eye/src/lib/api.ts`).
+  Demo mode stores everything in the browser's local storage only — nothing
+  survives a cache clear, a different device, or a different browser, and
+  nothing here is ever backed up. The site ran in demo mode from its first
+  deploy until Aug 2026; a real Supabase project (schema in
+  `art-eye/supabase/`, setup steps in `art-eye/README.md`) is now live.
+- **`docs/` must never be rebuilt without the Supabase credentials set**, or
+  the live site silently reverts to demo mode and every visitor's data (and
+  the owner's own account) becomes local-only and disposable again. Don't run
+  `npm run build:pages` by hand unless `EXPO_PUBLIC_SUPABASE_URL` and
+  `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set (`art-eye/.env`, gitignored).
+- **Prefer not to hand-build at all.** `.github/workflows/deploy-pages.yml`
+  rebuilds and commits `docs/` automatically on every push to `main` that
+  touches `art-eye/**`; the Supabase URL and publishable key are committed
+  right in that workflow (public by design — they ship inside the exported
+  JS anyway). Push the source change and let it run rather than exporting
+  locally.
+- To confirm which mode a build is in without a live check: open the
+  Curator tab signed out. Demo mode shows "Demo build — try
+  jadebrack@gmail.com…"; live mode shows a small build stamp instead
+  (git sha + export date, from `art-eye/app.config.js` → `BuildStamp` in
+  `art-eye/src/components/ui.tsx`).
+
 ## Repo layout
 
 - `art-eye/` — the Expo app (source).
-- `docs/` — the exported web build that GitHub Pages serves. It is a build
-  artifact: re-export it after app changes or the live site silently lags
-  behind the source.
+- `docs/` — the exported web build that GitHub Pages serves. Auto-rebuilt by
+  `.github/workflows/deploy-pages.yml` — see above before exporting by hand.
 - `branding/` — logo variations (print-ready SVGs), overview page, generator.

@@ -30,19 +30,18 @@ submissions and admin approval all work. Demo accounts (password `arteye`):
 ### Live mode (Supabase)
 
 1. Create a Supabase project.
-2. Run the migrations in order, then the seeds (SQL editor, or `supabase db push` + `psql -f`):
-   - `supabase/migrations/0001_init.sql`
-   - `supabase/migrations/0002_venue_type_ari.sql`
-   - `supabase/migrations/0003_venue_register.sql`
-   - `supabase/seed.sql` — the 8 venues + 13 July-2026 exhibitions
-   - `supabase/venues_seed.sql` — the managed venue register (add your ~50 Sydney venues here)
-3. Create `.env` in `art-eye/`:
-   ```
-   EXPO_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
-   EXPO_PUBLIC_SUPABASE_ANON_KEY=<anon key>
-   ```
-4. Sign up in the app with `jadebrack@gmail.com`, then promote it to admin (snippet at the
-   bottom of `seed.sql`).
+2. In the SQL Editor, paste and run **`supabase/setup_all.sql`** once — the
+   full schema, the 137 real Sydney venues and the 61 verified exhibitions in
+   a single repeat-safe file. (Do not run `supabase/migrations/*.sql`
+   individually or the legacy `supabase/seed.sql`; both are superseded.)
+3. The deployed website rebuilds itself: `.github/workflows/deploy-pages.yml`
+   re-exports `docs/` on every push to `main`, with the project URL and
+   publishable key committed in the workflow (they are public by design —
+   they ship inside the exported JS anyway; RLS guards the data). For local
+   dev, create `art-eye/.env` with `EXPO_PUBLIC_SUPABASE_URL` and
+   `EXPO_PUBLIC_SUPABASE_ANON_KEY` (gitignored).
+4. Sign up in the app with `jadebrack@gmail.com`, then run
+   `supabase/make_owner.sql` to promote that one account to admin.
 
 ### Managing the venue register
 
