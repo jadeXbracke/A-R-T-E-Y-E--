@@ -39,9 +39,10 @@
   `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set (`art-eye/.env`, gitignored).
 - **Prefer not to hand-build at all.** `.github/workflows/deploy-pages.yml`
   rebuilds and commits `docs/` automatically on every push to `main` that
-  touches `art-eye/**`, using the `EXPO_PUBLIC_SUPABASE_URL` /
-  `EXPO_PUBLIC_SUPABASE_ANON_KEY` repository secrets. Push the source change
-  and let it run rather than exporting locally.
+  touches `art-eye/**`; the Supabase URL and publishable key are committed
+  right in that workflow (public by design — they ship inside the exported
+  JS anyway). Push the source change and let it run rather than exporting
+  locally.
 - To confirm which mode a build is in without a live check: open the
   Curator tab signed out. Demo mode shows "Demo build — try
   jadebrack@gmail.com…"; live mode shows a small build stamp instead
