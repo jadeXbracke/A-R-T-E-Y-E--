@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
   const [activity, setActivity] = useState<FeedItem[]>([]);
   const [requests, setRequests] = useState<Profile[]>([]);
+  const [canMessage, setCanMessage] = useState(false);
 
   const isOwn = !!me && me.id === id;
 
@@ -31,6 +32,7 @@ export default function ProfileScreen() {
     api.getPublicProfile(id, me?.id ?? null).then(setProfile);
     api.userActivity(id, me?.id ?? null).then(setActivity);
     if (me && me.id === id) api.listFollowRequests(id).then(setRequests);
+    if (me && me.id !== id) api.canMessage(me.id, id).then(setCanMessage);
   }, [id, me]);
 
   useFocusEffect(useCallback(() => reload(), [reload]));
@@ -117,7 +119,7 @@ export default function ProfileScreen() {
         </View>
 
         {!isOwn && (
-          <View style={{ marginTop: space.m }}>
+          <View style={{ marginTop: space.m, flexDirection: 'row', gap: space.l }}>
             <MonoLink
               label={
                 profile.follow_state === 'following'
@@ -131,6 +133,13 @@ export default function ProfileScreen() {
               active={profile.follow_state !== 'none'}
               onPress={toggleFollow}
             />
+            {canMessage && (
+              <MonoLink
+                label="MESSAGE"
+                active
+                onPress={() => router.push(`/messages/${profile.id}`)}
+              />
+            )}
           </View>
         )}
 

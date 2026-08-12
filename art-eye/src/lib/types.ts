@@ -102,6 +102,26 @@ export interface Comment {
   created_at: string;
 }
 
+// ---- direct messages --------------------------------------------------------
+// One-to-one messages, only between people who follow each other (both
+// directions accepted) — that keeps the inbox spam-free by construction.
+export interface DirectMessage {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  text: string;
+  created_at: string;
+  read_at: string | null; // set when the recipient opens the thread
+}
+
+// One row in the inbox: the other person, the latest message, and how many
+// of their messages the viewer hasn't read yet.
+export interface Conversation {
+  peer: Profile;
+  last_message: DirectMessage;
+  unread: number;
+}
+
 export interface Venue {
   id: string;
   name: string;

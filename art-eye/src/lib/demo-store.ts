@@ -6,7 +6,9 @@ import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
   Comment,
+  Conversation,
   CuratedList,
+  DirectMessage,
   Exhibition,
   ExhibitionDraft,
   FeedItem,
@@ -51,6 +53,7 @@ interface DemoState {
   follows: Follow[];
   likes: Like[];
   comments: Comment[];
+  messages: DirectMessage[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
@@ -98,6 +101,7 @@ function seedState(): DemoState {
     follows: [],
     likes: [],
     comments: [],
+    messages: [],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
@@ -111,6 +115,8 @@ async function load(): Promise<DemoState> {
     const raw = await AsyncStorage.getItem(KEY);
     if (raw) {
       cache = JSON.parse(raw) as DemoState;
+      // Stores persisted before the messaging feature lack this array.
+      cache.messages = cache.messages ?? [];
       return cache;
     }
   } catch {
@@ -136,6 +142,13 @@ function stripUser(u: DemoUser): Profile {
 
 function withVenue(e: Exhibition, venues: Venue[]): Exhibition {
   return { ...e, venue: venues.find((v) => v.id === e.venue_id) };
+}
+
+// Messaging is allowed only between mutual follows: both directions accepted.
+function followsEachOther(s: DemoState, a: string, b: string): boolean {
+  const oneWay = (from: string, to: string) =>
+    s.follows.some((f) => f.follower_id === from && f.followee_id === to && f.status === 'accepted');
+  return oneWay(a, b) && oneWay(b, a);
 }
 
 // The viewer's relationship to a target user, from the follow graph.
@@ -489,6 +502,94 @@ export const demoApi: Api = {
     s.comments.push(comment);
     await persist();
     return comment;
+  },
+
+  // ---- direct messages ----------------------------------------------------
+  async canMessage(viewerId, targetId) {
+    if (!viewerId || viewerId === targetId) return false;
+    const s = await load();
+    return followsEachOther(s, viewerId, targetId);
+  },
+
+  async listConversations(userId) {
+    const s = await load();
+    const byPeer = new Map<string, DirectMessage[]>();
+    for (const m of s.messages) {
+      const peerId =
+        m.sender_id === userId ? m.recipient_id : m.recipient_id === userId ? m.sender_id : null;
+      if (!peerId) continue;
+      const list = byPeer.get(peerId) ?? [];
+      list.push(m);
+      byPeer.set(peerId, list);
+    }
+    const conversations: Conversation[] = [];
+    for (const [peerId, msgs] of byPeer) {
+      const peer = s.users.find((u) => u.id === peerId);
+      if (!peer) continue;
+      msgs.sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+      conversations.push({
+        peer: stripUser(peer),
+        last_message: msgs[msgs.length - 1],
+        unread: msgs.filter((m) => m.recipient_id === userId && !m.read_at).length,
+      });
+    }
+    return conversations.sort((a, b) =>
+      a.last_message.created_at < b.last_message.created_at ? 1 : -1
+    );
+  },
+
+  async listMessages(userId, peerId) {
+    const s = await load();
+    const thread = s.messages
+      .filter(
+        (m) =>
+          (m.sender_id === userId && m.recipient_id === peerId) ||
+          (m.sender_id === peerId && m.recipient_id === userId)
+      )
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+    // Opening the thread marks the peer's messages as read.
+    let touched = false;
+    for (const m of thread) {
+      if (m.recipient_id === userId && !m.read_at) {
+        m.read_at = new Date().toISOString();
+        touched = true;
+      }
+    }
+    if (touched) await persist();
+    return thread.map((m) => ({ ...m }));
+  },
+
+  async sendMessage(senderId, recipientId, text) {
+    const s = await load();
+    const body = text.trim();
+    if (!body) throw new Error('Write a message first.');
+    if (!followsEachOther(s, senderId, recipientId)) {
+      throw new Error('You can only message people who follow you back.');
+    }
+    const message: DirectMessage = {
+      id: uid('m'),
+      sender_id: senderId,
+      recipient_id: recipientId,
+      text: body,
+      created_at: new Date().toISOString(),
+      read_at: null,
+    };
+    s.messages.push(message);
+    await persist();
+    return { ...message };
+  },
+
+  async unreadMessageCount(userId) {
+    const s = await load();
+    return s.messages.filter((m) => m.recipient_id === userId && !m.read_at).length;
+  },
+
+  async listMessageablePeople(userId) {
+    const s = await load();
+    return s.users
+      .filter((u) => u.id !== userId && followsEachOther(s, userId, u.id))
+      .map(stripUser)
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
   },
 
   async submitExhibition(draft: ExhibitionDraft, userId) {
