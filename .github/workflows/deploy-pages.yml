@@ -1,0 +1,49 @@
+name: Rebuild and deploy the website
+
+# Rebuilds docs/ (the GitHub Pages export) and commits it back to main
+# whenever the app source changes, so the live site never silently falls
+# behind — or falls back to demo mode — because a manual export step got
+# skipped. Needs two repository secrets set once in
+# Settings → Secrets and variables → Actions:
+#   EXPO_PUBLIC_SUPABASE_URL
+#   EXPO_PUBLIC_SUPABASE_ANON_KEY
+# Without them the build silently reverts to the local demo store — see
+# art-eye/src/lib/api.ts.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['art-eye/**']
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: art-eye
+        run: npm ci
+
+      - name: Export the web build
+        working-directory: art-eye
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: npm run build:pages
+
+      - name: Commit docs/ if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs
+          git diff --cached --quiet && echo "docs/ unchanged" || git commit -m "Rebuild docs/ for GitHub Pages [skip ci]"
+          git push
