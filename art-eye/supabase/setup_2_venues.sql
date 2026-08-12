@@ -1,11 +1,11 @@
--- ART EYE — SETUP STEP 2 of 2: THE 54 REAL SYDNEY VENUES.
+-- ART EYE — SETUP STEP 2 of 2: THE 137 REAL SYDNEY VENUES.
 -- Run setup_1_schema.sql FIRST, then paste this file and press Run.
 -- Safe to run repeatedly (venues are matched on slug).
 
 -- ============================================================================
 --  ART EYE — SYDNEY VENUE REGISTER  (seed / upsert)
 -- ============================================================================
---  54 real Sydney venues (galleries, museums, ARIs), verified July 2026.
+--  137 real Sydney venues (galleries, museums, ARIs), verified July 2026.
 --  Safe to run repeatedly: rows are matched on `slug`, so re-running updates
 --  existing venues instead of creating duplicates.
 --

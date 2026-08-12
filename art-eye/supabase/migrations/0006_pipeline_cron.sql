@@ -41,3 +41,6 @@ select cron.schedule('validate-venues-weekly', '0 2 * * 1', $$select call_pipeli
 select cron.schedule('discover-venues-monthly', '0 3 1 * *', $$select call_pipeline_function('discover-venues')$$);
 -- weekly digest: Mondays 09:00 UTC (only emails when the queue is non-empty)
 select cron.schedule('queue-digest-weekly', '0 9 * * 1', $$select call_pipeline_function('queue-digest')$$);
+-- weekly press-image pass: Tuesdays 02:30 UTC, after Monday's validate run
+-- (needs run_type.enrich + exhibitions.image_source from 0010_press_images.sql)
+select cron.schedule('art-eye-enrich-images', '30 2 * * 2', $$select call_pipeline_function('enrich-images')$$);

@@ -8,10 +8,7 @@ alter type run_type add value if not exists 'enrich';
 alter table public.exhibitions
   add column if not exists image_source text;
 
--- Weekly press-image pass — Tuesdays 02:30, after Monday's validate run.
--- Uses the same Vault secrets (project_url, service_role_key) as 0006.
-select cron.schedule(
-  'art-eye-enrich-images',
-  '30 2 * * 2',
-  $$select call_pipeline_function('enrich-images')$$
-);
+-- The weekly cron schedule for this pipeline (Tuesdays 02:30) lives in
+-- 0006_pipeline_cron.sql alongside the other pipeline jobs — it needs
+-- pg_cron/pg_net enabled and the call_pipeline_function() helper that only
+-- exists once that (optional, manual-setup) migration has been run.
