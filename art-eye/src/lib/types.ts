@@ -122,6 +122,30 @@ export interface Conversation {
   unread: number;
 }
 
+// ---- feedback ---------------------------------------------------------------
+// A straight line from any user to the app owner: general notes, or "something
+// is missing/wrong" reports attached to a venue or exhibition.
+export type FeedbackKind = 'general' | 'venue' | 'exhibition';
+
+export interface Feedback {
+  id: string;
+  kind: FeedbackKind;
+  subject_id: string | null; // the venue/exhibition it is about (null for general)
+  subject_name: string | null; // denormalised label, so the inbox reads without joins
+  text: string;
+  sender_id: string | null; // null when sent while signed out
+  sender_name: string | null;
+  created_at: string;
+  status: 'new' | 'done';
+}
+
+export interface FeedbackDraft {
+  kind: FeedbackKind;
+  subject_id?: string | null;
+  subject_name?: string | null;
+  text: string;
+}
+
 export interface Venue {
   id: string;
   name: string;

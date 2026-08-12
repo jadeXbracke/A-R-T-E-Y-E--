@@ -36,6 +36,7 @@ export default function HostDesk() {
     shows: number;
     inbox: number;
     discovered: number;
+    feedback: number;
   } | null>(null);
 
   useFocusEffect(
@@ -48,8 +49,9 @@ export default function HostDesk() {
           api.listAllExhibitions(),
           api.listProposals(),
           api.listExhibitionProposals().catch(() => []),
+          api.listFeedback().catch(() => []),
         ]).then(
-          ([p, v, e, q, d]) =>
+          ([p, v, e, q, d, f]) =>
             alive &&
             setCounts({
               pending: p.length,
@@ -57,6 +59,7 @@ export default function HostDesk() {
               shows: e.length,
               inbox: q.length,
               discovered: d.length,
+              feedback: f.filter((x) => x.status === 'new').length,
             })
         );
       }
@@ -137,6 +140,11 @@ export default function HostDesk() {
         label="SHOWS INBOX — DISCOVERED EXHIBITIONS"
         meta={counts ? (counts.discovered > 0 ? `${counts.discovered} WAITING` : 'CLEAR') : '…'}
         onPress={() => router.push('/admin/shows-inbox')}
+      />
+      <DeskRow
+        label="FEEDBACK — FROM USERS"
+        meta={counts ? (counts.feedback > 0 ? `${counts.feedback} NEW` : 'CLEAR') : '…'}
+        onPress={() => router.push('/admin/feedback')}
       />
     </ScrollView>
   );

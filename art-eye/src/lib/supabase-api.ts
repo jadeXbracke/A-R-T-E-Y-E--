@@ -6,7 +6,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Comment, Conversation, CuratedList, CuratorRole, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, Follow, FollowState, ImageCandidate, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { Comment, Conversation, CuratedList, CuratorRole, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, Feedback, FeedItem, Follow, FollowState, ImageCandidate, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 import { todayStr } from './dates';
 
@@ -946,6 +946,47 @@ export const supabaseApi: Api = {
     return ((people ?? []) as Profile[]).sort((a, b) =>
       a.display_name.localeCompare(b.display_name)
     );
+  },
+
+  // ---- feedback -----------------------------------------------------------
+  async submitFeedback(draft, userId) {
+    const body = draft.text.trim();
+    if (!body) throw new Error('Write your feedback first.');
+    const { error } = await supabase().from('feedback').insert({
+      kind: draft.kind,
+      subject_id: draft.subject_id ?? null,
+      subject_name: draft.subject_name ?? null,
+      text: body,
+      sender_id: userId ?? null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  async listFeedback() {
+    const { data, error } = await supabase()
+      .from('feedback')
+      .select('*, sender:profiles!feedback_sender_id_fkey(display_name)')
+      .order('created_at', { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => {
+      const row = r as unknown as Feedback & { sender?: { display_name?: string } | null };
+      return {
+        id: row.id,
+        kind: row.kind,
+        subject_id: row.subject_id,
+        subject_name: row.subject_name,
+        text: row.text,
+        sender_id: row.sender_id,
+        sender_name: row.sender?.display_name ?? null,
+        created_at: row.created_at,
+        status: row.status,
+      };
+    });
+  },
+
+  async setFeedbackStatus(id, status) {
+    const { error } = await supabase().from('feedback').update({ status }).eq('id', id);
+    if (error) throw new Error(error.message);
   },
 
   async uploadImage(localUri) {

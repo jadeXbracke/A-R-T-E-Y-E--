@@ -207,11 +207,28 @@ export default function VenueDetail() {
           ))}
         </>
       )}
+
+      <Pressable
+        onPress={() =>
+          router.push(`/feedback?kind=venue&id=${venue.id}&name=${encodeURIComponent(venue.name)}`)
+        }
+        hitSlop={8}
+        style={{ marginTop: space.xl, alignSelf: 'center' }}
+      >
+        <Text style={styles.feedbackLink}>SOMETHING MISSING OR WRONG? TELL THE OWNER →</Text>
+      </Pressable>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  feedbackLink: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.ink,
+    opacity: 0.65,
+  },
   guard: { flex: 1, backgroundColor: colors.bg, paddingTop: 80, paddingHorizontal: space.page },
   head: {
     flexDirection: 'row',

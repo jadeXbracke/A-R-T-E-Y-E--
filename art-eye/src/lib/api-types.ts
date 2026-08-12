@@ -1,4 +1,4 @@
-import { Comment, Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, FeedItem, FollowState, ImageCandidate, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { Comment, Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, Feedback, FeedbackDraft, FeedItem, FollowState, ImageCandidate, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -109,6 +109,12 @@ export interface Api {
   sendMessage(senderId: string, recipientId: string, text: string): Promise<DirectMessage>;
   unreadMessageCount(userId: string): Promise<number>;
   listMessageablePeople(userId: string): Promise<Profile[]>; // mutual follows, for starting a thread
+
+  // feedback — anyone (signed in or not) can write to the owner; only the
+  // owner reads the inbox and marks items handled.
+  submitFeedback(draft: FeedbackDraft, userId: string | null): Promise<void>;
+  listFeedback(): Promise<Feedback[]>; // admin
+  setFeedbackStatus(id: string, status: Feedback['status']): Promise<void>; // admin
 
   // media
   uploadImage(localUri: string): Promise<string>;
