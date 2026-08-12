@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import React, { useRef } from 'react';
 import {Platform, Alert, ActivityIndicator,
   Animated,
@@ -242,7 +243,31 @@ export function Loading() {
   );
 }
 
+/**
+ * A quiet build stamp — the git commit + export date baked in at
+ * `npm run build:pages` time (see app.config.js). Settles the "am I looking
+ * at the new version?" question at a glance instead of by guesswork; shown
+ * on the Curator tab whether signed in or out.
+ */
+export function BuildStamp({ style }: { style?: object }) {
+  const sha = (Constants.expoConfig?.extra as { buildSha?: string } | undefined)?.buildSha;
+  const date = (Constants.expoConfig?.extra as { buildDate?: string } | undefined)?.buildDate;
+  if (!sha) return null;
+  return (
+    <Text style={[styles.buildStamp, style]}>
+      BUILD {sha.toUpperCase()} · {date}
+    </Text>
+  );
+}
+
 const styles = StyleSheet.create({
+  buildStamp: {
+    fontFamily: fonts.mono,
+    fontSize: 9,
+    letterSpacing: 1,
+    color: colors.ink,
+    opacity: 0.35,
+  },
   kicker: { ...type.monoLabel },
   monoLink: {
     fontFamily: fonts.monoMedium,
