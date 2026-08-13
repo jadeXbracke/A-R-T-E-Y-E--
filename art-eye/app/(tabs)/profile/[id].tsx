@@ -77,6 +77,19 @@ export default function ProfileScreen() {
     reload();
   };
 
+  const toggleBlock = async () => {
+    if (!me) return;
+    if (profile.blocked_by_me) await api.unblockUser(me.id, profile.id);
+    else await api.blockUser(me.id, profile.id);
+    reload();
+  };
+
+  const report = () => {
+    router.push(
+      `/feedback?kind=profile&id=${profile.id}&name=${encodeURIComponent(profile.display_name)}`
+    );
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.bg }}
@@ -118,7 +131,7 @@ export default function ProfileScreen() {
           <Stat label="LOGGED" value={profile.visit_count} />
         </View>
 
-        {!isOwn && (
+        {!isOwn && !profile.blocked_by_me && (
           <View style={{ marginTop: space.m, flexDirection: 'row', gap: space.l }}>
             <MonoLink
               label={
@@ -139,6 +152,19 @@ export default function ProfileScreen() {
                 active
                 onPress={() => router.push(`/messages/${profile.id}`)}
               />
+            )}
+          </View>
+        )}
+
+        {!isOwn && (
+          <View style={{ marginTop: space.m, flexDirection: 'row', gap: space.l }}>
+            <MonoLink
+              label={profile.blocked_by_me ? 'UNBLOCK' : 'BLOCK'}
+              color={colors.ink}
+              onPress={toggleBlock}
+            />
+            {!profile.blocked_by_me && (
+              <MonoLink label="REPORT" color={colors.ink} onPress={report} />
             )}
           </View>
         )}

@@ -282,6 +282,11 @@ export default function CuratorScreen() {
           style={{ alignSelf: 'flex-start' }}
         />
         <MonoLink
+          label="ACCOUNT & BLOCKED PEOPLE"
+          onPress={() => router.push('/account')}
+          style={{ alignSelf: 'flex-start' }}
+        />
+        <MonoLink
           label="SIGN OUT"
           onPress={() => signOut()}
           style={{ alignSelf: 'flex-start' }}

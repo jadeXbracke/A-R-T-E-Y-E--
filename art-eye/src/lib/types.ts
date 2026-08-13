@@ -63,6 +63,16 @@ export interface PublicProfile extends Profile {
   visit_count: number;
   follow_state: FollowState;
   can_view_activity: boolean; // public, own profile, or an accepted follower
+  blocked_by_me: boolean;
+}
+
+// One person blocking another. Blocking is one-directional as an action, but
+// its effect is symmetric: neither side sees the other in feeds, search or
+// messaging while any block exists between them (checked both ways).
+export interface Block {
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
 }
 
 // One entry in the activity feed — a friend logging a visit to a show. A "post"
@@ -123,9 +133,10 @@ export interface Conversation {
 }
 
 // ---- feedback ---------------------------------------------------------------
-// A straight line from any user to the app owner: general notes, or "something
-// is missing/wrong" reports attached to a venue or exhibition.
-export type FeedbackKind = 'general' | 'venue' | 'exhibition';
+// A straight line from any user to the app owner: general notes, "something
+// is missing/wrong" reports attached to a venue or exhibition, or a report
+// against a person or their post — same inbox, same review flow.
+export type FeedbackKind = 'general' | 'venue' | 'exhibition' | 'profile' | 'post';
 
 export interface Feedback {
   id: string;

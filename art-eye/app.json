@@ -33,6 +33,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-video"]
+    "plugins": ["expo-router", "expo-video", "expo-notifications"]
   }
 }

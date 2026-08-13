@@ -17,7 +17,10 @@ export default function FeedbackScreen() {
   const params = useLocalSearchParams<{ kind?: string; id?: string; name?: string }>();
 
   const kind: FeedbackKind =
-    params.kind === 'venue' || params.kind === 'exhibition' ? params.kind : 'general';
+    params.kind === 'venue' || params.kind === 'exhibition' || params.kind === 'profile'
+      ? params.kind
+      : 'general';
+  const isReport = kind === 'profile';
   const subjectName = params.name ? decodeURIComponent(params.name) : null;
 
   const [text, setText] = useState('');
@@ -84,9 +87,9 @@ export default function FeedbackScreen() {
     >
       <View style={styles.head}>
         <View>
-          <Kicker style={{ marginBottom: 10 }}>FEEDBACK</Kicker>
+          <Kicker style={{ marginBottom: 10 }}>{isReport ? 'REPORT' : 'FEEDBACK'}</Kicker>
           <Text style={type.serifHeading}>
-            {kind === 'general' ? 'Tell the owner' : 'Something missing?'}
+            {kind === 'general' ? 'Tell the owner' : isReport ? 'Report this profile' : 'Something missing?'}
           </Text>
         </View>
         <Pressable onPress={() => router.back()} hitSlop={12}>
@@ -104,7 +107,9 @@ export default function FeedbackScreen() {
         <Text style={styles.intro}>
           {kind === 'general'
             ? 'Ideas, problems, praise — everything lands directly with the person who runs ART EYE.'
-            : 'Wrong dates, a missing show, a closed venue, a broken link — say what’s off and it lands directly with the person who runs ART EYE.'}
+            : isReport
+              ? 'Tell the owner what’s wrong with this profile or their posts. Reports go straight to the person who runs ART EYE and are reviewed by hand.'
+              : 'Wrong dates, a missing show, a closed venue, a broken link — say what’s off and it lands directly with the person who runs ART EYE.'}
         </Text>
         <Hairline style={{ marginBottom: space.l }} />
 
@@ -112,7 +117,13 @@ export default function FeedbackScreen() {
           label="YOUR NOTE"
           value={text}
           onChangeText={setText}
-          placeholder={kind === 'general' ? 'What should the owner know?' : 'What’s missing or wrong here?'}
+          placeholder={
+            kind === 'general'
+              ? 'What should the owner know?'
+              : isReport
+                ? 'What’s wrong?'
+                : 'What’s missing or wrong here?'
+          }
           multiline
           inputStyle={styles.noteInput}
         />

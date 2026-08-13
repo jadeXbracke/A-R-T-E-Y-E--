@@ -86,6 +86,27 @@ async function withReactions(items: FeedItem[], viewerId: string | null): Promis
   });
 }
 
+// Everyone blocked by, or who has blocked, viewerId — for filtering feeds,
+// discovery and search. Empty set for a signed-out viewer.
+async function blockedIdSet(viewerId: string | null): Promise<Set<string>> {
+  if (!viewerId) return new Set();
+  const { data } = await supabase()
+    .from('blocks')
+    .select('blocker_id, blocked_id')
+    .or(`blocker_id.eq.${viewerId},blocked_id.eq.${viewerId}`);
+  const rows = (data ?? []) as { blocker_id: string; blocked_id: string }[];
+  return new Set(rows.map((r) => (r.blocker_id === viewerId ? r.blocked_id : r.blocker_id)));
+}
+
+// Fire-and-forget push notification via the send-push Edge Function. Never
+// throws — a failed or absent push must never break the action that
+// triggered it (sending a message still succeeds even if the push fails).
+function notify(userId: string, title: string, body: string, data?: Record<string, unknown>): void {
+  supabase()
+    .functions.invoke('send-push', { body: { user_id: userId, title, body, data } })
+    .catch(() => {});
+}
+
 async function fetchProfile(userId: string, email: string): Promise<Profile> {
   const { data, error } = await supabase().from('profiles').select('*').eq('id', userId).single();
   if (error) throw new Error(error.message);
@@ -583,35 +604,50 @@ export const supabaseApi: Api = {
     const sb = supabase();
     const { data: profile, error } = await sb.from('profiles').select('*').eq('id', userId).single();
     if (error) throw new Error(error.message);
-    const [{ count: followers }, { count: following }, { count: visits }, rel] = await Promise.all([
+    const [{ count: followers }, { count: following }, { count: visits }, rel, blockRow] = await Promise.all([
       sb.from('follows').select('*', { count: 'exact', head: true }).eq('followee_id', userId).eq('status', 'accepted'),
       sb.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId).eq('status', 'accepted'),
       sb.from('user_visits').select('*', { count: 'exact', head: true }).eq('user_id', userId),
       viewerId && viewerId !== userId
         ? sb.from('follows').select('status').eq('follower_id', viewerId).eq('followee_id', userId).maybeSingle()
         : Promise.resolve({ data: null }),
+      viewerId && viewerId !== userId
+        ? sb.from('blocks').select('blocker_id').eq('blocker_id', viewerId).eq('blocked_id', userId).maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
     const status = (rel as { data: { status?: string } | null }).data?.status;
     const state: FollowState = status === 'accepted' ? 'following' : status === 'pending' ? 'requested' : 'none';
     const isOwn = viewerId === userId;
+    const blockedByMe = !!(blockRow as { data: unknown } | null)?.data;
     return {
       ...(profile as Profile),
       followers: followers ?? 0,
       following: following ?? 0,
       visit_count: visits ?? 0,
       follow_state: state,
-      can_view_activity: isOwn || !(profile as Profile).is_private || state === 'following',
+      can_view_activity: !blockedByMe && (isOwn || !(profile as Profile).is_private || state === 'following'),
+      blocked_by_me: blockedByMe,
     } as PublicProfile;
   },
 
   async followUser(viewerId, targetId) {
     const sb = supabase();
-    const { data: target } = await sb.from('profiles').select('is_private').eq('id', targetId).single();
+    const [{ data: target }, { data: follower }] = await Promise.all([
+      sb.from('profiles').select('is_private').eq('id', targetId).single(),
+      sb.from('profiles').select('display_name').eq('id', viewerId).single(),
+    ]);
     const status: Follow['status'] = (target as { is_private?: boolean })?.is_private ? 'pending' : 'accepted';
     const { error } = await sb
       .from('follows')
       .upsert({ follower_id: viewerId, followee_id: targetId, status }, { onConflict: 'follower_id,followee_id' });
     if (error) throw new Error(error.message);
+    const name = (follower as { display_name?: string } | null)?.display_name ?? 'Someone';
+    notify(
+      targetId,
+      status === 'accepted' ? 'New follower' : 'Follow request',
+      status === 'accepted' ? `${name} started following you.` : `${name} asked to follow you.`,
+      { type: 'follow', user_id: viewerId }
+    );
     return status === 'accepted' ? 'following' : 'requested';
   },
 
@@ -685,34 +721,41 @@ export const supabaseApi: Api = {
 
   async discoverPeople(viewerId) {
     const sb = supabase();
-    const { data: mine } = await sb.from('follows').select('followee_id').eq('follower_id', viewerId);
-    const exclude = new Set([viewerId, ...((mine ?? []).map((r) => (r as { followee_id: string }).followee_id))]);
+    const [{ data: mine }, blocked] = await Promise.all([
+      sb.from('follows').select('followee_id').eq('follower_id', viewerId),
+      blockedIdSet(viewerId),
+    ]);
+    const exclude = new Set([
+      viewerId,
+      ...blocked,
+      ...((mine ?? []).map((r) => (r as { followee_id: string }).followee_id)),
+    ]);
     const { data, error } = await sb.from('profiles').select('*').neq('role', 'admin').limit(50);
     if (error) throw new Error(error.message);
     return (data ?? []).filter((p) => !exclude.has((p as Profile).id)) as Profile[];
   },
 
-  // Everyone (except the app owner and yourself), for the people search — the
-  // caller filters by name locally, same pattern as the venue/show search.
+  // Everyone (except the app owner, yourself and anyone blocked either way),
+  // for the people search — the caller filters by name locally, same pattern
+  // as the venue/show search.
   async searchPeople(viewerId) {
-    const { data, error } = await supabase()
-      .from('profiles')
-      .select('*')
-      .neq('role', 'admin')
-      .neq('id', viewerId)
-      .limit(200);
+    const [{ data, error }, blocked] = await Promise.all([
+      supabase().from('profiles').select('*').neq('role', 'admin').neq('id', viewerId).limit(200),
+      blockedIdSet(viewerId),
+    ]);
     if (error) throw new Error(error.message);
-    return (data ?? []) as Profile[];
+    return ((data ?? []) as Profile[]).filter((p) => !blocked.has(p.id));
   },
 
   async friendsFeed(viewerId) {
     const sb = supabase();
-    const { data: following } = await sb
-      .from('follows')
-      .select('followee_id')
-      .eq('follower_id', viewerId)
-      .eq('status', 'accepted');
-    const ids = (following ?? []).map((r) => (r as { followee_id: string }).followee_id);
+    const [{ data: following }, blocked] = await Promise.all([
+      sb.from('follows').select('followee_id').eq('follower_id', viewerId).eq('status', 'accepted'),
+      blockedIdSet(viewerId),
+    ]);
+    const ids = (following ?? [])
+      .map((r) => (r as { followee_id: string }).followee_id)
+      .filter((id) => !blocked.has(id));
     if (ids.length === 0) return [];
     const { data, error } = await sb
       .from('user_visits')
@@ -727,8 +770,13 @@ export const supabaseApi: Api = {
   // visitors find people to follow in the first place.
   async discoverFeed(viewerId) {
     const sb = supabase();
-    const { data: pub } = await sb.from('profiles').select('id').eq('is_private', false).neq('role', 'admin');
-    const ids = (pub ?? []).map((r) => (r as { id: string }).id);
+    const [{ data: pub }, blocked] = await Promise.all([
+      sb.from('profiles').select('id').eq('is_private', false).neq('role', 'admin'),
+      blockedIdSet(viewerId),
+    ]);
+    const ids = (pub ?? [])
+      .map((r) => (r as { id: string }).id)
+      .filter((id) => !blocked.has(id));
     if (ids.length === 0) return [];
     const { data, error } = await sb
       .from('user_visits')
@@ -816,12 +864,20 @@ export const supabaseApi: Api = {
       id: string; post_user_id: string; exhibition_id: string; author_id: string;
       text: string; created_at: string; author?: { display_name?: string } | null;
     };
+    const authorName = row.author?.display_name ?? 'Someone';
+    if (postUserId !== authorId) {
+      notify(postUserId, 'New comment', `${authorName} commented on your post.`, {
+        type: 'comment',
+        post_user_id: postUserId,
+        exhibition_id: exhibitionId,
+      });
+    }
     return {
       id: row.id,
       post_user_id: row.post_user_id,
       exhibition_id: row.exhibition_id,
       author_id: row.author_id,
-      author_name: row.author?.display_name ?? 'Someone',
+      author_name: authorName,
       text: row.text,
       created_at: row.created_at,
     };
@@ -832,13 +888,15 @@ export const supabaseApi: Api = {
   async canMessage(viewerId, targetId) {
     if (!viewerId || viewerId === targetId) return false;
     const sb = supabase();
-    const [{ count: ab }, { count: ba }] = await Promise.all([
+    const [{ count: ab }, { count: ba }, { count: blocked }] = await Promise.all([
       sb.from('follows').select('*', { count: 'exact', head: true })
         .eq('follower_id', viewerId).eq('followee_id', targetId).eq('status', 'accepted'),
       sb.from('follows').select('*', { count: 'exact', head: true })
         .eq('follower_id', targetId).eq('followee_id', viewerId).eq('status', 'accepted'),
+      sb.from('blocks').select('*', { count: 'exact', head: true })
+        .or(`and(blocker_id.eq.${viewerId},blocked_id.eq.${targetId}),and(blocker_id.eq.${targetId},blocked_id.eq.${viewerId})`),
     ]);
-    return (ab ?? 0) > 0 && (ba ?? 0) > 0;
+    return (ab ?? 0) > 0 && (ba ?? 0) > 0 && (blocked ?? 0) === 0;
   },
 
   async listConversations(userId) {
@@ -902,11 +960,11 @@ export const supabaseApi: Api = {
   async sendMessage(senderId, recipientId, text) {
     const body = text.trim();
     if (!body) throw new Error('Write a message first.');
-    const { data, error } = await supabase()
-      .from('direct_messages')
-      .insert({ sender_id: senderId, recipient_id: recipientId, text: body })
-      .select('*')
-      .single();
+    const sb = supabase();
+    const [{ data, error }, { data: sender }] = await Promise.all([
+      sb.from('direct_messages').insert({ sender_id: senderId, recipient_id: recipientId, text: body }).select('*').single(),
+      sb.from('profiles').select('display_name').eq('id', senderId).single(),
+    ]);
     if (error) {
       // RLS refuses inserts outside a mutual follow — translate to a human line.
       throw new Error(
@@ -915,6 +973,8 @@ export const supabaseApi: Api = {
           : error.message
       );
     }
+    const name = (sender as { display_name?: string } | null)?.display_name ?? 'Someone';
+    notify(recipientId, name, body, { type: 'message', user_id: senderId });
     return data as DirectMessage;
   },
 
@@ -937,9 +997,10 @@ export const supabaseApi: Api = {
     if (e1) throw new Error(e1.message);
     if (e2) throw new Error(e2.message);
     const mine = new Set(((iFollow ?? []) as { followee_id: string }[]).map((r) => r.followee_id));
+    const blocked = await blockedIdSet(userId);
     const mutual = ((followMe ?? []) as { follower_id: string }[])
       .map((r) => r.follower_id)
-      .filter((id) => mine.has(id));
+      .filter((id) => mine.has(id) && !blocked.has(id));
     if (mutual.length === 0) return [];
     const { data: people, error: e3 } = await sb.from('profiles').select('*').in('id', mutual);
     if (e3) throw new Error(e3.message);
@@ -986,6 +1047,56 @@ export const supabaseApi: Api = {
 
   async setFeedbackStatus(id, status) {
     const { error } = await supabase().from('feedback').update({ status }).eq('id', id);
+    if (error) throw new Error(error.message);
+  },
+
+  // ---- blocking -------------------------------------------------------------
+  async blockUser(_blockerId, blockedId) {
+    // block_user() reads auth.uid() server-side and also drops any existing
+    // follow in either direction — see migration 0018.
+    const { error } = await supabase().rpc('block_user', { target: blockedId });
+    if (error) throw new Error(error.message);
+  },
+
+  async unblockUser(blockerId, blockedId) {
+    const { error } = await supabase()
+      .from('blocks')
+      .delete()
+      .eq('blocker_id', blockerId)
+      .eq('blocked_id', blockedId);
+    if (error) throw new Error(error.message);
+  },
+
+  async listBlocked(userId) {
+    const { data, error } = await supabase()
+      .from('blocks')
+      .select('blocked:profiles!blocks_blocked_id_fkey(*)')
+      .eq('blocker_id', userId);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => (r as unknown as { blocked: Profile }).blocked);
+  },
+
+  // ---- account deletion (App Store 5.1.1(v)) ---------------------------------
+  async deleteOwnAccount(_userId) {
+    const { error } = await supabase().rpc('delete_own_account');
+    if (error) throw new Error(error.message);
+    await supabase().auth.signOut();
+  },
+
+  // ---- push notifications ----------------------------------------------------
+  async registerPushToken(userId, token) {
+    const { error } = await supabase()
+      .from('push_tokens')
+      .upsert({ user_id: userId, token }, { onConflict: 'user_id,token' });
+    if (error) throw new Error(error.message);
+  },
+
+  async unregisterPushToken(userId, token) {
+    const { error } = await supabase()
+      .from('push_tokens')
+      .delete()
+      .eq('user_id', userId)
+      .eq('token', token);
     if (error) throw new Error(error.message);
   },
 

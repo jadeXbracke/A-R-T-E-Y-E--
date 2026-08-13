@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Api, SignUpInput } from './api-types';
 import { SEED_EXHIBITIONS, SEED_VENUES } from './seed';
 import {
+  Block,
   Comment,
   Conversation,
   CuratedList,
@@ -56,6 +57,8 @@ interface DemoState {
   comments: Comment[];
   messages: DirectMessage[];
   feedback: Feedback[];
+  blocks: Block[];
+  pushTokens: { user_id: string; token: string }[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
@@ -105,6 +108,8 @@ function seedState(): DemoState {
     comments: [],
     messages: [],
     feedback: [],
+    blocks: [],
+    pushTokens: [],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
@@ -118,9 +123,11 @@ async function load(): Promise<DemoState> {
     const raw = await AsyncStorage.getItem(KEY);
     if (raw) {
       cache = JSON.parse(raw) as DemoState;
-      // Stores persisted before the messaging/feedback features lack these.
+      // Stores persisted before newer features lack these arrays.
       cache.messages = cache.messages ?? [];
       cache.feedback = cache.feedback ?? [];
+      cache.blocks = cache.blocks ?? [];
+      cache.pushTokens = cache.pushTokens ?? [];
       return cache;
     }
   } catch {
@@ -146,6 +153,13 @@ function stripUser(u: DemoUser): Profile {
 
 function withVenue(e: Exhibition, venues: Venue[]): Exhibition {
   return { ...e, venue: venues.find((v) => v.id === e.venue_id) };
+}
+
+// A block in either direction hides both people from each other everywhere.
+function isBlocked(s: DemoState, a: string, b: string): boolean {
+  return s.blocks.some(
+    (x) => (x.blocker_id === a && x.blocked_id === b) || (x.blocker_id === b && x.blocked_id === a)
+  );
 }
 
 // Messaging is allowed only between mutual follows: both directions accepted.
@@ -311,13 +325,15 @@ export const demoApi: Api = {
     if (!u) throw new Error('Profile not found.');
     const state = followStateFor(s, viewerId, userId);
     const isOwn = viewerId === userId;
+    const blocked = !!viewerId && isBlocked(s, viewerId, userId);
     return {
       ...stripUser(u),
       followers: s.follows.filter((f) => f.followee_id === userId && f.status === 'accepted').length,
       following: s.follows.filter((f) => f.follower_id === userId && f.status === 'accepted').length,
       visit_count: s.visits.filter((v) => v.user_id === userId).length,
       follow_state: state,
-      can_view_activity: isOwn || !u.is_private || state === 'following',
+      can_view_activity: !blocked && (isOwn || !u.is_private || state === 'following'),
+      blocked_by_me: !!viewerId && s.blocks.some((b) => b.blocker_id === viewerId && b.blocked_id === userId),
     } as PublicProfile;
   },
 
@@ -408,13 +424,21 @@ export const demoApi: Api = {
       s.follows.filter((f) => f.follower_id === viewerId).map((f) => f.followee_id)
     );
     return s.users
-      .filter((u) => u.id !== viewerId && !connected.has(u.id) && u.role !== 'admin')
+      .filter(
+        (u) =>
+          u.id !== viewerId &&
+          !connected.has(u.id) &&
+          u.role !== 'admin' &&
+          !isBlocked(s, viewerId, u.id)
+      )
       .map(stripUser);
   },
 
   async searchPeople(viewerId) {
     const s = await load();
-    return s.users.filter((u) => u.id !== viewerId && u.role !== 'admin').map(stripUser);
+    return s.users
+      .filter((u) => u.id !== viewerId && u.role !== 'admin' && !isBlocked(s, viewerId, u.id))
+      .map(stripUser);
   },
 
   async friendsFeed(viewerId) {
@@ -425,7 +449,7 @@ export const demoApi: Api = {
         .map((f) => f.followee_id)
     );
     return s.visits
-      .filter((v) => following.has(v.user_id))
+      .filter((v) => following.has(v.user_id) && !isBlocked(s, viewerId, v.user_id))
       .map((v) => feedItemFrom(s, v, viewerId))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
@@ -437,7 +461,7 @@ export const demoApi: Api = {
       s.users.filter((u) => !u.is_private && u.role !== 'admin').map((u) => u.id)
     );
     return s.visits
-      .filter((v) => publicIds.has(v.user_id))
+      .filter((v) => publicIds.has(v.user_id) && !isBlocked(s, viewerId, v.user_id))
       .map((v) => feedItemFrom(s, v, viewerId))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
@@ -448,7 +472,8 @@ export const demoApi: Api = {
     const u = s.users.find((x) => x.id === userId);
     if (!u) return [];
     const state = followStateFor(s, viewerId, userId);
-    const canView = viewerId === userId || !u.is_private || state === 'following';
+    const blocked = !!viewerId && isBlocked(s, viewerId, userId);
+    const canView = !blocked && (viewerId === userId || !u.is_private || state === 'following');
     if (!canView) return [];
     return s.visits
       .filter((v) => v.user_id === userId)
@@ -512,7 +537,7 @@ export const demoApi: Api = {
   async canMessage(viewerId, targetId) {
     if (!viewerId || viewerId === targetId) return false;
     const s = await load();
-    return followsEachOther(s, viewerId, targetId);
+    return followsEachOther(s, viewerId, targetId) && !isBlocked(s, viewerId, targetId);
   },
 
   async listConversations(userId) {
@@ -529,7 +554,7 @@ export const demoApi: Api = {
     const conversations: Conversation[] = [];
     for (const [peerId, msgs] of byPeer) {
       const peer = s.users.find((u) => u.id === peerId);
-      if (!peer) continue;
+      if (!peer || isBlocked(s, userId, peerId)) continue;
       msgs.sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
       conversations.push({
         peer: stripUser(peer),
@@ -544,6 +569,7 @@ export const demoApi: Api = {
 
   async listMessages(userId, peerId) {
     const s = await load();
+    if (isBlocked(s, userId, peerId)) return [];
     const thread = s.messages
       .filter(
         (m) =>
@@ -567,7 +593,7 @@ export const demoApi: Api = {
     const s = await load();
     const body = text.trim();
     if (!body) throw new Error('Write a message first.');
-    if (!followsEachOther(s, senderId, recipientId)) {
+    if (!followsEachOther(s, senderId, recipientId) || isBlocked(s, senderId, recipientId)) {
       throw new Error('You can only message people who follow you back.');
     }
     const message: DirectMessage = {
@@ -591,7 +617,9 @@ export const demoApi: Api = {
   async listMessageablePeople(userId) {
     const s = await load();
     return s.users
-      .filter((u) => u.id !== userId && followsEachOther(s, userId, u.id))
+      .filter(
+        (u) => u.id !== userId && followsEachOther(s, userId, u.id) && !isBlocked(s, userId, u.id)
+      )
       .map(stripUser)
       .sort((a, b) => a.display_name.localeCompare(b.display_name));
   },
@@ -628,6 +656,81 @@ export const demoApi: Api = {
     const f = s.feedback.find((x) => x.id === id);
     if (!f) throw new Error('Feedback not found.');
     f.status = status;
+    await persist();
+  },
+
+  // ---- blocking ------------------------------------------------------------
+  async blockUser(blockerId, blockedId) {
+    const s = await load();
+    if (blockerId === blockedId) return;
+    if (!s.blocks.some((b) => b.blocker_id === blockerId && b.blocked_id === blockedId)) {
+      s.blocks.push({ blocker_id: blockerId, blocked_id: blockedId, created_at: new Date().toISOString() });
+    }
+    // A block ends any existing follow relationship in either direction.
+    s.follows = s.follows.filter(
+      (f) =>
+        !((f.follower_id === blockerId && f.followee_id === blockedId) ||
+          (f.follower_id === blockedId && f.followee_id === blockerId))
+    );
+    await persist();
+  },
+
+  async unblockUser(blockerId, blockedId) {
+    const s = await load();
+    s.blocks = s.blocks.filter(
+      (b) => !(b.blocker_id === blockerId && b.blocked_id === blockedId)
+    );
+    await persist();
+  },
+
+  async listBlocked(userId) {
+    const s = await load();
+    const ids = s.blocks.filter((b) => b.blocker_id === userId).map((b) => b.blocked_id);
+    return s.users.filter((u) => ids.includes(u.id)).map(stripUser);
+  },
+
+  // ---- account deletion (App Store 5.1.1(v)) -------------------------------
+  async deleteOwnAccount(userId) {
+    const s = await load();
+    s.users = s.users.filter((u) => u.id !== userId);
+    s.watchlist = s.watchlist.filter((w) => w.user_id !== userId);
+    s.visits = s.visits.filter((v) => v.user_id !== userId);
+    s.follows = s.follows.filter((f) => f.follower_id !== userId && f.followee_id !== userId);
+    s.likes = s.likes.filter((l) => l.user_id !== userId && l.post_user_id !== userId);
+    s.comments = s.comments.filter((c) => c.author_id !== userId && c.post_user_id !== userId);
+    s.messages = s.messages.filter((m) => m.sender_id !== userId && m.recipient_id !== userId);
+    s.blocks = s.blocks.filter((b) => b.blocker_id !== userId && b.blocked_id !== userId);
+    s.pushTokens = s.pushTokens.filter((t) => t.user_id !== userId);
+    // Feedback the account sent is kept (matches the live-mode behaviour,
+    // where sender_id is set null rather than the row deleted) but anonymised.
+    for (const f of s.feedback) {
+      if (f.sender_id === userId) {
+        f.sender_id = null;
+        f.sender_name = null;
+      }
+    }
+    // Venues this account owned become unclaimed rather than orphaned.
+    for (const v of s.venues) {
+      if (v.owner_user_id === userId) v.owner_user_id = null;
+    }
+    if (s.sessionUserId === userId) s.sessionUserId = null;
+    await persist();
+  },
+
+  // ---- push notifications ---------------------------------------------------
+  // Demo mode has no server to trigger a real push from, but registration is
+  // still exercised so the permission flow and UI can be tried end to end.
+  async registerPushToken(userId, token) {
+    const s = await load();
+    if (!s.pushTokens.some((t) => t.user_id === userId && t.token === token)) {
+      s.pushTokens.push({ user_id: userId, token });
+      await persist();
+    }
+  },
+
+  async unregisterPushToken(userId, token) {
+    const s = await load();
+    s.pushTokens = s.pushTokens.filter((t) => !(t.user_id === userId && t.token === token));
     await persist();
   },
 
