@@ -17,6 +17,8 @@ import {
   Follow,
   FollowState,
   Like,
+  Notification,
+  NotificationKind,
   Profile,
   PublicProfile,
   RejectionReason,
@@ -26,6 +28,7 @@ import {
   Visit,
   WatchlistEntry,
 } from './types';
+import { extractMentionIds } from './mentions';
 
 // Editors' pick list over real current shows. In live mode these come from the
 // public guides tables (migration 0007).
@@ -46,6 +49,27 @@ interface DemoUser extends Profile {
   password: string;
 }
 
+// Comments are stored without the derived like_count/liked_by_me — those are
+// computed from commentLikes at read time, same as post likes.
+type StoredComment = Omit<Comment, 'like_count' | 'liked_by_me'>;
+
+interface StoredNotification {
+  id: string;
+  user_id: string; // recipient
+  kind: NotificationKind;
+  actor_id: string | null;
+  exhibition_id: string | null;
+  post_user_id: string | null;
+  comment_id: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+
+interface CommentLike {
+  user_id: string;
+  comment_id: string;
+}
+
 interface DemoState {
   users: DemoUser[];
   venues: Venue[];
@@ -54,17 +78,19 @@ interface DemoState {
   visits: Visit[];
   follows: Follow[];
   likes: Like[];
-  comments: Comment[];
+  comments: StoredComment[];
+  commentLikes: CommentLike[];
   messages: DirectMessage[];
   feedback: Feedback[];
   blocks: Block[];
   pushTokens: { user_id: string; token: string }[];
+  notifications: StoredNotification[];
   proposals: VenueProposal[];
   sessionUserId: string | null;
 }
 
 // Bump the suffix when the seed changes — installed devices then reload it.
-const KEY = 'arteye.demo.v19';
+const KEY = 'arteye.demo.v20';
 
 // No sample/test data in the seed — the inbox fills from the live pipeline.
 const SEED_PROPOSALS: VenueProposal[] = [];
@@ -106,10 +132,12 @@ function seedState(): DemoState {
     follows: [],
     likes: [],
     comments: [],
+    commentLikes: [],
     messages: [],
     feedback: [],
     blocks: [],
     pushTokens: [],
+    notifications: [],
     proposals: SEED_PROPOSALS.map((p) => ({ ...p })),
     sessionUserId: null,
   };
@@ -128,6 +156,8 @@ async function load(): Promise<DemoState> {
       cache.feedback = cache.feedback ?? [];
       cache.blocks = cache.blocks ?? [];
       cache.pushTokens = cache.pushTokens ?? [];
+      cache.commentLikes = cache.commentLikes ?? [];
+      cache.notifications = cache.notifications ?? [];
       return cache;
     }
   } catch {
@@ -160,6 +190,30 @@ function isBlocked(s: DemoState, a: string, b: string): boolean {
   return s.blocks.some(
     (x) => (x.blocker_id === a && x.blocked_id === b) || (x.blocker_id === b && x.blocked_id === a)
   );
+}
+
+// Records an in-app notification. Never notifies someone about their own action.
+function pushNotification(
+  s: DemoState,
+  userId: string,
+  kind: NotificationKind,
+  actorId: string | null,
+  exhibitionId: string | null = null,
+  postUserId: string | null = null,
+  commentId: string | null = null
+): void {
+  if (!userId || userId === actorId) return;
+  s.notifications.push({
+    id: uid('n'),
+    user_id: userId,
+    kind,
+    actor_id: actorId,
+    exhibition_id: exhibitionId,
+    post_user_id: postUserId,
+    comment_id: commentId,
+    created_at: new Date().toISOString(),
+    read_at: null,
+  });
 }
 
 // Messaging is allowed only between mutual follows: both directions accepted.
@@ -354,6 +408,7 @@ export const demoApi: Api = {
       status,
       created_at: new Date().toISOString(),
     });
+    pushNotification(s, targetId, status === 'accepted' ? 'follow' : 'follow_request', viewerId);
     await persist();
     return status === 'accepted' ? 'following' : 'requested';
   },
@@ -396,8 +451,12 @@ export const demoApi: Api = {
       (x) => x.follower_id === requesterId && x.followee_id === userId && x.status === 'pending'
     );
     if (!f) return;
-    if (accept) f.status = 'accepted';
-    else s.follows = s.follows.filter((x) => x !== f);
+    if (accept) {
+      f.status = 'accepted';
+      pushNotification(s, requesterId, 'follow', userId);
+    } else {
+      s.follows = s.follows.filter((x) => x !== f);
+    }
     await persist();
   },
 
@@ -497,6 +556,7 @@ export const demoApi: Api = {
     );
     if (!exists) {
       s.likes.push({ user_id: likerId, post_user_id: postUserId, exhibition_id: exhibitionId, created_at: new Date().toISOString() });
+      pushNotification(s, postUserId, 'like', likerId, exhibitionId, postUserId);
       await persist();
     }
   },
@@ -509,28 +569,81 @@ export const demoApi: Api = {
     await persist();
   },
 
-  async listComments(postUserId, exhibitionId) {
+  async listComments(postUserId, exhibitionId, viewerId) {
     const s = await load();
     return s.comments
       .filter((c) => c.post_user_id === postUserId && c.exhibition_id === exhibitionId)
-      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+      .map((c) => {
+        const commentLikes = s.commentLikes.filter((l) => l.comment_id === c.id);
+        return {
+          ...c,
+          like_count: commentLikes.length,
+          liked_by_me: !!viewerId && commentLikes.some((l) => l.user_id === viewerId),
+        };
+      });
   },
 
-  async addComment(authorId, postUserId, exhibitionId, text) {
+  async addComment(authorId, postUserId, exhibitionId, text, parentCommentId = null) {
     const s = await load();
     const author = s.users.find((u) => u.id === authorId);
-    const comment: Comment = {
+    const body = text.trim();
+    const comment: StoredComment = {
       id: uid('c'),
       post_user_id: postUserId,
       exhibition_id: exhibitionId,
       author_id: authorId,
       author_name: author?.display_name ?? 'Someone',
-      text: text.trim(),
+      text: body,
       created_at: new Date().toISOString(),
+      parent_comment_id: parentCommentId ?? null,
     };
     s.comments.push(comment);
+    const parent = parentCommentId ? s.comments.find((c) => c.id === parentCommentId) : null;
+    if (parent) {
+      pushNotification(s, parent.author_id, 'reply', authorId, exhibitionId, postUserId, comment.id);
+      if (postUserId !== parent.author_id) {
+        pushNotification(s, postUserId, 'comment', authorId, exhibitionId, postUserId, comment.id);
+      }
+    } else {
+      pushNotification(s, postUserId, 'comment', authorId, exhibitionId, postUserId, comment.id);
+    }
+    for (const mentionedId of extractMentionIds(body)) {
+      pushNotification(s, mentionedId, 'mention', authorId, exhibitionId, postUserId, comment.id);
+    }
     await persist();
-    return comment;
+    return { ...comment, like_count: 0, liked_by_me: false };
+  },
+
+  async likeComment(userId, commentId) {
+    const s = await load();
+    if (!s.commentLikes.some((l) => l.user_id === userId && l.comment_id === commentId)) {
+      s.commentLikes.push({ user_id: userId, comment_id: commentId });
+      const c = s.comments.find((x) => x.id === commentId);
+      if (c) pushNotification(s, c.author_id, 'comment_like', userId, c.exhibition_id, c.post_user_id, c.id);
+      await persist();
+    }
+  },
+
+  async unlikeComment(userId, commentId) {
+    const s = await load();
+    s.commentLikes = s.commentLikes.filter((l) => !(l.user_id === userId && l.comment_id === commentId));
+    await persist();
+  },
+
+  async friendsWhoVisited(exhibitionId, viewerId) {
+    const s = await load();
+    const following = new Set(
+      s.follows
+        .filter((f) => f.follower_id === viewerId && f.status === 'accepted')
+        .map((f) => f.followee_id)
+    );
+    const visitorIds = new Set(
+      s.visits.filter((v) => v.exhibition_id === exhibitionId).map((v) => v.user_id)
+    );
+    return s.users
+      .filter((u) => following.has(u.id) && visitorIds.has(u.id) && !isBlocked(s, viewerId, u.id))
+      .map(stripUser);
   },
 
   // ---- direct messages ----------------------------------------------------
@@ -589,10 +702,10 @@ export const demoApi: Api = {
     return thread.map((m) => ({ ...m }));
   },
 
-  async sendMessage(senderId, recipientId, text) {
+  async sendMessage(senderId, recipientId, text, imageUrl = null) {
     const s = await load();
     const body = text.trim();
-    if (!body) throw new Error('Write a message first.');
+    if (!body && !imageUrl) throw new Error('Write a message or attach a photo first.');
     if (!followsEachOther(s, senderId, recipientId) || isBlocked(s, senderId, recipientId)) {
       throw new Error('You can only message people who follow you back.');
     }
@@ -601,10 +714,12 @@ export const demoApi: Api = {
       sender_id: senderId,
       recipient_id: recipientId,
       text: body,
+      image_url: imageUrl ?? null,
       created_at: new Date().toISOString(),
       read_at: null,
     };
     s.messages.push(message);
+    pushNotification(s, recipientId, 'message', senderId);
     await persist();
     return { ...message };
   },
@@ -697,7 +812,32 @@ export const demoApi: Api = {
     s.visits = s.visits.filter((v) => v.user_id !== userId);
     s.follows = s.follows.filter((f) => f.follower_id !== userId && f.followee_id !== userId);
     s.likes = s.likes.filter((l) => l.user_id !== userId && l.post_user_id !== userId);
-    s.comments = s.comments.filter((c) => c.author_id !== userId && c.post_user_id !== userId);
+    // Removing this account's comments (or comments on its posts) can orphan
+    // replies underneath them — cascade those out too, same as the database's
+    // `on delete cascade` on parent_comment_id.
+    const removedCommentIds = new Set(
+      s.comments.filter((c) => c.author_id === userId || c.post_user_id === userId).map((c) => c.id)
+    );
+    let grew = true;
+    while (grew) {
+      grew = false;
+      for (const c of s.comments) {
+        if (!removedCommentIds.has(c.id) && c.parent_comment_id && removedCommentIds.has(c.parent_comment_id)) {
+          removedCommentIds.add(c.id);
+          grew = true;
+        }
+      }
+    }
+    s.comments = s.comments.filter((c) => !removedCommentIds.has(c.id));
+    s.commentLikes = s.commentLikes.filter(
+      (l) => l.user_id !== userId && !removedCommentIds.has(l.comment_id)
+    );
+    s.notifications = s.notifications.filter(
+      (n) =>
+        n.user_id !== userId &&
+        n.actor_id !== userId &&
+        !(n.comment_id && removedCommentIds.has(n.comment_id))
+    );
     s.messages = s.messages.filter((m) => m.sender_id !== userId && m.recipient_id !== userId);
     s.blocks = s.blocks.filter((b) => b.blocker_id !== userId && b.blocked_id !== userId);
     s.pushTokens = s.pushTokens.filter((t) => t.user_id !== userId);
@@ -732,6 +872,49 @@ export const demoApi: Api = {
     const s = await load();
     s.pushTokens = s.pushTokens.filter((t) => !(t.user_id === userId && t.token === token));
     await persist();
+  },
+
+  // ---- in-app notification center ------------------------------------------
+  async listNotifications(userId) {
+    const s = await load();
+    return s.notifications
+      .filter((n) => n.user_id === userId)
+      .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+      .map((n) => {
+        const actor = n.actor_id ? s.users.find((u) => u.id === n.actor_id) : undefined;
+        const ex = n.exhibition_id ? s.exhibitions.find((e) => e.id === n.exhibition_id) : undefined;
+        return {
+          id: n.id,
+          user_id: n.user_id,
+          kind: n.kind,
+          actor_id: n.actor_id,
+          actor_name: actor?.display_name ?? 'Someone',
+          exhibition_id: n.exhibition_id,
+          exhibition_title: ex?.title ?? null,
+          post_user_id: n.post_user_id,
+          comment_id: n.comment_id,
+          created_at: n.created_at,
+          read_at: n.read_at,
+        } as Notification;
+      });
+  },
+
+  async unreadNotificationCount(userId) {
+    const s = await load();
+    return s.notifications.filter((n) => n.user_id === userId && !n.read_at).length;
+  },
+
+  async markNotificationsRead(userId) {
+    const s = await load();
+    const now = new Date().toISOString();
+    let touched = false;
+    for (const n of s.notifications) {
+      if (n.user_id === userId && !n.read_at) {
+        n.read_at = now;
+        touched = true;
+      }
+    }
+    if (touched) await persist();
   },
 
   async submitExhibition(draft: ExhibitionDraft, userId) {

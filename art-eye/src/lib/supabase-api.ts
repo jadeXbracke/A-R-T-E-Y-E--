@@ -6,9 +6,10 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Api, SignUpInput } from './api-types';
-import { Comment, Conversation, CuratedList, CuratorRole, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, Feedback, FeedItem, Follow, FollowState, ImageCandidate, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
+import { Comment, Conversation, CuratedList, CuratorRole, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, Feedback, FeedItem, Follow, FollowState, ImageCandidate, Notification, NotificationKind, Profile, PublicProfile, RejectionReason, Venue, VenueDraft, VenueProposal, Visit } from './types';
 import { mapsSearchUrl } from './maps';
 import { todayStr } from './dates';
+import { extractMentionIds } from './mentions';
 
 let client: SupabaseClient | null = null;
 
@@ -105,6 +106,34 @@ function notify(userId: string, title: string, body: string, data?: Record<strin
   supabase()
     .functions.invoke('send-push', { body: { user_id: userId, title, body, data } })
     .catch(() => {});
+}
+
+// Durable, in-app counterpart to the push notify() above. Never notifies
+// someone about their own action; failures are swallowed the same way —
+// a missed notification row must never break the action that triggered it.
+function notifyInApp(
+  userId: string,
+  kind: NotificationKind,
+  actorId: string,
+  exhibitionId: string | null = null,
+  postUserId: string | null = null,
+  commentId: string | null = null
+): void {
+  if (!userId || userId === actorId) return;
+  supabase()
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      kind,
+      actor_id: actorId,
+      exhibition_id: exhibitionId,
+      post_user_id: postUserId,
+      comment_id: commentId,
+    })
+    .then(
+      () => {},
+      () => {}
+    );
 }
 
 async function fetchProfile(userId: string, email: string): Promise<Profile> {
@@ -642,6 +671,7 @@ export const supabaseApi: Api = {
       .upsert({ follower_id: viewerId, followee_id: targetId, status }, { onConflict: 'follower_id,followee_id' });
     if (error) throw new Error(error.message);
     const name = (follower as { display_name?: string } | null)?.display_name ?? 'Someone';
+    notifyInApp(targetId, status === 'accepted' ? 'follow' : 'follow_request', viewerId);
     notify(
       targetId,
       status === 'accepted' ? 'New follower' : 'Follow request',
@@ -699,6 +729,7 @@ export const supabaseApi: Api = {
         .eq('follower_id', requesterId)
         .eq('followee_id', userId);
       if (error) throw new Error(error.message);
+      notifyInApp(requesterId, 'follow', userId);
     } else {
       const { error } = await sb
         .from('follows')
@@ -799,6 +830,29 @@ export const supabaseApi: Api = {
     return withReactions((data ?? []).map(toFeedItem), viewerId);
   },
 
+  async friendsWhoVisited(exhibitionId, viewerId) {
+    const sb = supabase();
+    const [{ data: following }, blocked] = await Promise.all([
+      sb.from('follows').select('followee_id').eq('follower_id', viewerId).eq('status', 'accepted'),
+      blockedIdSet(viewerId),
+    ]);
+    const ids = (following ?? [])
+      .map((r) => (r as { followee_id: string }).followee_id)
+      .filter((id) => !blocked.has(id));
+    if (ids.length === 0) return [];
+    const { data, error } = await sb
+      .from('user_visits')
+      .select('user_id')
+      .eq('exhibition_id', exhibitionId)
+      .in('user_id', ids);
+    if (error) throw new Error(error.message);
+    const visitorIds = [...new Set((data ?? []).map((r) => (r as { user_id: string }).user_id))];
+    if (visitorIds.length === 0) return [];
+    const { data: people, error: pErr } = await sb.from('profiles').select('*').in('id', visitorIds);
+    if (pErr) throw new Error(pErr.message);
+    return (people ?? []) as Profile[];
+  },
+
   async getPost(postUserId, exhibitionId, viewerId) {
     const { data, error } = await supabase()
       .from('user_visits')
@@ -816,6 +870,7 @@ export const supabaseApi: Api = {
       .from('post_likes')
       .upsert({ user_id: likerId, post_user_id: postUserId, exhibition_id: exhibitionId });
     if (error) throw new Error(error.message);
+    notifyInApp(postUserId, 'like', likerId, exhibitionId, postUserId);
   },
 
   async unlikePost(likerId, postUserId, exhibitionId) {
@@ -828,7 +883,7 @@ export const supabaseApi: Api = {
     if (error) throw new Error(error.message);
   },
 
-  async listComments(postUserId, exhibitionId) {
+  async listComments(postUserId, exhibitionId, viewerId) {
     const { data, error } = await supabase()
       .from('post_comments')
       .select('*, author:profiles!post_comments_author_id_fkey(display_name)')
@@ -836,11 +891,20 @@ export const supabaseApi: Api = {
       .eq('exhibition_id', exhibitionId)
       .order('created_at', { ascending: true });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((r) => {
-      const row = r as unknown as {
-        id: string; post_user_id: string; exhibition_id: string; author_id: string;
-        text: string; created_at: string; author?: { display_name?: string } | null;
-      };
+    const rows = (data ?? []) as unknown as {
+      id: string; post_user_id: string; exhibition_id: string; author_id: string;
+      text: string; created_at: string; parent_comment_id: string | null;
+      author?: { display_name?: string } | null;
+    }[];
+    if (rows.length === 0) return [];
+    const { data: likeRows, error: likeErr } = await supabase()
+      .from('comment_likes')
+      .select('user_id, comment_id')
+      .in('comment_id', rows.map((r) => r.id));
+    if (likeErr) throw new Error(likeErr.message);
+    const likes = (likeRows ?? []) as { user_id: string; comment_id: string }[];
+    return rows.map((row) => {
+      const commentLikes = likes.filter((l) => l.comment_id === row.id);
       return {
         id: row.id,
         post_user_id: row.post_user_id,
@@ -849,29 +913,53 @@ export const supabaseApi: Api = {
         author_name: row.author?.display_name ?? 'Someone',
         text: row.text,
         created_at: row.created_at,
+        parent_comment_id: row.parent_comment_id,
+        like_count: commentLikes.length,
+        liked_by_me: !!viewerId && commentLikes.some((l) => l.user_id === viewerId),
       };
     });
   },
 
-  async addComment(authorId, postUserId, exhibitionId, text) {
+  async addComment(authorId, postUserId, exhibitionId, text, parentCommentId = null) {
     const { data, error } = await supabase()
       .from('post_comments')
-      .insert({ author_id: authorId, post_user_id: postUserId, exhibition_id: exhibitionId, text: text.trim() })
-      .select('*, author:profiles!post_comments_author_id_fkey(display_name)')
+      .insert({
+        author_id: authorId,
+        post_user_id: postUserId,
+        exhibition_id: exhibitionId,
+        text: text.trim(),
+        parent_comment_id: parentCommentId ?? null,
+      })
+      .select(
+        '*, author:profiles!post_comments_author_id_fkey(display_name), parent:post_comments!post_comments_parent_comment_id_fkey(author_id)'
+      )
       .single();
     if (error) throw new Error(error.message);
     const row = data as unknown as {
       id: string; post_user_id: string; exhibition_id: string; author_id: string;
-      text: string; created_at: string; author?: { display_name?: string } | null;
+      text: string; created_at: string; parent_comment_id: string | null;
+      author?: { display_name?: string } | null;
+      parent?: { author_id?: string } | null;
     };
     const authorName = row.author?.display_name ?? 'Someone';
-    if (postUserId !== authorId) {
-      notify(postUserId, 'New comment', `${authorName} commented on your post.`, {
-        type: 'comment',
-        post_user_id: postUserId,
-        exhibition_id: exhibitionId,
+    const parentAuthorId = row.parent?.author_id ?? null;
+
+    if (parentAuthorId && parentAuthorId !== authorId) {
+      notifyInApp(parentAuthorId, 'reply', authorId, exhibitionId, postUserId, row.id);
+      notify(parentAuthorId, 'New reply', `${authorName} replied to your comment.`, {
+        type: 'reply', post_user_id: postUserId, exhibition_id: exhibitionId,
       });
     }
+    if (postUserId !== authorId && postUserId !== parentAuthorId) {
+      notifyInApp(postUserId, 'comment', authorId, exhibitionId, postUserId, row.id);
+      notify(postUserId, 'New comment', `${authorName} commented on your post.`, {
+        type: 'comment', post_user_id: postUserId, exhibition_id: exhibitionId,
+      });
+    }
+    for (const mentionedId of extractMentionIds(row.text)) {
+      if (mentionedId !== authorId) notifyInApp(mentionedId, 'mention', authorId, exhibitionId, postUserId, row.id);
+    }
+
     return {
       id: row.id,
       post_user_id: row.post_user_id,
@@ -880,7 +968,35 @@ export const supabaseApi: Api = {
       author_name: authorName,
       text: row.text,
       created_at: row.created_at,
+      parent_comment_id: row.parent_comment_id,
+      like_count: 0,
+      liked_by_me: false,
     };
+  },
+
+  async likeComment(userId, commentId) {
+    const { error } = await supabase()
+      .from('comment_likes')
+      .upsert({ user_id: userId, comment_id: commentId });
+    if (error) throw new Error(error.message);
+    const { data: c } = await supabase()
+      .from('post_comments')
+      .select('author_id, exhibition_id, post_user_id')
+      .eq('id', commentId)
+      .maybeSingle();
+    if (c) {
+      const row = c as { author_id: string; exhibition_id: string; post_user_id: string };
+      notifyInApp(row.author_id, 'comment_like', userId, row.exhibition_id, row.post_user_id, commentId);
+    }
+  },
+
+  async unlikeComment(userId, commentId) {
+    const { error } = await supabase()
+      .from('comment_likes')
+      .delete()
+      .eq('user_id', userId)
+      .eq('comment_id', commentId);
+    if (error) throw new Error(error.message);
   },
 
   // ---- direct messages ----------------------------------------------------
@@ -957,12 +1073,15 @@ export const supabaseApi: Api = {
     return (data ?? []) as DirectMessage[];
   },
 
-  async sendMessage(senderId, recipientId, text) {
+  async sendMessage(senderId, recipientId, text, imageUrl = null) {
     const body = text.trim();
-    if (!body) throw new Error('Write a message first.');
+    if (!body && !imageUrl) throw new Error('Write a message or attach a photo first.');
     const sb = supabase();
     const [{ data, error }, { data: sender }] = await Promise.all([
-      sb.from('direct_messages').insert({ sender_id: senderId, recipient_id: recipientId, text: body }).select('*').single(),
+      sb.from('direct_messages')
+        .insert({ sender_id: senderId, recipient_id: recipientId, text: body, image_url: imageUrl ?? null })
+        .select('*')
+        .single(),
       sb.from('profiles').select('display_name').eq('id', senderId).single(),
     ]);
     if (error) {
@@ -974,7 +1093,8 @@ export const supabaseApi: Api = {
       );
     }
     const name = (sender as { display_name?: string } | null)?.display_name ?? 'Someone';
-    notify(recipientId, name, body, { type: 'message', user_id: senderId });
+    notifyInApp(recipientId, 'message', senderId);
+    notify(recipientId, name, body || 'Sent a photo', { type: 'message', user_id: senderId });
     return data as DirectMessage;
   },
 
@@ -1097,6 +1217,57 @@ export const supabaseApi: Api = {
       .delete()
       .eq('user_id', userId)
       .eq('token', token);
+    if (error) throw new Error(error.message);
+  },
+
+  // ---- in-app notification center ------------------------------------------
+  async listNotifications(userId) {
+    const { data, error } = await supabase()
+      .from('notifications')
+      .select('*, actor:profiles!notifications_actor_id_fkey(display_name), exhibition:exhibitions(title)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    return (data ?? []).map((r) => {
+      const row = r as unknown as {
+        id: string; user_id: string; kind: NotificationKind; actor_id: string | null;
+        exhibition_id: string | null; post_user_id: string | null; comment_id: string | null;
+        created_at: string; read_at: string | null;
+        actor?: { display_name?: string } | null; exhibition?: { title?: string } | null;
+      };
+      return {
+        id: row.id,
+        user_id: row.user_id,
+        kind: row.kind,
+        actor_id: row.actor_id,
+        actor_name: row.actor?.display_name ?? 'Someone',
+        exhibition_id: row.exhibition_id,
+        exhibition_title: row.exhibition?.title ?? null,
+        post_user_id: row.post_user_id,
+        comment_id: row.comment_id,
+        created_at: row.created_at,
+        read_at: row.read_at,
+      } as Notification;
+    });
+  },
+
+  async unreadNotificationCount(userId) {
+    const { count, error } = await supabase()
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .is('read_at', null);
+    if (error) throw new Error(error.message);
+    return count ?? 0;
+  },
+
+  async markNotificationsRead(userId) {
+    const { error } = await supabase()
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('user_id', userId)
+      .is('read_at', null);
     if (error) throw new Error(error.message);
   },
 

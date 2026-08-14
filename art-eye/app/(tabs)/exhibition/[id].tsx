@@ -11,7 +11,7 @@ import { fmtOpening, fmtRange } from '../../../src/lib/dates';
 import { directionsUrl } from '../../../src/lib/maps';
 import { ReelLink } from '../../../src/components/reel-link';
 import { shareExhibition } from '../../../src/lib/share';
-import { Exhibition, Visit } from '../../../src/lib/types';
+import { Exhibition, Profile, Visit } from '../../../src/lib/types';
 import { colors, fonts, space, type } from '../../../src/theme';
 
 function openLink(url: string) {
@@ -60,6 +60,7 @@ export default function ExhibitionDetail() {
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [wanted, setWanted] = useState(false);
   const [visit, setVisit] = useState<Visit | null>(null);
+  const [friendsHere, setFriendsHere] = useState<Profile[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useFocusEffect(
@@ -70,16 +71,19 @@ export default function ExhibitionDetail() {
         if (!alive) return;
         setExhibition(e);
         if (profile) {
-          const [watch, visits] = await Promise.all([
+          const [watch, visits, friends] = await Promise.all([
             api.listWatchlist(profile.id),
             api.listVisits(profile.id),
+            api.friendsWhoVisited(id, profile.id),
           ]);
           if (!alive) return;
           setWanted(watch.includes(id));
           setVisit(visits.find((v) => v.exhibition_id === id) ?? null);
+          setFriendsHere(friends);
         } else {
           setWanted(false);
           setVisit(null);
+          setFriendsHere([]);
         }
         setLoaded(true);
       })();
@@ -254,6 +258,17 @@ export default function ExhibitionDetail() {
             />
           )}
 
+          {friendsHere.length > 0 && (
+            <View style={styles.friendsBlock}>
+              <Kicker style={{ marginBottom: space.s }}>PEOPLE YOU FOLLOW SAW THIS</Kicker>
+              {friendsHere.map((p) => (
+                <Pressable key={p.id} onPress={() => router.push(`/profile/${p.id}`)} hitSlop={4}>
+                  <Text style={styles.friendName}>{p.display_name.toUpperCase()}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
           <Pressable
             onPress={() =>
               router.push(
@@ -364,6 +379,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.hairline,
     padding: space.m,
+  },
+  friendsBlock: { marginTop: space.l },
+  friendName: {
+    fontFamily: fonts.monoMedium,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    color: colors.ink,
+    paddingVertical: 6,
   },
   seenLabel: {
     fontFamily: fonts.monoMedium,
