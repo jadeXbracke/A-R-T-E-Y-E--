@@ -20,6 +20,7 @@ export default function FeedScreen() {
   const [people, setPeople] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<number>(0);
   const [unread, setUnread] = useState<number>(0);
+  const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
 
   const reload = useCallback(() => {
     if (!profile) {
@@ -33,12 +34,14 @@ export default function FeedScreen() {
       api.discoverPeople(profile.id),
       api.listFollowRequests(profile.id),
       api.unreadMessageCount(profile.id),
-    ]).then(([d, f, p, r, u]) => {
+      api.unreadNotificationCount(profile.id),
+    ]).then(([d, f, p, r, u, n]) => {
       setDiscover(d);
       setFriends(f);
       setPeople(p);
       setRequests(r.length);
       setUnread(u);
+      setUnreadNotifications(n);
     });
   }, [profile]);
 
@@ -67,6 +70,11 @@ export default function FeedScreen() {
           </View>
           {profile && (
             <View style={{ alignItems: 'flex-end', gap: 8 }}>
+              <Pressable onPress={() => router.push('/notifications')} hitSlop={8}>
+                <Text style={styles.you}>
+                  {unreadNotifications > 0 ? `NOTIFICATIONS (${unreadNotifications}) →` : 'NOTIFICATIONS →'}
+                </Text>
+              </Pressable>
               <Pressable onPress={() => router.push('/messages')} hitSlop={8}>
                 <Text style={styles.you}>
                   {unread > 0 ? `MESSAGES (${unread}) →` : 'MESSAGES →'}

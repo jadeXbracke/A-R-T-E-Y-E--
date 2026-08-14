@@ -63,6 +63,16 @@ export interface PublicProfile extends Profile {
   visit_count: number;
   follow_state: FollowState;
   can_view_activity: boolean; // public, own profile, or an accepted follower
+  blocked_by_me: boolean;
+}
+
+// One person blocking another. Blocking is one-directional as an action, but
+// its effect is symmetric: neither side sees the other in feeds, search or
+// messaging while any block exists between them (checked both ways).
+export interface Block {
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
 }
 
 // One entry in the activity feed — a friend logging a visit to a show. A "post"
@@ -91,7 +101,8 @@ export interface Like {
   created_at: string;
 }
 
-// A comment on a post.
+// A comment on a post, optionally a reply to another comment (one level deep
+// — a reply's own parent_comment_id is always a top-level comment).
 export interface Comment {
   id: string;
   post_user_id: string; // whose post
@@ -100,6 +111,9 @@ export interface Comment {
   author_name: string;
   text: string;
   created_at: string;
+  parent_comment_id: string | null;
+  like_count: number;
+  liked_by_me: boolean;
 }
 
 // ---- direct messages --------------------------------------------------------
@@ -110,6 +124,7 @@ export interface DirectMessage {
   sender_id: string;
   recipient_id: string;
   text: string;
+  image_url?: string | null; // an attached photo, with or instead of text
   created_at: string;
   read_at: string | null; // set when the recipient opens the thread
 }
@@ -122,10 +137,38 @@ export interface Conversation {
   unread: number;
 }
 
+// ---- notification center ----------------------------------------------------
+// An in-app, durable record of an event aimed at this user — the readable
+// counterpart to push (which is fire-and-forget and has no unread state).
+export type NotificationKind =
+  | 'like'
+  | 'comment'
+  | 'reply'
+  | 'comment_like'
+  | 'follow'
+  | 'follow_request'
+  | 'message'
+  | 'mention';
+
+export interface Notification {
+  id: string;
+  user_id: string; // recipient
+  kind: NotificationKind;
+  actor_id: string | null;
+  actor_name: string;
+  exhibition_id: string | null;
+  exhibition_title: string | null;
+  post_user_id: string | null; // the post this refers to, when relevant
+  comment_id: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+
 // ---- feedback ---------------------------------------------------------------
-// A straight line from any user to the app owner: general notes, or "something
-// is missing/wrong" reports attached to a venue or exhibition.
-export type FeedbackKind = 'general' | 'venue' | 'exhibition';
+// A straight line from any user to the app owner: general notes, "something
+// is missing/wrong" reports attached to a venue or exhibition, or a report
+// against a person or their post — same inbox, same review flow.
+export type FeedbackKind = 'general' | 'venue' | 'exhibition' | 'profile' | 'post';
 
 export interface Feedback {
   id: string;

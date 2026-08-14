@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { api, DEMO_MODE } from './api';
 import { SignUpInput } from './api-types';
 import { Profile } from './types';
+import { registerForPushNotifications } from './push';
 
 interface AuthState {
   profile: Profile | null;
@@ -37,6 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refresh().finally(() => setLoading(false));
   }, [refresh]);
+
+  // Once signed in (fresh sign-in, sign-up, or an app launch that resumes an
+  // existing session), quietly try to register this device for push.
+  useEffect(() => {
+    if (profile) registerForPushNotifications(profile.id);
+  }, [profile?.id]);
 
   // A password-recovery email signs the user in via the URL; send them
   // straight to the new-password screen. Live mode only.

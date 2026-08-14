@@ -125,7 +125,7 @@ function ConversationRow({ conversation, myId }: { conversation: Conversation; m
         </View>
         <Text style={[styles.preview, unread > 0 && styles.previewUnread]} numberOfLines={1}>
           {mine ? 'You: ' : ''}
-          {last_message.text}
+          {last_message.text || (last_message.image_url ? '📷 Photo' : '')}
         </Text>
       </View>
       {unread > 0 && <View style={styles.unreadDot} />}

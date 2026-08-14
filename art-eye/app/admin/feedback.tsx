@@ -102,10 +102,20 @@ function Row({
     month: 'short',
   });
   const kindLabel =
-    item.kind === 'general' ? 'GENERAL' : item.kind === 'venue' ? 'VENUE' : 'EXHIBITION';
+    item.kind === 'general' ? 'GENERAL'
+    : item.kind === 'venue' ? 'VENUE'
+    : item.kind === 'exhibition' ? 'EXHIBITION'
+    : item.kind === 'profile' ? 'REPORT — PROFILE'
+    : 'REPORT — POST';
   const openSubject = () => {
     if (!item.subject_id) return;
-    router.push(item.kind === 'venue' ? `/venue/${item.subject_id}` : `/exhibition/${item.subject_id}`);
+    router.push(
+      item.kind === 'venue'
+        ? `/venue/${item.subject_id}`
+        : item.kind === 'profile' || item.kind === 'post'
+          ? `/profile/${item.subject_id}`
+          : `/exhibition/${item.subject_id}`
+    );
   };
   return (
     <View style={[styles.row, muted && { opacity: 0.55 }]}>

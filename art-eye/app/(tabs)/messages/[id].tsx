@@ -1,3 +1,5 @@
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useRef, useState } from 'react';
 import {
@@ -29,6 +31,8 @@ export default function ThreadScreen() {
   const [messages, setMessages] = useState<DirectMessage[] | null>(null);
   const [allowed, setAllowed] = useState<boolean>(true);
   const [draft, setDraft] = useState('');
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [attaching, setAttaching] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,18 +75,30 @@ export default function ThreadScreen() {
 
   const send = async () => {
     const body = draft.trim();
-    if (!body || sending) return;
+    if ((!body && !attachedImage) || sending) return;
     setSending(true);
     setError(null);
     try {
-      const sent = await api.sendMessage(me.id, peer.id, body);
+      const sent = await api.sendMessage(me.id, peer.id, body, attachedImage);
       setDraft('');
+      setAttachedImage(null);
       setMessages((prev) => [...(prev ?? []), sent]);
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not send the message.');
     } finally {
       setSending(false);
+    }
+  };
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+    if (result.canceled || !result.assets[0]) return;
+    setAttaching(true);
+    try {
+      setAttachedImage(await api.uploadImage(result.assets[0].uri));
+    } finally {
+      setAttaching(false);
     }
   };
 
@@ -123,8 +139,21 @@ export default function ThreadScreen() {
               10 * 60 * 1000;
           return (
             <View key={m.id} style={{ alignItems: mine ? 'flex-end' : 'flex-start' }}>
-              <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs]}>
-                <Text style={mine ? styles.textMine : styles.textTheirs}>{m.text}</Text>
+              <View
+                style={[
+                  styles.bubble,
+                  mine ? styles.bubbleMine : styles.bubbleTheirs,
+                  !!m.image_url && styles.bubbleImage,
+                ]}
+              >
+                {!!m.image_url && (
+                  <Image source={{ uri: m.image_url }} style={styles.image} contentFit="cover" />
+                )}
+                {!!m.text && (
+                  <Text style={[mine ? styles.textMine : styles.textTheirs, !!m.image_url && { marginTop: space.s }]}>
+                    {m.text}
+                  </Text>
+                )}
               </View>
               {showTime && <Text style={styles.stamp}>{stamp(m.created_at)}</Text>}
             </View>
@@ -135,7 +164,18 @@ export default function ThreadScreen() {
       {allowed ? (
         <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, space.m) }]}>
           {!!error && <Text style={styles.error}>{error.toUpperCase()}</Text>}
+          {!!attachedImage && (
+            <View style={styles.attachPreview}>
+              <Image source={{ uri: attachedImage }} style={styles.attachThumb} contentFit="cover" />
+              <Pressable onPress={() => setAttachedImage(null)} hitSlop={8}>
+                <Text style={styles.attachRemove}>REMOVE</Text>
+              </Pressable>
+            </View>
+          )}
           <View style={styles.composerRow}>
+            <Pressable onPress={pickImage} disabled={attaching} hitSlop={8}>
+              <Text style={[styles.attachButton, attaching && { opacity: 0.35 }]}>+</Text>
+            </Pressable>
             <TextInput
               style={styles.input}
               value={draft}
@@ -144,8 +184,8 @@ export default function ThreadScreen() {
               placeholderTextColor={colors.grey}
               multiline
             />
-            <Pressable onPress={send} disabled={!draft.trim() || sending} hitSlop={8}>
-              <Text style={[styles.send, (!draft.trim() || sending) && { opacity: 0.35 }]}>
+            <Pressable onPress={send} disabled={(!draft.trim() && !attachedImage) || sending} hitSlop={8}>
+              <Text style={[styles.send, (!draft.trim() && !attachedImage) || sending ? { opacity: 0.35 } : null]}>
                 SEND
               </Text>
             </Pressable>
@@ -192,6 +232,8 @@ const styles = StyleSheet.create({
   bubble: { maxWidth: '78%', paddingHorizontal: 14, paddingVertical: 10 },
   bubbleMine: { backgroundColor: colors.ink },
   bubbleTheirs: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.hairline },
+  bubbleImage: { paddingHorizontal: 6, paddingVertical: 6 },
+  image: { width: 200, height: 200, backgroundColor: colors.dim },
   textMine: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 21, color: colors.white },
   textTheirs: { fontFamily: fonts.serif, fontSize: 15, lineHeight: 21, color: colors.ink },
   stamp: { fontFamily: fonts.mono, fontSize: 9, letterSpacing: 1, color: colors.ink, opacity: 0.5, marginTop: 4 },
@@ -203,6 +245,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   composerRow: { flexDirection: 'row', alignItems: 'flex-end', gap: space.m },
+  attachButton: { fontFamily: fonts.monoMedium, fontSize: 20, color: colors.ink, paddingBottom: 6 },
+  attachPreview: { flexDirection: 'row', alignItems: 'center', gap: space.m, paddingBottom: space.s },
+  attachThumb: { width: 44, height: 44, backgroundColor: colors.dim },
+  attachRemove: { fontFamily: fonts.monoMedium, fontSize: 9, letterSpacing: 1, color: colors.ink },
   input: {
     flex: 1,
     fontFamily: fonts.serif,

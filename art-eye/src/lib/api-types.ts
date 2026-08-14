@@ -1,4 +1,4 @@
-import { Comment, Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, Feedback, FeedbackDraft, FeedItem, FollowState, ImageCandidate, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
+import { Block, Comment, Conversation, CuratedList, DirectMessage, Exhibition, ExhibitionDraft, ExhibitionProposal, Feedback, FeedbackDraft, FeedItem, FollowState, ImageCandidate, Notification, Profile, ProfileType, PublicProfile, RejectionReason, Role, Venue, VenueDraft, VenueProposal, VenueType, Visit } from './types';
 
 export interface SignUpInput {
   email: string;
@@ -98,23 +98,55 @@ export interface Api {
   getPost(postUserId: string, exhibitionId: string, viewerId: string | null): Promise<FeedItem | null>;
   likePost(likerId: string, postUserId: string, exhibitionId: string): Promise<void>;
   unlikePost(likerId: string, postUserId: string, exhibitionId: string): Promise<void>;
-  listComments(postUserId: string, exhibitionId: string): Promise<Comment[]>;
-  addComment(authorId: string, postUserId: string, exhibitionId: string, text: string): Promise<Comment>;
+  listComments(postUserId: string, exhibitionId: string, viewerId: string | null): Promise<Comment[]>;
+  addComment(
+    authorId: string,
+    postUserId: string,
+    exhibitionId: string,
+    text: string,
+    parentCommentId?: string | null
+  ): Promise<Comment>;
+  likeComment(userId: string, commentId: string): Promise<void>;
+  unlikeComment(userId: string, commentId: string): Promise<void>;
+
+  // "who else saw this" — people the viewer follows who also logged a visit
+  // to this exhibition. Social proof on the exhibition page.
+  friendsWhoVisited(exhibitionId: string, viewerId: string): Promise<Profile[]>;
 
   // direct messages — only between mutual follows (both accepted). The UI
   // hides the composer otherwise and sendMessage double-checks server-side.
   canMessage(viewerId: string, targetId: string): Promise<boolean>;
   listConversations(userId: string): Promise<Conversation[]>;
   listMessages(userId: string, peerId: string): Promise<DirectMessage[]>; // also marks the peer's messages as read
-  sendMessage(senderId: string, recipientId: string, text: string): Promise<DirectMessage>;
+  sendMessage(senderId: string, recipientId: string, text: string, imageUrl?: string | null): Promise<DirectMessage>;
   unreadMessageCount(userId: string): Promise<number>;
   listMessageablePeople(userId: string): Promise<Profile[]>; // mutual follows, for starting a thread
 
   // feedback — anyone (signed in or not) can write to the owner; only the
-  // owner reads the inbox and marks items handled.
+  // owner reads the inbox and marks items handled. Also used for reports
+  // (kind: 'profile' | 'post') — same inbox, no separate moderation queue.
   submitFeedback(draft: FeedbackDraft, userId: string | null): Promise<void>;
   listFeedback(): Promise<Feedback[]>; // admin
   setFeedbackStatus(id: string, status: Feedback['status']): Promise<void>; // admin
+
+  // blocking — hides the other person from feeds, search and messaging in
+  // both directions for as long as the block exists.
+  blockUser(blockerId: string, blockedId: string): Promise<void>;
+  unblockUser(blockerId: string, blockedId: string): Promise<void>;
+  listBlocked(userId: string): Promise<Profile[]>;
+
+  // account deletion (App Store 5.1.1(v)): removes the account and every row
+  // that references it. Irreversible; the caller signs out right after.
+  deleteOwnAccount(userId: string): Promise<void>;
+
+  // push notifications
+  registerPushToken(userId: string, token: string): Promise<void>;
+  unregisterPushToken(userId: string, token: string): Promise<void>;
+
+  // in-app notification center — the durable, readable counterpart to push
+  listNotifications(userId: string): Promise<Notification[]>;
+  unreadNotificationCount(userId: string): Promise<number>;
+  markNotificationsRead(userId: string): Promise<void>;
 
   // media
   uploadImage(localUri: string): Promise<string>;

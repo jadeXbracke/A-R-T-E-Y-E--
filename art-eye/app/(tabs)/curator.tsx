@@ -9,6 +9,7 @@ import { BuildStamp, EmptyState, Hairline, Kicker, Loading, MonoLink, RatingDots
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { fmtDay } from '../../src/lib/dates';
+import { monthStreak } from '../../src/lib/stats';
 import { Exhibition, PROFILE_TYPES, Visit } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
@@ -136,6 +137,7 @@ export default function CuratorScreen() {
     if (!visits?.length) return '—';
     return (visits.reduce((s, v) => s + v.rating, 0) / visits.length).toFixed(1);
   }, [visits]);
+  const streak = useMemo(() => monthStreak(visits ?? []), [visits]);
 
   if (!profile) {
     return (
@@ -210,6 +212,8 @@ export default function CuratorScreen() {
         <Stat label="WANT TO SEE" value={String(watchCount)} />
         <View style={styles.statDivider} />
         <Stat label="AVG" value={avg} />
+        <View style={styles.statDivider} />
+        <Stat label={streak === 1 ? 'MONTH STREAK' : 'MONTHS STREAK'} value={String(streak)} />
       </View>
       <Hairline />
 
@@ -263,6 +267,12 @@ export default function CuratorScreen() {
 
       <View style={styles.footerLinks}>
         <MonoLink
+          label="YOUR YEAR WRAPPED"
+          active
+          onPress={() => router.push('/wrapped')}
+          style={{ alignSelf: 'flex-start' }}
+        />
+        <MonoLink
           label="SUBMIT A SHOW"
           active
           onPress={() => router.push('/submit')}
@@ -279,6 +289,11 @@ export default function CuratorScreen() {
         <MonoLink
           label="SEND FEEDBACK TO THE OWNER"
           onPress={() => router.push('/feedback')}
+          style={{ alignSelf: 'flex-start' }}
+        />
+        <MonoLink
+          label="ACCOUNT & BLOCKED PEOPLE"
+          onPress={() => router.push('/account')}
           style={{ alignSelf: 'flex-start' }}
         />
         <MonoLink
