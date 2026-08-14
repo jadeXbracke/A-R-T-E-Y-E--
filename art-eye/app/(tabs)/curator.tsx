@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArtImage } from '../../src/components/exhibition';
@@ -132,11 +132,6 @@ export default function CuratorScreen() {
     }, [profile])
   );
 
-  const avg = useMemo(() => {
-    if (!visits?.length) return '—';
-    return (visits.reduce((s, v) => s + v.rating, 0) / visits.length).toFixed(1);
-  }, [visits]);
-
   if (!profile) {
     return (
       <View
@@ -208,8 +203,6 @@ export default function CuratorScreen() {
         <Stat label="SEEN" value={String(visits?.length ?? 0)} />
         <View style={styles.statDivider} />
         <Stat label="WANT TO SEE" value={String(watchCount)} />
-        <View style={styles.statDivider} />
-        <Stat label="AVG" value={avg} />
       </View>
       <Hairline />
 

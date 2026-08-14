@@ -245,13 +245,17 @@ function feedItemFrom(s: DemoState, v: Visit, viewerId: string | null): FeedItem
     id: `${v.user_id}:${v.exhibition_id}`,
     user_id: v.user_id,
     display_name: user.display_name,
+    avatar_url: user.avatar_url ?? null,
     exhibition_id: ex.id,
     exhibition_title: ex.title,
+    exhibition_image_url: ex.image_url ?? null,
     venue_name: venue?.name ?? null,
+    venue_image_url: venue?.image_url ?? null,
     rating: v.rating,
     reflection: v.reflection,
     visit_date: v.visit_date,
     video_url: v.video_url ?? null,
+    photo_url: v.photo_url ?? null,
     like_count: postLikes.length,
     liked_by_me: !!viewerId && postLikes.some((l) => l.user_id === viewerId),
     comment_count: s.comments.filter(
@@ -524,6 +528,22 @@ export const demoApi: Api = {
       .map((v) => feedItemFrom(s, v, viewerId))
       .filter((x): x is FeedItem => x !== null)
       .sort((a, b) => (a.visit_date < b.visit_date ? 1 : -1));
+  },
+
+  async trendingPosts(viewerId) {
+    const s = await load();
+    const publicIds = new Set(
+      s.users.filter((u) => !u.is_private && u.role !== 'admin').map((u) => u.id)
+    );
+    const since = new Date();
+    since.setDate(since.getDate() - 7);
+    const sinceStr = since.toISOString().slice(0, 10);
+    return s.visits
+      .filter((v) => publicIds.has(v.user_id) && v.visit_date >= sinceStr && !isBlocked(s, viewerId, v.user_id))
+      .map((v) => feedItemFrom(s, v, viewerId))
+      .filter((x): x is FeedItem => x !== null && x.like_count > 0)
+      .sort((a, b) => b.like_count - a.like_count)
+      .slice(0, 10);
   },
 
   async userActivity(userId, viewerId) {
