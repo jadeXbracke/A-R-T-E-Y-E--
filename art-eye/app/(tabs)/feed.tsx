@@ -3,7 +3,8 @@ import React, { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState, Hairline, Loading } from '../../src/components/ui';
-import { ActivityRow, PersonRow } from '../../src/components/social';
+import { ActivityRow, PersonRow, postParam } from '../../src/components/social';
+import { LiveArt } from '../../src/components/live-art';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { FeedItem, Profile } from '../../src/lib/types';
@@ -17,6 +18,7 @@ export default function FeedScreen() {
   const [tab, setTab] = useState<FeedTab>('discover');
   const [discover, setDiscover] = useState<FeedItem[] | null>(null);
   const [friends, setFriends] = useState<FeedItem[] | null>(null);
+  const [trending, setTrending] = useState<FeedItem[]>([]);
   const [people, setPeople] = useState<Profile[]>([]);
   const [requests, setRequests] = useState<number>(0);
   const [unread, setUnread] = useState<number>(0);
@@ -35,13 +37,15 @@ export default function FeedScreen() {
       api.listFollowRequests(profile.id),
       api.unreadMessageCount(profile.id),
       api.unreadNotificationCount(profile.id),
-    ]).then(([d, f, p, r, u, n]) => {
+      api.trendingPosts(profile.id),
+    ]).then(([d, f, p, r, u, n, t]) => {
       setDiscover(d);
       setFriends(f);
       setPeople(p);
       setRequests(r.length);
       setUnread(u);
       setUnreadNotifications(n);
+      setTrending(t);
     });
   }, [profile]);
 
@@ -124,6 +128,42 @@ export default function FeedScreen() {
             </Pressable>
           )}
 
+          {tab === 'discover' && trending.length > 0 && (
+            <>
+              <View style={styles.sectionHead}>
+                <Text style={styles.sectionTitle}>TRENDING THIS WEEK</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.trendingRow}
+              >
+                {trending.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => router.push(`/post/${postParam(item)}`)}
+                    style={styles.trendingCard}
+                  >
+                    <LiveArt
+                      videoUrl={item.video_url}
+                      uri={item.photo_url ?? item.exhibition_image_url}
+                      venueUri={item.venue_image_url}
+                      fallbackId={item.id}
+                      active={false}
+                      aspectRatio={1}
+                      style={styles.trendingImage}
+                    />
+                    <Text style={styles.trendingLikes}>♥ {item.like_count}</Text>
+                    <Text style={styles.trendingTitle} numberOfLines={1}>
+                      {item.exhibition_title}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+              <Hairline />
+            </>
+          )}
+
           {feed.length === 0 ? (
             <EmptyState>
               {tab === 'discover'
@@ -184,4 +224,9 @@ const styles = StyleSheet.create({
     paddingBottom: space.s,
   },
   sectionTitle: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.8, color: colors.ink },
+  trendingRow: { paddingHorizontal: space.page, gap: space.m, paddingBottom: space.l },
+  trendingCard: { width: 130 },
+  trendingImage: { width: 130, backgroundColor: colors.dim },
+  trendingLikes: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1, color: colors.ink, marginTop: 6 },
+  trendingTitle: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 0.6, color: colors.ink, opacity: 0.7, marginTop: 2 },
 });

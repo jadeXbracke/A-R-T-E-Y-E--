@@ -35,6 +35,9 @@ export function supabase(): SupabaseClient {
 const EXHIBITION_SELECT = '*, venue:venues(*)';
 
 // Shape a joined user_visits row (with actor + exhibition + venue) into a FeedItem.
+const FEED_ITEM_SELECT =
+  '*, actor:profiles!user_visits_user_id_fkey(display_name, avatar_url), exhibition:exhibitions(title, image_url, venue:venues(name, image_url))';
+
 function toFeedItem(row: unknown): FeedItem {
   const r = row as {
     user_id: string;
@@ -43,20 +46,25 @@ function toFeedItem(row: unknown): FeedItem {
     reflection: string;
     visit_date: string;
     video_url?: string | null;
-    actor?: { display_name?: string } | null;
-    exhibition?: { title?: string; venue?: { name?: string } | null } | null;
+    photo_url?: string | null;
+    actor?: { display_name?: string; avatar_url?: string | null } | null;
+    exhibition?: { title?: string; image_url?: string | null; venue?: { name?: string; image_url?: string | null } | null } | null;
   };
   return {
     id: `${r.user_id}:${r.exhibition_id}`,
     user_id: r.user_id,
     display_name: r.actor?.display_name ?? 'Someone',
+    avatar_url: r.actor?.avatar_url ?? null,
     exhibition_id: r.exhibition_id,
     exhibition_title: r.exhibition?.title ?? 'a show',
+    exhibition_image_url: r.exhibition?.image_url ?? null,
     venue_name: r.exhibition?.venue?.name ?? null,
+    venue_image_url: r.exhibition?.venue?.image_url ?? null,
     rating: r.rating,
     reflection: r.reflection,
     visit_date: r.visit_date,
     video_url: r.video_url ?? null,
+    photo_url: r.photo_url ?? null,
     like_count: 0,
     liked_by_me: false,
     comment_count: 0,
@@ -790,7 +798,7 @@ export const supabaseApi: Api = {
     if (ids.length === 0) return [];
     const { data, error } = await sb
       .from('user_visits')
-      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .select(FEED_ITEM_SELECT)
       .in('user_id', ids)
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
@@ -811,7 +819,7 @@ export const supabaseApi: Api = {
     if (ids.length === 0) return [];
     const { data, error } = await sb
       .from('user_visits')
-      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .select(FEED_ITEM_SELECT)
       .in('user_id', ids)
       .order('visit_date', { ascending: false })
       .limit(100);
@@ -819,11 +827,36 @@ export const supabaseApi: Api = {
     return withReactions((data ?? []).map(toFeedItem), viewerId);
   },
 
+  async trendingPosts(viewerId) {
+    const sb = supabase();
+    const since = new Date();
+    since.setDate(since.getDate() - 7);
+    const sinceStr = since.toISOString().slice(0, 10);
+    const [{ data: pub }, blocked] = await Promise.all([
+      sb.from('profiles').select('id').eq('is_private', false).neq('role', 'admin'),
+      blockedIdSet(viewerId),
+    ]);
+    const ids = (pub ?? [])
+      .map((r) => (r as { id: string }).id)
+      .filter((id) => !blocked.has(id));
+    if (ids.length === 0) return [];
+    const { data, error } = await sb
+      .from('user_visits')
+      .select(FEED_ITEM_SELECT)
+      .in('user_id', ids)
+      .gte('visit_date', sinceStr)
+      .order('visit_date', { ascending: false })
+      .limit(100);
+    if (error) throw new Error(error.message);
+    const items = await withReactions((data ?? []).map(toFeedItem), viewerId);
+    return items.filter((i) => i.like_count > 0).sort((a, b) => b.like_count - a.like_count).slice(0, 10);
+  },
+
   async userActivity(userId, viewerId) {
     // RLS enforces visibility — a hidden profile simply returns no rows.
     const { data, error } = await supabase()
       .from('user_visits')
-      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .select(FEED_ITEM_SELECT)
       .eq('user_id', userId)
       .order('visit_date', { ascending: false });
     if (error) throw new Error(error.message);
@@ -856,7 +889,7 @@ export const supabaseApi: Api = {
   async getPost(postUserId, exhibitionId, viewerId) {
     const { data, error } = await supabase()
       .from('user_visits')
-      .select('*, actor:profiles!user_visits_user_id_fkey(display_name), exhibition:exhibitions(title, venue:venues(name))')
+      .select(FEED_ITEM_SELECT)
       .eq('user_id', postUserId)
       .eq('exhibition_id', exhibitionId)
       .maybeSingle();

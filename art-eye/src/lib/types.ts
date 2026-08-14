@@ -81,13 +81,17 @@ export interface FeedItem {
   id: string; // `${user_id}:${exhibition_id}`
   user_id: string;
   display_name: string;
+  avatar_url: string | null;
   exhibition_id: string;
   exhibition_title: string;
+  exhibition_image_url: string | null; // the show's own photo — the card's visual fallback
   venue_name: string | null;
+  venue_image_url: string | null; // next fallback, when the show itself has no photo
   rating: number;
   reflection: string;
   visit_date: string; // YYYY-MM-DD
   video_url?: string | null; // short clip attached to the post
+  photo_url?: string | null; // still photo attached instead of a clip
   like_count: number;
   liked_by_me: boolean;
   comment_count: number;
@@ -271,6 +275,7 @@ export interface Visit {
   reflection: string;
   visit_date: string; // YYYY-MM-DD
   video_url?: string | null; // short clip the user attached to the post
+  photo_url?: string | null; // still photo attached instead of a clip
 }
 
 export interface ExhibitionDraft {

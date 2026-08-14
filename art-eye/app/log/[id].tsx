@@ -19,6 +19,8 @@ import { todayStr } from '../../src/lib/dates';
 import { Exhibition } from '../../src/lib/types';
 import { colors, fonts, space, type } from '../../src/theme';
 
+type Media = 'photo' | 'video';
+
 export default function LogVisit() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -26,6 +28,8 @@ export default function LogVisit() {
   const [exhibition, setExhibition] = useState<Exhibition | null>(null);
   const [rating, setRating] = useState(0);
   const [reflection, setReflection] = useState('');
+  const [media, setMedia] = useState<Media>('photo');
+  const [photo, setPhoto] = useState<string | null>(null);
   const [video, setVideo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,18 +42,28 @@ export default function LogVisit() {
         if (v) {
           setRating(v.rating);
           setReflection(v.reflection);
+          setPhoto(v.photo_url ?? null);
           setVideo(v.video_url ?? null);
+          if (v.video_url) setMedia('video');
         }
       });
     }
   }, [id, profile]);
+
+  // Photo and video are mutually exclusive on a post — switching tabs keeps
+  // whatever was already picked for the other tab out of what gets saved.
+  const switchMedia = (next: Media) => setMedia(next);
 
   const save = async () => {
     if (!profile || !rating) return;
     setBusy(true);
     setError(null);
     try {
-      let videoUrl = video;
+      let photoUrl = media === 'photo' ? photo : null;
+      let videoUrl = media === 'video' ? video : null;
+      if (photoUrl && !photoUrl.startsWith('http')) {
+        photoUrl = await api.uploadImage(photoUrl);
+      }
       if (videoUrl && !videoUrl.startsWith('http')) {
         videoUrl = await api.uploadImage(videoUrl); // uploads video too (content-type detected)
       }
@@ -59,6 +73,7 @@ export default function LogVisit() {
         rating,
         reflection: reflection.trim(),
         visit_date: todayStr(),
+        photo_url: photoUrl,
         video_url: videoUrl,
       });
       router.back();
@@ -114,9 +129,28 @@ export default function LogVisit() {
           A line is enough. This is your record, not a review for anyone else.
         </Text>
 
-        <Kicker style={{ marginTop: space.xl, marginBottom: space.s }}>VIDEO (OPTIONAL)</Kicker>
-        <PhotoPicker uri={video} media="video" onPick={setVideo} addLabel="ADD A CLIP" />
-        <Text style={styles.hint}>A short clip from the room — up to a minute.</Text>
+        <View style={styles.mediaHead}>
+          <Kicker>PHOTO OR VIDEO (OPTIONAL)</Kicker>
+          <View style={styles.mediaTabs}>
+            <Pressable onPress={() => switchMedia('photo')} hitSlop={6}>
+              <Text style={[styles.mediaTab, media === 'photo' && styles.mediaTabActive]}>PHOTO</Text>
+            </Pressable>
+            <Pressable onPress={() => switchMedia('video')} hitSlop={6}>
+              <Text style={[styles.mediaTab, media === 'video' && styles.mediaTabActive]}>VIDEO</Text>
+            </Pressable>
+          </View>
+        </View>
+        {media === 'photo' ? (
+          <>
+            <PhotoPicker uri={photo} media="image" onPick={setPhoto} addLabel="ADD A PHOTO" />
+            <Text style={styles.hint}>A shot from the room — the work, the crowd, whatever stayed with you.</Text>
+          </>
+        ) : (
+          <>
+            <PhotoPicker uri={video} media="video" onPick={setVideo} addLabel="ADD A CLIP" />
+            <Text style={styles.hint}>A short clip from the room — up to a minute.</Text>
+          </>
+        )}
 
         {error && <Text style={styles.error}>{error}</Text>}
       </ScrollView>
@@ -134,6 +168,16 @@ export default function LogVisit() {
 }
 
 const styles = StyleSheet.create({
+  mediaHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: space.xl,
+    marginBottom: space.s,
+  },
+  mediaTabs: { flexDirection: 'row', gap: space.m },
+  mediaTab: { fontFamily: fonts.monoMedium, fontSize: 10, letterSpacing: 1.4, color: colors.ink, opacity: 0.35 },
+  mediaTabActive: { opacity: 1, textDecorationLine: 'underline' },
   headRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

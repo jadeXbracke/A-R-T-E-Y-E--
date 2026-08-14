@@ -92,6 +92,7 @@ export interface Api {
   searchPeople(viewerId: string): Promise<Profile[]>; // everyone (except self), for name search
   friendsFeed(viewerId: string): Promise<FeedItem[]>; // activity from accepted follows
   discoverFeed(viewerId: string): Promise<FeedItem[]>; // activity from every public profile
+  trendingPosts(viewerId: string): Promise<FeedItem[]>; // most-liked public posts from the last 7 days
   userActivity(userId: string, viewerId: string | null): Promise<FeedItem[]>;
 
   // reactions on posts (Letterboxd-style) — a post is (postUserId, exhibitionId)
