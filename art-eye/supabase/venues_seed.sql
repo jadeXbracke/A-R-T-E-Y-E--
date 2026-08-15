@@ -1,7 +1,7 @@
 -- ============================================================================
 --  ART EYE — SYDNEY VENUE REGISTER  (seed / upsert)
 -- ============================================================================
---  137 real Sydney venues (galleries, museums, ARIs), verified July 2026.
+--  138 real Sydney venues (galleries, museums, ARIs), verified July 2026.
 --  Safe to run repeatedly: rows are matched on `slug`, so re-running updates
 --  existing venues instead of creating duplicates.
 --
@@ -123,6 +123,7 @@ insert into venues (slug, name, type, category, tier, editorial_note, address, s
   ('the-commercial', 'The Commercial', 'gallery', 'commercial', '3', 'Sharp conceptual program with a devoted following.', null, 'Marrickville', null, null, -33.911, 151.155, 'Sydney'),
   ('wagner-contemporary', 'Wagner Contemporary', 'gallery', 'commercial', '3', 'Approachable contemporary painting on Oxford Street.', null, 'Paddington', null, null, -33.885, 151.227, 'Sydney'),
   ('piermarq', 'Piermarq', 'gallery', 'commercial', '3', 'International program pitched at a younger crowd.', null, 'Paddington', null, null, -33.884, 151.225, 'Sydney'),
+  ('lowe-leckie', 'Lowe + Leckie', 'gallery', 'commercial', '3', 'Young Paddington gallery; viewings and stockroom by appointment.', null, 'Paddington', 'https://www.loweleckie.com', '@loweleckie.gallery', null, null, 'Sydney'),
   ('gallery-sally-dan-cuthbert', 'Gallery Sally Dan-Cuthbert', 'gallery', 'commercial', '3', 'Art crossed with collectible design.', null, 'Rushcutters Bay', null, null, -33.875, 151.225, 'Sydney'),
   ('annette-larkin-fine-art', 'Annette Larkin Fine Art', 'gallery', 'commercial', '3', 'Secondary-market specialist.', null, 'Darlinghurst', null, null, -33.879, 151.217, 'Sydney'),
   ('maunsell-wickes', 'Maunsell Wickes', 'gallery', 'commercial', '3', 'Long-established rooms on Glenmore Road.', null, 'Paddington', null, null, -33.885, 151.224, 'Sydney'),

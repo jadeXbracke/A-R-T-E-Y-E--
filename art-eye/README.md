@@ -31,7 +31,7 @@ submissions and admin approval all work. Demo accounts (password `arteye`):
 
 1. Create a Supabase project.
 2. In the SQL Editor, paste and run **`supabase/setup_all.sql`** once — the
-   full schema, the 137 real Sydney venues and the 61 verified exhibitions in
+   full schema, the 138 real Sydney venues and the 61 verified exhibitions in
    a single repeat-safe file. (Do not run `supabase/migrations/*.sql`
    individually or the legacy `supabase/seed.sql`; both are superseded.)
 3. The deployed website rebuilds itself: `.github/workflows/deploy-pages.yml`
