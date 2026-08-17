@@ -963,19 +963,28 @@ export const supabaseApi: Api = {
         text: text.trim(),
         parent_comment_id: parentCommentId ?? null,
       })
-      .select(
-        '*, author:profiles!post_comments_author_id_fkey(display_name), parent:post_comments!post_comments_parent_comment_id_fkey(author_id)'
-      )
+      .select('*, author:profiles!post_comments_author_id_fkey(display_name)')
       .single();
     if (error) throw new Error(error.message);
     const row = data as unknown as {
       id: string; post_user_id: string; exhibition_id: string; author_id: string;
       text: string; created_at: string; parent_comment_id: string | null;
       author?: { display_name?: string } | null;
-      parent?: { author_id?: string } | null;
     };
     const authorName = row.author?.display_name ?? 'Someone';
-    const parentAuthorId = row.parent?.author_id ?? null;
+
+    // A plain follow-up lookup, not a self-referencing embed — PostgREST's
+    // embedding of a table into itself needs extra disambiguation and isn't
+    // worth the fragility here for what's only needed on the reply path.
+    let parentAuthorId: string | null = null;
+    if (parentCommentId) {
+      const { data: parent } = await supabase()
+        .from('post_comments')
+        .select('author_id')
+        .eq('id', parentCommentId)
+        .maybeSingle();
+      parentAuthorId = (parent as { author_id?: string } | null)?.author_id ?? null;
+    }
 
     if (parentAuthorId && parentAuthorId !== authorId) {
       notifyInApp(parentAuthorId, 'reply', authorId, exhibitionId, postUserId, row.id);
