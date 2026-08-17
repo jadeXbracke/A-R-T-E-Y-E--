@@ -35,6 +35,7 @@ export default function PostDetail() {
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     if (!postUserId || !exhibitionId) return;
@@ -74,11 +75,14 @@ export default function PostDetail() {
     }
     if (!text.trim()) return;
     setBusy(true);
+    setError(null);
     try {
       await api.addComment(profile.id, postUserId, exhibitionId, text, replyTo?.id ?? null);
       setText('');
       setReplyTo(null);
       reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not send that comment.');
     } finally {
       setBusy(false);
     }
@@ -217,6 +221,7 @@ export default function PostDetail() {
       </ScrollView>
 
       <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, space.m) }]}>
+        {!!error && <Text style={styles.error}>{error.toUpperCase()}</Text>}
         {replyTo && (
           <View style={styles.replyBanner}>
             <Text style={styles.replyBannerText}>REPLYING TO {replyTo.author_name.toUpperCase()}</Text>
@@ -307,6 +312,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.hairline,
   },
+  error: { fontFamily: fonts.mono, fontSize: 10, letterSpacing: 1, color: colors.ink, marginBottom: space.s },
   replyBanner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
