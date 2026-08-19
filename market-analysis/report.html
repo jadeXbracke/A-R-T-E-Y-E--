@@ -1,0 +1,673 @@
+<title>ART EYE Market Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;700&display=swap">
+<style>
+  :root{
+    --bg:#FFFFFF; --ink:#131211; --grey:#7B766D; --hair:#E4E1DB;
+    --red:#C22F1E; --wash:#FAF9F7; --shade:#F2F0EC;
+    --measure:68ch;
+    --f:'Archivo','Helvetica Neue',Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#131211; --ink:#F2EFEA; --grey:#8B857B; --hair:#2A2724;
+      --red:#D8412C; --wash:#1A1917; --shade:#201E1B;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#131211; --ink:#F2EFEA; --grey:#8B857B; --hair:#2A2724;
+    --red:#D8412C; --wash:#1A1917; --shade:#201E1B;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:var(--f); font-weight:400; font-size:16px; line-height:1.62;
+    -webkit-font-smoothing:antialiased; margin:0;
+    font-variant-numeric:tabular-nums;
+  }
+  .page{max-width:1080px; margin:0 auto; padding:0 24px 120px}
+
+  /* ── masthead ─────────────────────────────────────── */
+  .mast{padding:72px 0 0; border-bottom:1px solid var(--ink); padding-bottom:28px}
+  .wordmark{
+    font-weight:500; font-size:clamp(22px,4.4vw,34px); letter-spacing:.34em;
+    text-transform:uppercase; margin:0; display:flex; align-items:baseline; gap:.34em;
+  }
+  .wordmark .dot{
+    width:.28em; height:.28em; background:var(--red); border-radius:50%;
+    display:inline-block; flex:none; transform:translateY(-.15em);
+  }
+  .mast h1{
+    font-weight:300; font-size:clamp(26px,5.2vw,46px); letter-spacing:.11em; line-height:1.18;
+    text-transform:uppercase; margin:30px 0 0; max-width:22ch; text-wrap:balance;
+  }
+  .rule-red{width:64px; height:2px; background:var(--red); margin:26px 0 22px}
+  .standfirst{max-width:var(--measure); color:var(--ink); font-size:17px; margin:0}
+  .meta{
+    display:flex; flex-wrap:wrap; gap:0 34px; margin-top:30px;
+    font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    font-weight:500; color:var(--grey);
+  }
+  .meta b{display:block; color:var(--ink); font-weight:500; margin-top:5px; letter-spacing:.12em}
+
+  /* ── key ──────────────────────────────────────────── */
+  .key{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:0;
+    border-bottom:1px solid var(--hair); margin-bottom:8px;
+  }
+  .key div{padding:20px 22px 20px 0; border-top:1px solid var(--hair)}
+  .key span{
+    font-weight:500; font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--red); display:block; margin-bottom:6px;
+  }
+  .key p{margin:0; font-size:14px; line-height:1.55; color:var(--grey)}
+
+  /* ── sections ─────────────────────────────────────── */
+  section{border-top:1px solid var(--ink); padding-top:24px; margin-top:64px}
+  .shead{display:flex; gap:20px; align-items:baseline; margin-bottom:26px}
+  .snum{
+    font-weight:500; font-size:11px; letter-spacing:.18em; color:var(--red);
+    flex:none; padding-top:.55em;
+  }
+  .shead h2{
+    font-weight:300; font-size:clamp(19px,2.8vw,27px); letter-spacing:.14em; line-height:1.3;
+    text-transform:uppercase; margin:0; text-wrap:balance;
+  }
+  h3{
+    font-weight:500; font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    margin:44px 0 14px; padding-bottom:9px; border-bottom:1px solid var(--hair);
+  }
+  h4{font-weight:500; font-size:15px; letter-spacing:.02em; margin:28px 0 8px}
+  p{max-width:var(--measure); margin:0 0 15px}
+  ul,ol{max-width:var(--measure); padding-left:1.15em; margin:0 0 15px}
+  li{margin-bottom:8px}
+  a{color:var(--ink); text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--grey)}
+  a:hover{text-decoration-color:var(--red)}
+  a:focus-visible{outline:2px solid var(--red); outline-offset:2px}
+  strong{font-weight:500}
+  em{font-style:normal; font-weight:500; border-bottom:1px solid var(--red)}
+
+  /* ── findings ─────────────────────────────────────── */
+  .finding{
+    display:grid; grid-template-columns:14px 1fr; gap:0 16px;
+    padding:20px 0; border-top:1px solid var(--hair); max-width:var(--measure);
+  }
+  .finding:last-of-type{border-bottom:1px solid var(--hair)}
+  .seen{width:9px; height:9px; border-radius:50%; background:var(--red); margin-top:.55em}
+  .finding h4{margin:0 0 6px; font-size:14px; letter-spacing:.03em}
+  .finding p{margin:0; font-size:15px; color:var(--grey)}
+  .finding p strong{color:var(--ink)}
+
+  /* ── figures ──────────────────────────────────────── */
+  .figs{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    border-top:1px solid var(--ink); border-bottom:1px solid var(--ink); margin:34px 0;
+  }
+  .figs div{padding:24px 20px 24px 0}
+  .figs .n{
+    font-weight:300; font-size:clamp(28px,4.4vw,40px); letter-spacing:.02em;
+    line-height:1.05; display:block;
+  }
+  .figs .l{
+    font-weight:500; font-size:10px; letter-spacing:.19em; text-transform:uppercase;
+    color:var(--grey); display:block; margin-top:10px; line-height:1.5;
+  }
+
+  /* ── tables ───────────────────────────────────────── */
+  .scroll{overflow-x:auto; margin:0 0 22px; -webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:14px}
+  th{
+    text-align:left; font-weight:500; font-size:10px; letter-spacing:.17em;
+    text-transform:uppercase; color:var(--grey);
+    border-bottom:1px solid var(--ink); padding:0 18px 9px 0; vertical-align:bottom;
+  }
+  td{padding:11px 18px 11px 0; border-bottom:1px solid var(--hair); vertical-align:top; line-height:1.5}
+  tbody tr:last-child td{border-bottom:1px solid var(--ink)}
+  td:last-child,th:last-child{padding-right:0}
+  .num{text-align:right}
+  tr.total td{font-weight:500}
+
+  /* ── callout ──────────────────────────────────────── */
+  .call{
+    border-left:2px solid var(--red); padding:4px 0 4px 22px; margin:30px 0;
+    max-width:var(--measure);
+  }
+  .call p{margin:0; font-size:17px; line-height:1.55}
+  .call .lab{
+    font-weight:500; font-size:10px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--red); display:block; margin-bottom:9px;
+  }
+
+  /* ── positioning map ──────────────────────────────── */
+  .map{
+    position:relative; margin:30px 0; padding:26px; background:var(--wash);
+    border:1px solid var(--hair); overflow-x:auto;
+  }
+  .map svg{display:block; width:100%; min-width:480px; height:auto}
+  .map text{font-family:var(--f); font-weight:500; letter-spacing:.09em; text-transform:uppercase}
+
+  /* ── gate ─────────────────────────────────────────── */
+  .gate{border-top:1px solid var(--hair); padding:18px 0; max-width:var(--measure)}
+  .gate:last-child{border-bottom:1px solid var(--hair)}
+  .gate .cond{
+    font-weight:500; font-size:11px; letter-spacing:.15em; text-transform:uppercase;
+    display:block; margin-bottom:7px;
+  }
+  .gate p{margin:0; font-size:15px; color:var(--grey)}
+
+  /* ── sources ──────────────────────────────────────── */
+  .src{columns:2; column-gap:44px; font-size:13px; line-height:1.55; max-width:none}
+  .src li{break-inside:avoid; margin-bottom:11px}
+  @media (max-width:720px){ .src{columns:1} }
+
+  code{
+    font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    font-size:.88em; background:var(--shade); padding:1px 5px; letter-spacing:0;
+  }
+  .foot{
+    border-top:1px solid var(--ink); margin-top:70px; padding-top:22px;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--grey); font-weight:500; display:flex; justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+  }
+
+  @media (min-width:960px){
+    .shead{margin-left:-64px}
+    .snum{width:44px; text-align:right}
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation:none!important; transition:none!important} }
+</style>
+
+<div class="page">
+
+<header class="mast">
+  <p class="wordmark">ART<span class="dot"></span>EYE</p>
+  <h1>Multidimensional market analysis</h1>
+  <div class="rule-red"></div>
+  <p class="standfirst">A Sydney exhibition agenda, venue register and art-going record, assessed across demand, supply, competition, business model, sizing, go-to-market and risk — and priced honestly.</p>
+  <div class="meta">
+    <span>Prepared<b>August 2026</b></span>
+    <span>Register<b>143 venues · 61 shows</b></span>
+    <span>Market<b>Greater Sydney</b></span>
+    <span>Horizon<b>Three years</b></span>
+  </div>
+</header>
+
+<div class="key">
+  <div><span>[S] Sourced</span><p>Attributed to a named third party. Every one is listed in §14.</p></div>
+  <div><span>[R] Repository</span><p>Measured directly from the ART EYE codebase and database seeds.</p></div>
+  <div><span>[M] Modelled</span><p>Estimated from stated assumptions. Not a finding — disagree and rerun the arithmetic.</p></div>
+</div>
+
+<!-- 1 -->
+<section>
+  <div class="shead"><span class="snum">01</span><h2>Executive summary</h2></div>
+  <p>ART EYE is a well-built product sitting in a market with an awkward shape: the demand is real and growing, but the willingness to pay in a single city is structurally small. The analysis reaches four conclusions.</p>
+
+  <div class="finding"><span class="seen"></span><div>
+    <h4>The listings business is a commodity with rich incumbents and a near-zero price</h4>
+    <p>Art Almanac (running since 1974), Art Guide Australia, Ocula, Time Out, Broadsheet, <strong>Concrete Playground (1.6m monthly users, acquired by Vinyl Group in 2025)</strong> and the City of Sydney's own What's On all publish Sydney exhibition listings free. Bloomberg Connects gives away guides to <strong>1,500+ institutions</strong> on a philanthropic budget. Nobody wins this on coverage alone, and no consumer pays for it.</p>
+  </div></div>
+
+  <div class="finding"><span class="seen"></span><div>
+    <h4>The defensible asset is the record and the social graph, not the agenda</h4>
+    <p>What ART EYE has that none of the above has is a <strong>personal, cumulative history of what you saw and what you thought of it</strong> — Letterboxd's mechanic applied to exhibitions. That asset appreciates. A user with 60 logged shows cannot switch; a user with 60 saved listings can.</p>
+  </div></div>
+
+  <div class="finding"><span class="seen"></span><div>
+    <h4>Sydney alone caps out around A$120k–250k of annual revenue, executed well</h4>
+    <p>Modelled bottom-up from <strong>~300k engaged gallery-goers</strong> and <strong>~60 commercially-motivated venues</strong>. That is a strong one-person business and a poor venture. Venture scale requires the social layer taken internationally — the route Letterboxd took to <strong>21m members</strong> on a A$19–49/yr subscription.</p>
+  </div></div>
+
+  <div class="finding"><span class="seen"></span><div>
+    <h4>The economics are unusually forgiving, which changes the recommendation</h4>
+    <p>Infrastructure run-rate is <strong>a few thousand dollars a year</strong>, and the venue register maintains itself. ART EYE is default-alive. The strategy is therefore not to chase a big number early, but to <strong>compound density in one scene cheaply until the social graph is liquid</strong>.</p>
+  </div></div>
+
+  <div class="call">
+    <span class="lab">Recommendation</span>
+    <p>Narrow the positioning from “Sydney's exhibition agenda” to <em>the record of what you've seen</em> — the Letterboxd wedge — and win inner-Sydney's contemporary and ARI scene completely before adding a second city.</p>
+  </div>
+</section>
+
+<!-- 2 -->
+<section>
+  <div class="shead"><span class="snum">02</span><h2>What ART EYE is today</h2></div>
+  <p>Grounded in the repository, not the pitch. <strong>[R]</strong></p>
+
+  <div class="figs">
+    <div><span class="n">143</span><span class="l">Venues — 104 galleries, 23 museums, 16 ARIs</span></div>
+    <div><span class="n">61</span><span class="l">Web-verified exhibitions</span></div>
+    <div><span class="n">0</span><span class="l">Lines of monetisation code</span></div>
+    <div><span class="n">~A$4k</span><span class="l">Annual cost to keep alive</span></div>
+  </div>
+
+  <div class="scroll"><table>
+    <thead><tr><th style="width:26%">Dimension</th><th>Current state</th></tr></thead>
+    <tbody>
+      <tr><td>Coverage discipline</td><td>Venues carry <code>opening_hours</code> and <code>hours_checked</code> — staleness is shown, not hidden</td></tr>
+      <tr><td>Freshness</td><td>Weekly validation, monthly discovery of new spaces, weekly digest. Jobs <strong>propose</strong>; the owner approves in an Owner Inbox — no autonomous writes</td></tr>
+      <tr><td>Imagery</td><td>Press images from the venue's own <code>og:image</code> with provenance recorded; venue photos freely licensed or uploaded</td></tr>
+      <tr><td>Consumer loop</td><td>Browse agenda → <strong>Want to see</strong> → mark <strong>seen</strong> with rating and reflection → <strong>Curator</strong> profile</td></tr>
+      <tr><td>Social layer</td><td>Follows with privacy, discover and friends feeds, trending, comments with mentions and replies, likes, DMs with media, notification centre, block/report, account deletion</td></tr>
+      <tr><td>Supply-side self-serve</td><td>Venues claim and manage their page; submissions route through approval; RLS prevents self-approval and self-featuring</td></tr>
+      <tr><td>Platform</td><td>Expo / React Native — iOS, Android and web from one codebase. Currently shipped as web</td></tr>
+    </tbody>
+  </table></div>
+
+  <p><strong>Read-through.</strong> This is materially more than a listings app. The approval flow, RLS-enforced host control, self-validating register and full social stack are the expensive parts of a two-sided marketplace, and they already exist. What has <em>not</em> been built is any monetisation surface at all — no pricing, payments or subscription code exists anywhere in the app. That is the single largest gap between the product and a business.</p>
+</section>
+
+<!-- 3 -->
+<section>
+  <div class="shead"><span class="snum">03</span><h2>Market definition</h2></div>
+  <p>ART EYE sits at the intersection of three markets that behave very differently.</p>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:30%">Market</th><th>Character</th><th style="width:22%">ART EYE's relationship</th></tr></thead>
+    <tbody>
+      <tr><td>Cultural discovery / what's-on media</td><td>Large audience, advertising-funded, consumer pays nothing, incumbents are media companies</td><td><strong>Builds here</strong></td></tr>
+      <tr><td>Personal logging &amp; taste-graph social</td><td>Small ARPU, enormous retention, network effects — the only category here that has produced durable independent businesses</td><td><strong>Moat is here</strong></td></tr>
+      <tr><td>Arts-sector SaaS &amp; marketing services</td><td>Few buyers, real budgets, slow sales cycles</td><td><strong>Must monetise here</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p>Recognising that these are three different markets — with different customers, price points and metrics — is the central strategic discipline of this document.</p>
+</section>
+
+<!-- 4 -->
+<section>
+  <div class="shead"><span class="snum">04</span><h2>Demand</h2></div>
+
+  <h3>The macro picture is favourable</h3>
+  <ul>
+    <li><strong>74% of Australians attended at least one live arts event or festival</strong> in the year to 2025 — the highest since the survey began in 2009, equivalent to 15.4m people. 98% engage with the arts in some way. <strong>[S]</strong></li>
+    <li><strong>Art-gallery and museum attendance sits in the low-to-mid 20% range</strong> of people aged 15+. The most recent full ABS release is dated; treat as a floor. <strong>[S]</strong></li>
+    <li><strong>Cost is a growing barrier to attendance</strong> — the headline finding of the 2025 survey. A free app surfacing free exhibitions runs with that grain, not against it. <strong>[S]</strong></li>
+    <li><strong>The Art Gallery of NSW passed 2 million visitors</strong> across the expanded campus — the largest concentration of qualified art audience in the country, walkable from most of the register. <strong>[S]</strong></li>
+    <li><strong>NSW is committing $1.21bn to arts and culture in 2026–27</strong>, including $26.8m for Creative Communities and $29.1m to the 24-Hour Economy Commissioner. <strong>[S]</strong></li>
+    <li><strong>The Biennale of Sydney's 25th edition topped Time Out's list of the world's best exhibitions for 2026</strong>, across five venues. A once-in-a-cycle demand spike. <strong>[S]</strong></li>
+  </ul>
+
+  <h3>Sydney audience pyramid <span style="color:var(--grey)">[M]</span></h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Segment</th><th>Definition</th><th class="num">Est. size</th><th>Value to ART EYE</th></tr></thead>
+    <tbody>
+      <tr><td>Annual attenders</td><td>≥1 gallery or museum visit per year</td><td class="num">1.0–1.1m</td><td>Top of funnel; poor retention</td></tr>
+      <tr><td><strong>Regulars</strong></td><td>3–9 visits per year</td><td class="num">~265k</td><td><strong>Core target</strong></td></tr>
+      <tr><td><strong>Scene</strong></td><td>10+ visits; artists, students, gallerists, collectors, critics</td><td class="num">~50k</td><td><strong>Beachhead — highest density, lowest CAC</strong></td></tr>
+      <tr><td>Cultural tourists</td><td>Visiting Sydney, culture-motivated</td><td class="num">600–780k</td><td>High volume, near-zero retention</td></tr>
+      <tr class="total"><td>Serviceable audience</td><td>Regulars + Scene</td><td class="num">~300k</td><td>The number every model below uses</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Jobs to be done</h3>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:14%">Segment</th><th style="width:32%">Job</th><th style="width:26%">Solved today by</th><th>ART EYE's edge</th></tr></thead>
+    <tbody>
+      <tr><td>Scene</td><td>“What's opening this week that I shouldn't miss, including the ARIs?”</td><td>Instagram, mailing lists, word of mouth</td><td><strong>Only complete register including 16 ARIs; not pay-to-list</strong></td></tr>
+      <tr><td>Scene</td><td>“What have I seen this year? What did I think?”</td><td><strong>Nothing</strong> — notes app, camera roll</td><td><strong>The record. No substitute exists</strong></td></tr>
+      <tr><td>Regulars</td><td>“Free Saturday in Paddington — what's within walking distance?”</td><td>Google, Time Out, Broadsheet</td><td>Map, suburb, one-tap directions</td></tr>
+      <tr><td>Regulars</td><td>“What are people whose taste I trust going to?”</td><td>Instagram stories</td><td>Follow graph, friends feed, trending</td></tr>
+      <tr><td>Tourists</td><td>“Best art in Sydney this week”</td><td>Time Out, concierge, TripAdvisor</td><td>Weak — a media job, not an app job</td></tr>
+      <tr><td>Venues</td><td>“How do I reach people who actually attend?”</td><td>Instagram, mailing list, paid listings</td><td>Claimed page, intent-signalled audience</td></tr>
+    </tbody>
+  </table></div>
+  <p>The strongest and least-contested job on this list is the second. It is also the only one where the competitive set is <em>nothing</em>.</p>
+
+  <h3>The behavioural risk</h3>
+  <p>Instagram is not a weak substitute; it is the incumbent behaviour. <strong>91.3% of a surveyed Gen Z cohort use Instagram to search for exhibition information</strong>, and <strong>87% of surveyed art buyers used it to find new artists in 2020, up from 48% in 2016 [S]</strong>. Any honest analysis concedes that ART EYE's discovery job is adequately served by a free app everyone already has open.</p>
+  <div class="call">
+    <span class="lab">Which is why the record matters</span>
+    <p>Instagram cannot tell you what you saw in March. It has no state, no history, no rating, no archive. Compete where Instagram is structurally incapable of following — not where it is merely mediocre.</p>
+  </div>
+</section>
+
+<!-- 5 -->
+<section>
+  <div class="shead"><span class="snum">05</span><h2>Supply</h2></div>
+
+  <h3>The register, segmented commercially</h3>
+  <div class="scroll"><table>
+    <thead><tr><th>Venue type</th><th class="num">Count [R]</th><th>Marketing budget?</th><th>Will pay for reach?</th></tr></thead>
+    <tbody>
+      <tr><td>Commercial galleries</td><td class="num">104</td><td>Roughly half, meaningfully</td><td><strong>Yes — the paying core, ~50–60</strong></td></tr>
+      <tr><td>Museums &amp; public institutions</td><td class="num">23</td><td>Yes, centrally managed</td><td>Rarely for listings; possibly for audience insight</td></tr>
+      <tr><td>ARIs</td><td class="num">16</td><td>Effectively none</td><td><strong>No — must stay free, permanently</strong></td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Addressable paying venues in Sydney: ~50–60 [M].</strong> This is the hard ceiling on any venue-subscription line, and it is small enough that the entire market can be sold by one person, by hand, in a quarter — which is both the constraint and the opportunity.</p>
+
+  <h3>What the incumbents charge</h3>
+  <p>Art Guide Australia and Art Almanac both publish media kits <strong>on request only</strong>; neither lists public rates <strong>[S]</strong>. I have deliberately not modelled a specific competitor price. What can be said with confidence:</p>
+  <ul>
+    <li>Art Almanac has sold monthly print listings to this exact customer base <strong>since 1974, 11 issues a year</strong> — a five-decade proof that Australian galleries do pay for exhibition listings. <strong>[S]</strong></li>
+    <li>The price point is set by print economics, and the buyer is habituated to paying for a <em>listing</em> rather than for a <em>result</em>.</li>
+  </ul>
+  <p><strong>Implication.</strong> Willingness to pay exists and is proven. The differentiator to sell against it is measurability — “37 people saved your show, 12 marked it seen” is something a print listing has never been able to say.</p>
+
+  <h3>Supply is already solved — an unusual position</h3>
+  <p>Most two-sided marketplaces die on the supply side. ART EYE's is populated and, critically, <strong>self-maintaining</strong>: weekly validation, monthly discovery, evidence required by database constraint, cost-capped, owner-approval gated <strong>[R]</strong>. The marginal cost of keeping supply accurate is near zero and does not scale with usage. This is the single most under-valued asset in the product, and the reason a second city is cheap to add later.</p>
+</section>
+
+<!-- 6 -->
+<section>
+  <div class="shead"><span class="snum">06</span><h2>Competition</h2></div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:20%">Competitor</th><th style="width:26%">What it is</th><th style="width:26%">Strength</th><th>Where ART EYE wins</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Art Almanac</strong></td><td>Monthly print + web listings since 1974</td><td>Habit, trust, gallery relationships</td><td>Mobile-native; free; ARIs; the record</td></tr>
+      <tr><td><strong>Art Guide Australia</strong></td><td>National listings and editorial</td><td>Editorial authority, SEO</td><td>Real-time state, social, map</td></tr>
+      <tr><td><strong>Ocula</strong></td><td>Global contemporary platform, vetted gallery membership</td><td>International prestige</td><td>Local completeness; non-commercial spaces</td></tr>
+      <tr><td><strong>Artsy</strong></td><td>Global marketplace and fair coverage</td><td>Scale, transactions</td><td>Not a transaction product; local depth</td></tr>
+      <tr><td><strong>Time Out Sydney</strong></td><td>What's-on media</td><td>Reach, tourist trust</td><td>Depth beyond the top ten; no gatekeeping</td></tr>
+      <tr><td><strong>Broadsheet / Concrete Playground</strong></td><td>Lifestyle media; CP reports 1.6m monthly users, acquired 2025</td><td>Enormous reach, ad sales machine</td><td>Art-specific; personal state</td></tr>
+      <tr><td><strong>City of Sydney What's On</strong></td><td>Council listings</td><td>Free, official</td><td>Geography limited to the LGA</td></tr>
+      <tr><td><strong>Bloomberg Connects</strong></td><td>Free guides to 1,500+ institutions, philanthropically funded</td><td>Free forever, institution-grade</td><td>An in-gallery guide is not city-wide discovery</td></tr>
+      <tr><td><strong>Smartify</strong></td><td>2m active users, 14m tours, funded early 2025</td><td>Scale, AI recognition</td><td>A companion, not a diary</td></tr>
+      <tr><td><strong>Instagram</strong></td><td>The actual incumbent behaviour</td><td>Universal, free, where galleries post</td><td><strong>No memory, no state, no archive</strong></td></tr>
+      <tr><td><strong>Letterboxd</strong></td><td>21m members; Pro $19/yr, Patron $49/yr</td><td>Proves the model</td><td>Not a competitor — the template</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Positioning</h3>
+  <p>Two axes matter: <strong>coverage completeness</strong> — does it include ARIs and small commercial spaces, or only advertisers and majors? — and <strong>personal state</strong> — does the app remember you?</p>
+  <div class="map">
+    <svg viewBox="0 0 720 400" role="img" aria-label="Positioning map. ART EYE occupies the high personal state, complete coverage quadrant. Art Almanac, City of Sydney and Instagram sit in complete coverage with low personal state. Ocula, Artsy, Time Out, Broadsheet and Bloomberg Connects sit in partial coverage with low personal state. Letterboxd sits in high personal state but a different vertical.">
+      <line x1="360" y1="34" x2="360" y2="366" stroke="currentColor" stroke-width="1" opacity=".22"/>
+      <line x1="40" y1="200" x2="680" y2="200" stroke="currentColor" stroke-width="1" opacity=".22"/>
+      <text x="360" y="20" text-anchor="middle" font-size="10" fill="currentColor" opacity=".6">High personal state</text>
+      <text x="360" y="390" text-anchor="middle" font-size="10" fill="currentColor" opacity=".6">Low personal state</text>
+      <text x="40" y="196" font-size="10" fill="currentColor" opacity=".6">Complete coverage</text>
+      <text x="680" y="196" text-anchor="end" font-size="10" fill="currentColor" opacity=".6">Curated / partial</text>
+
+      <circle cx="150" cy="88" r="6" fill="#C22F1E"/>
+      <text x="166" y="92" font-size="12" fill="currentColor" font-weight="700">ART EYE</text>
+
+      <circle cx="545" cy="112" r="4" fill="currentColor" opacity=".45"/>
+      <text x="557" y="116" font-size="10" fill="currentColor" opacity=".7">Letterboxd</text>
+
+      <circle cx="120" cy="252" r="4" fill="currentColor" opacity=".45"/>
+      <text x="132" y="256" font-size="10" fill="currentColor" opacity=".7">Art Almanac</text>
+      <circle cx="120" cy="290" r="4" fill="currentColor" opacity=".45"/>
+      <text x="132" y="294" font-size="10" fill="currentColor" opacity=".7">City of Sydney</text>
+      <circle cx="120" cy="328" r="4" fill="currentColor" opacity=".45"/>
+      <text x="132" y="332" font-size="10" fill="currentColor" opacity=".7">Instagram</text>
+
+      <circle cx="470" cy="252" r="4" fill="currentColor" opacity=".45"/>
+      <text x="482" y="256" font-size="10" fill="currentColor" opacity=".7">Ocula</text>
+      <circle cx="580" cy="252" r="4" fill="currentColor" opacity=".45"/>
+      <text x="592" y="256" font-size="10" fill="currentColor" opacity=".7">Artsy</text>
+      <circle cx="470" cy="290" r="4" fill="currentColor" opacity=".45"/>
+      <text x="482" y="294" font-size="10" fill="currentColor" opacity=".7">Time Out</text>
+      <circle cx="580" cy="290" r="4" fill="currentColor" opacity=".45"/>
+      <text x="592" y="294" font-size="10" fill="currentColor" opacity=".7">Broadsheet</text>
+      <circle cx="470" cy="328" r="4" fill="currentColor" opacity=".45"/>
+      <text x="482" y="332" font-size="10" fill="currentColor" opacity=".7">Bloomberg Connects</text>
+    </svg>
+  </div>
+  <p>ART EYE occupies an empty quadrant. Empty quadrants are either an opportunity or a graveyard; §07 and §09 test which.</p>
+
+  <h3>Moat assessment</h3>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:26%">Candidate moat</th><th style="width:16%">Strength</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Complete verified register</td><td>Medium</td><td>Replicable in ~3 months by a funded competitor — but nobody has bothered in 50 years</td></tr>
+      <tr><td>Self-maintaining pipeline</td><td><strong>Medium-high</strong></td><td>Genuine engineering asset; lowers the marginal cost of every new city</td></tr>
+      <tr><td>Personal logged history</td><td><strong>High</strong></td><td>Compounds monotonically; direct switching cost</td></tr>
+      <tr><td>Social graph</td><td><strong>High, if liquid</strong></td><td>Worthless below critical density — the central risk, §11</td></tr>
+      <tr><td>Editorial design and brand</td><td>Medium</td><td>Real differentiation in a category of ugly listings, but not defensible alone</td></tr>
+      <tr><td>Venue relationships</td><td>Medium</td><td>~60 accounts; personal, slow to build, slow to lose</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 7 -->
+<section>
+  <div class="shead"><span class="snum">07</span><h2>Five forces</h2></div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:24%">Force</th><th style="width:16%">Intensity</th><th>Reasoning</th></tr></thead>
+    <tbody>
+      <tr><td>Threat of substitutes</td><td><strong>Very high</strong></td><td>Instagram, Google, gallery mailing lists — free and entrenched</td></tr>
+      <tr><td>Buyer power (consumers)</td><td><strong>Very high</strong></td><td>Zero switching cost at install; infinite free alternatives; will not pay for listings</td></tr>
+      <tr><td>Buyer power (venues)</td><td>High</td><td>~60 buyers in total; each can walk; free alternatives exist</td></tr>
+      <tr><td>Competitive rivalry</td><td>Medium</td><td>Fragmented; none doing the record; incumbents are media firms, not product firms</td></tr>
+      <tr><td>Supplier power</td><td>Medium</td><td>Stores take 15–30%; infrastructure is substitutable; <strong>content supply is self-generated, which neutralises the usual risk</strong></td></tr>
+      <tr><td>Threat of new entry</td><td>Medium-low</td><td>Low technical barrier, poor prize. The reason nobody has built it is the reason ART EYE can hold it</td></tr>
+    </tbody>
+  </table></div>
+  <div class="call">
+    <span class="lab">Synthesis</span>
+    <p>This is a structurally unattractive market for a <em>funded</em> entrant and a structurally <em>defensible</em> one for a low-cost incumbent. That asymmetry is the strategic core of the whole analysis.</p>
+  </div>
+</section>
+
+<!-- 8 -->
+<section>
+  <div class="shead"><span class="snum">08</span><h2>Business model, priced and ranked</h2></div>
+  <p>All figures <strong>[M]</strong>, at a Year-3 base case of ~36,000 registered users and ~13,000 monthly actives in Sydney.</p>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:6%">Rank</th><th style="width:22%">Line</th><th style="width:24%">Mechanism</th><th class="num" style="width:16%">Year 3 (A$)</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1</strong></td><td><strong>Fair &amp; festival campaigns</strong></td><td>Sydney Contemporary (114 exhibitors, 25k+ visitors), Biennale, Vivid, Art Month. 3–4 × A$5k–15k</td><td class="num">20k–50k</td><td><strong>Start here.</strong> Lumpy but immediate, needs no consumer scale, and each campaign seeds the graph</td></tr>
+      <tr><td><strong>2</strong></td><td><strong>Grants &amp; cultural funding</strong></td><td>NSW $1.21bn arts budget; Creative Communities; City of Sydney audience development</td><td class="num">10k–50k</td><td>Non-dilutive, genuinely on-mandate, materially under-exploited today</td></tr>
+      <tr><td><strong>3</strong></td><td><strong>Venue subscription</strong></td><td>40 venues × A$79/mo — claimed page, promoted placement, insight, submission priority</td><td class="num">38k</td><td>Most reliable line, slowest to build. <strong>Do not price above A$99/mo</strong> — the anchor is a print listing</td></tr>
+      <tr><td><strong>4</strong></td><td><strong>Audience insight</strong></td><td>5 institutions × A$2k–5k. Who saved, who came, what they rated, where else they go</td><td class="num">10k–25k</td><td>Highest strategic value per dollar — makes ART EYE infrastructure, not media</td></tr>
+      <tr><td><strong>5</strong></td><td><strong>Consumer subscription</strong></td><td>36,000 registered × 3% × A$29/yr, net of store fees</td><td class="num">~25k</td><td>Never funds the business in one city. Ship it anyway — it proves willingness to pay</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>Explicitly rejected</h4>
+  <ul>
+    <li><strong>Transactions and ticketing</strong> — most Sydney exhibitions are free; no take rate exists.</li>
+    <li><strong>Art sales commission</strong> — enters Ocula and Artsy's fight with none of their supply.</li>
+    <li><strong>Display advertising</strong> — needs ten times the audience to earn a fraction of line 1.</li>
+    <li><strong>A paid consumer wall on listings</strong> — kills the funnel against free incumbents.</li>
+  </ul>
+  <p>Benchmark for line 5: freemium conversion runs at a <strong>2.18% median</strong>, with strong niche communities reaching 4–6% <strong>[S]</strong>. The model uses 3%.</p>
+</section>
+
+<!-- 9 -->
+<section>
+  <div class="shead"><span class="snum">09</span><h2>Sizing</h2></div>
+
+  <h3>TAM / SAM / SOM <span style="color:var(--grey)">[M]</span></h3>
+  <div class="figs">
+    <div><span class="n">1.0–1.1m</span><span class="l">TAM — annual gallery attenders, Greater Sydney</span></div>
+    <div><span class="n">~300k</span><span class="l">SAM — regulars and scene, 3+ visits a year</span></div>
+    <div><span class="n">~36k</span><span class="l">SOM at year 3 — registered, organic-led</span></div>
+    <div><span class="n">~13k</span><span class="l">SOM at year 3 — monthly active</span></div>
+  </div>
+
+  <h3>Adoption path, base case</h3>
+  <div class="scroll"><table>
+    <thead><tr><th></th><th class="num">Registered</th><th class="num">MAU</th><th class="num">Paying venues</th><th class="num">Revenue (A$)</th></tr></thead>
+    <tbody>
+      <tr><td>Year 1</td><td class="num">6,000 <span style="color:var(--grey)">(2% of SAM)</span></td><td class="num">1,800</td><td class="num">12</td><td class="num">25k–45k</td></tr>
+      <tr><td>Year 2</td><td class="num">18,000 <span style="color:var(--grey)">(6%)</span></td><td class="num">6,000</td><td class="num">25</td><td class="num">60k–100k</td></tr>
+      <tr class="total"><td>Year 3</td><td class="num">36,000 <span style="color:var(--grey)">(12%)</span></td><td class="num">13,000</td><td class="num">40</td><td class="num">115k–135k</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>The ceiling, stated plainly</h3>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:16%">Scenario</th><th class="num" style="width:26%">Sydney-only, year 3</th><th>Interpretation</th></tr></thead>
+    <tbody>
+      <tr><td>Bear</td><td class="num">A$25k–40k</td><td>Passion project. The register is still valuable</td></tr>
+      <tr class="total"><td>Base</td><td class="num">A$115k–135k</td><td>Sustainable one-person business</td></tr>
+      <tr><td>Bull</td><td class="num">A$200k–250k</td><td>Excellent outcome — still one salary plus costs</td></tr>
+    </tbody>
+  </table></div>
+  <p>Adding Melbourne, Brisbane, Adelaide, Perth and Hobart multiplies the base by roughly <strong>2.5× → A$300k–600k by year 5 [M]</strong>: the pipeline makes each new city cheap, but the <em>selling</em> does not scale without headcount.</p>
+  <div class="call">
+    <span class="lab">The honest conclusion</span>
+    <p>No configuration of the Australian listings market produces a venture-scale outcome. Venture scale requires the Letterboxd path — the record and the graph, internationally, at 21m-member scale. That is a different, longer, less certain company. It is a legitimate ambition, but it must be chosen deliberately — and it argues for building the record well now, even while revenue comes from campaigns and venues.</p>
+  </div>
+
+  <h3>Cost base, and the default-alive finding</h3>
+  <p>Supabase, GitHub Pages, Expo and a cost-capped enrichment pipeline put annual infrastructure in the low thousands. Add A$99/yr Apple and A$25 Google Play. With no paid marketing, keeping ART EYE alive costs <strong>A$3k–6k a year [R][M]</strong>. Break-even needs about <strong>six paying venues</strong>.</p>
+  <p><strong>ART EYE cannot fail for financial reasons — only for attention reasons.</strong> That fact should drive strategy: optimise for duration and compounding, not early scale.</p>
+</section>
+
+<!-- 10 -->
+<section>
+  <div class="shead"><span class="snum">10</span><h2>Go-to-market</h2></div>
+
+  <h3>The bottleneck is social liquidity, not supply</h3>
+  <p>The agenda works for a single user on day one. The feed, trending, friends-who-visited and DMs are worthless until enough people in the <em>same scene</em> are active. A social feature at low density is worse than no social feature — it advertises emptiness. Therefore: <strong>density before breadth. Win one scene completely.</strong></p>
+
+  <h3>Beachhead — the inner-Sydney contemporary and ARI scene</h3>
+  <p>~50k people <strong>[M]</strong>, geographically concentrated in Paddington, Woolloomooloo, Chippendale, Redfern, Marrickville and Leichhardt — all already in the register <strong>[R]</strong> — socially interconnected, high visit frequency, and structurally under-served by every incumbent <em>because ARIs don't buy advertising</em>. If ART EYE is the only place all 16 ARIs appear alongside AGNSW, that is a reason to install it no competitor can cheaply copy: they would have to list venues that will never pay them.</p>
+
+  <h3>Channels, ranked by cost per engaged user</h3>
+  <ol>
+    <li><strong>Venue-led distribution.</strong> 143 venues, each with a mailing list and an Instagram. Give claimed pages away free for 12 months in exchange for one post or newsletter mention. Highest-intent traffic in the market, at zero cash cost.</li>
+    <li><strong>Opening nights.</strong> The scene physically assembles several nights a week. Be there with a QR code — nothing converts a logging app better than logging the show you're standing in.</li>
+    <li><strong>Art schools.</strong> NAS, UNSW A&amp;D, SCA — dense cohorts of 10+/year attenders, annual intake, natural social clustering.</li>
+    <li><strong>Fair and festival campaigns.</strong> Sydney Contemporary and the Biennale bring 25k+ qualified people into a single window <strong>[S]</strong> — a seeding event and a revenue line simultaneously.</li>
+    <li><strong>Editorial and SEO.</strong> “Exhibitions in Sydney this week” is a durable, compounding, zero-marginal-cost query the register answers better than anyone. Underused today.</li>
+    <li><strong>Paid social.</strong> Last resort. Australian consumer installs at ~A$3–8 each would consume the entire cost base for a few thousand low-intent users.</li>
+  </ol>
+
+  <h3>Platform sequencing and unit economics</h3>
+  <p>Web is live; iOS should follow. The record and the mark-as-seen flow are in-the-moment behaviours that need a home-screen icon and push notifications — already shipped in the codebase <strong>[R]</strong>. Web-only caps retention structurally.</p>
+  <p>Blended CAC via channels 1–3 is <strong>A$0–2 cash</strong> with a high founder-time cost. Direct value per engaged user is about A$0.75/yr — but each engaged user raises the price defensibility of the venue and insight lines. <strong>The correct metric is not CAC:LTV. It is engaged users per venue relationship</strong>, because that ratio is what venue subscriptions are priced against.</p>
+</section>
+
+<!-- 11 -->
+<section>
+  <div class="shead"><span class="snum">11</span><h2>Risk register</h2></div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:4%">#</th><th style="width:24%">Risk</th><th style="width:9%">Likely</th><th style="width:9%">Impact</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Social features stay empty</strong> — feed and DMs below critical density</td><td>High</td><td>High</td><td>Density-first; hide social surfaces below a threshold; make the solo record valuable alone</td></tr>
+      <tr><td>2</td><td>Instagram remains good enough for discovery</td><td>High</td><td>Medium</td><td>Don't fight it — compete on memory; use it as a distribution channel, not a rival</td></tr>
+      <tr><td>3</td><td>Content staleness — a wrong closing date breaks trust once, permanently</td><td>Medium</td><td>High</td><td>Already strong: staleness shown, weekly validation, owner-approval gate. Extend to exhibition end dates</td></tr>
+      <tr><td>4</td><td><strong>Press-image sourcing</strong> — taking a venue's <code>og:image</code> is customary, not licensed</td><td>Medium</td><td><strong>High</strong></td><td>Explicit permission in the venue claim terms; immediate takedowns; provenance already recorded</td></tr>
+      <tr><td>5</td><td>Moderation and safety liability — DMs, comments, mentions, possibly minors</td><td>Medium</td><td>High</td><td>Block/report/deletion shipped. Add T&amp;Cs, age gate, written moderation policy and response SLA before any marketing push</td></tr>
+      <tr><td>6</td><td>Privacy — visit histories are sensitive; the insight product must never expose individuals</td><td>Medium</td><td>High</td><td>Aggregate-only with a minimum cohort size; RLS already blocks venues reading individual rows. State it publicly as a feature</td></tr>
+      <tr><td>7</td><td><strong>Key-person concentration</strong> — one founder, one admin role</td><td>High</td><td>High</td><td>Document runbooks; pipeline autonomy already buys weeks of absence; consider a second trusted admin</td></tr>
+      <tr><td>8</td><td>A funded incumbent copies the record</td><td>Low-med</td><td>High</td><td>Speed and scene credibility; their ad model conflicts with listing non-paying ARIs</td></tr>
+      <tr><td>9</td><td>Demo-mode regression wipes live behaviour on a bad build</td><td>Low</td><td><strong>Critical</strong></td><td>Documented and workflow-enforced; keep the build-stamp check in the release routine</td></tr>
+      <tr><td>10</td><td>Venue churn after the free year</td><td>Medium</td><td>Medium</td><td>Ship insight <em>before</em> the free period ends, so renewal is priced against evidence</td></tr>
+      <tr><td>11</td><td>App Store rejection or the 30% take</td><td>Low</td><td>Medium</td><td>Web subscription path — Letterboxd's own strategy</td></tr>
+      <tr><td>12</td><td>Market simply too small to sustain interest</td><td>Medium</td><td>Medium</td><td>Accept it explicitly: at a A$3–6k/yr cost base, a small business is a legitimate outcome, not a failure</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 12 -->
+<section>
+  <div class="shead"><span class="snum">12</span><h2>SWOT</h2></div>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:14%"></th><th>Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Strengths</strong></td><td>Complete register including the 16 ARIs nobody else lists; self-maintaining, evidence-gated pipeline; full social stack already built; genuinely distinctive editorial design; near-zero cost base; owner inside the scene; multi-platform from one codebase</td></tr>
+      <tr><td><strong>Weaknesses</strong></td><td>Zero monetisation surface in the product today; single city; single operator; web-only distribution so far; empty-room risk on social; only 61 exhibitions live, so a quiet week looks thin; no analytics instrumentation evident</td></tr>
+      <tr><td><strong>Opportunities</strong></td><td>Biennale of Sydney 2026 demand spike; $1.21bn NSW arts budget with explicit audience-development funds; arts attendance at a 16-year high; cost-as-barrier trend favours a free tool; no incumbent occupies the record quadrant; city two is genuinely cheap</td></tr>
+      <tr><td><strong>Threats</strong></td><td>Instagram's entrenched discovery behaviour; free, philanthropically funded museum apps at global scale; well-capitalised local media with far greater reach; Australian art market flat at ~A$140–150m auction turnover, capping sector ad spend; platform fee and policy risk; founder-attention risk</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 13 -->
+<section>
+  <div class="shead"><span class="snum">13</span><h2>Recommendation &amp; 90-day plan</h2></div>
+  <div class="call">
+    <span class="lab">Strategic statement</span>
+    <p>ART EYE is the record of Sydney's art scene — the only place that lists every venue including the ones that can't pay, and the only place that remembers what you saw. Lead with the record. Let the agenda be the reason to open it, and the record be the reason to keep it.</p>
+  </div>
+
+  <h4>Days 1–30 — instrument and sharpen</h4>
+  <ul>
+    <li>Add analytics for the six metrics below. <strong>Nothing here can be judged without them.</strong></li>
+    <li>Rewrite first-run and store copy from “Sydney's exhibition agenda” to the record positioning.</li>
+    <li>Publish T&amp;Cs, privacy policy, moderation policy and an age gate.</li>
+    <li>Add explicit press-image permission to the venue claim terms.</li>
+    <li>Gate social surfaces behind a density threshold, so no user meets an empty feed.</li>
+  </ul>
+
+  <h4>Days 31–60 — supply-side landgrab and first revenue</h4>
+  <ul>
+    <li>Personally onboard 30 of the ~60 commercially-motivated venues; free claimed page for 12 months in exchange for one mention.</li>
+    <li>Pitch <strong>two</strong> fair or festival campaigns for the next six months. First invoice is the goal.</li>
+    <li>Draft one grant application against Creative Communities or a City of Sydney audience-development stream.</li>
+  </ul>
+
+  <h4>Days 61–90 — ship iOS and prove retention</h4>
+  <ul>
+    <li>iOS release with push; drive installs from opening nights and the venue mentions already banked.</li>
+    <li>Ship the free stats and year-in-review surface — what makes the record visible and shareable, and the substance of any future paid tier.</li>
+    <li>Deliver a first aggregate-only insight report to three venues — the artefact renewals will be priced against.</li>
+  </ul>
+
+  <h3>Metrics that decide everything</h3>
+  <div class="scroll"><table>
+    <thead><tr><th style="width:34%">Metric</th><th class="num" style="width:16%">90-day target [M]</th><th>Why it is the one that matters</th></tr></thead>
+    <tbody>
+      <tr class="total"><td><strong>Marks-as-seen per active user per month</strong></td><td class="num">≥1.5</td><td><strong>The single leading indicator. Below 1, there is no record and no business</strong></td></tr>
+      <tr><td>Week-4 retention</td><td class="num">≥25%</td><td>Distinguishes a tool from a novelty</td></tr>
+      <tr><td>Registered users in beachhead</td><td class="num">2,000</td><td>Density threshold for social liquidity</td></tr>
+      <tr><td>Venues claimed</td><td class="num">30 of ~60</td><td>Supply-side proof for the venue and insight lines</td></tr>
+      <tr><td>Follows per active user</td><td class="num">≥3</td><td>Below 3, switch the social features off</td></tr>
+      <tr><td>First revenue booked</td><td class="num">A$5,000</td><td>Proves someone will pay for something</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Decision gate at six months</h3>
+  <div class="gate">
+    <span class="cond">If logging ≥1.5/user/month and W4 retention ≥25%</span>
+    <p>The record works. Commit to city two and begin building international optionality.</p>
+  </div>
+  <div class="gate">
+    <span class="cond">If retention holds but logging is under 0.5</span>
+    <p>It's a listings utility, not a record. Cut the social stack, keep the agenda, monetise via campaigns, venues and grants, and run it as a profitable small business.</p>
+  </div>
+  <div class="gate">
+    <span class="cond">If neither</span>
+    <p>The free incumbents are sufficient. Preserve the register and the pipeline as the durable asset, and stop investing in the consumer app.</p>
+  </div>
+  <p style="margin-top:22px"><strong>All three are acceptable outcomes.</strong> The failure mode to avoid is spending two more years building features without instrumenting which of the three is true.</p>
+</section>
+
+<!-- 14 -->
+<section>
+  <div class="shead"><span class="snum">14</span><h2>Sources &amp; method</h2></div>
+  <h3>Third-party sources [S]</h3>
+  <ul class="src">
+    <li><a href="https://creative.gov.au/research/creative-transformations-results-national-arts-participation-survey">Creative Australia — <em>Creative Transformations</em>, National Arts Participation Survey (June 2026)</a></li>
+    <li><a href="https://creative.gov.au/news-events/news/more-australians-attending-arts-ever-cost-growing-barrier">Creative Australia — More Australians attending arts than ever, but cost is a growing barrier</a></li>
+    <li><a href="https://www.artshub.com.au/news/news/cost-a-growing-factor-preventing-arts-participation-creative-australias-national-survey-reveals-2861203/">ArtsHub — Cost a growing factor preventing arts participation</a></li>
+    <li><a href="https://www.abs.gov.au/statistics/people/people-and-communities/attendance-selected-cultural-venues-and-events-australia/latest-release">ABS — Attendance at Selected Cultural Venues and Events</a></li>
+    <li><a href="https://www.parliament.nsw.gov.au/tp/files/192250/2024-25%20Annual%20Report%20Art%20Gallery%20of%20NSW.pdf">Art Gallery of NSW — Annual Report 2024–25</a></li>
+    <li><a href="https://data.nsw.gov.au/data/dataset/in-person-visits-to-nsw-cultural-institutions-xlsx">Data.NSW — In-person visits to NSW cultural institutions</a></li>
+    <li><a href="https://www.destinationnsw.com.au/insights/sydney-statistics">Destination NSW — Sydney statistics</a></li>
+    <li><a href="https://www.destinationnsw.com.au/newsroom/record-visitor-expenditure-for-nsw">Destination NSW — Record visitor expenditure for NSW</a></li>
+    <li><a href="https://limelight-arts.com.au/news/nsw-state-budget-2026-arts-and-culture/">Limelight — NSW State Budget 2026: arts and culture</a></li>
+    <li><a href="https://www.nsw.gov.au/departments-and-agencies/create-nsw/news/recipients-creatensw-multiyear-funding">Create NSW — Multiyear funding recipients</a></li>
+    <li><a href="https://mgnsw.org.au/sector/resources/online-resources/research/nsw-museum-and-gallery-sector-census-and-survey/">Museums &amp; Galleries of NSW — Sector census</a></li>
+    <li><a href="https://www.art-almanac.com.au/almanac/about-us/">Art Almanac — About</a> · <a href="https://www.art-almanac.com.au/almanac/advertising/">Advertising</a></li>
+    <li><a href="https://artguide.com.au/faq/">Art Guide Australia — Advertising / media kit on request</a></li>
+    <li><a href="https://ocula.com/membership/">Ocula — Gallery membership</a> · <a href="https://ocula.com/cities/australia/sydney-art-galleries/exhibitions/">Sydney exhibitions</a></li>
+    <li><a href="https://concreteplayground.com/sydney/advertise">Concrete Playground — Advertise (audience figures)</a></li>
+    <li><a href="https://www.bloombergconnects.org/guides/">Bloomberg Connects — Available guides</a></li>
+    <li><a href="https://mooseum.app/blog/best-museum-apps">Mooseum — Best museum apps 2026 (Smartify figures)</a></li>
+    <li><a href="https://letterboxd.com/about/pro/">Letterboxd — Paid subscriptions</a> · <a href="https://statista.com/statistics/1555400/number-letterboxd-subscribers-worldwide">Statista — subscribers</a> · <a href="https://www.paddle.com/customers/letterboxd">Paddle — web monetisation case study</a></li>
+    <li><a href="https://www.revenuecat.com/state-of-subscription-apps">RevenueCat — State of Subscription Apps</a> · <a href="https://www.businessofapps.com/data/app-subscription-trial-benchmarks/">Business of Apps — trial benchmarks</a></li>
+    <li><a href="https://www.ausleisure.com.au/news/sydney-contemporary-announces-2025-program-featuring-114-exhibitors-and-more-than-500-artists/">Australasian Leisure Management — Sydney Contemporary 2025</a> · <a href="https://www.artshub.com.au/news/opinions-analysis/was-sydney-contemporary-a-sales-success-the-numbers-are-in-2823105/">ArtsHub — fair sales results</a></li>
+    <li><a href="https://www.timeout.com/australia/news/australia-will-host-three-of-the-worlds-best-exhibitions-in-2026-according-to-time-out-010426">Time Out — World's best exhibitions 2026</a></li>
+    <li><a href="https://www.statista.com/statistics/1021992/popular-social-media-platforms-artist-discovery/">Statista — Art buyers using Instagram to discover artists</a> · <a href="https://boa.unimib.it/retrieve/e39773b7-bc33-35a3-e053-3a05fe0aac26/FP_revised_Curator_img.pdf">Museum experience through Instagram posts (Gen Z survey)</a></li>
+    <li><a href="https://imgpublic.artprice.com/pdf/the-contemporary-art-market-report-2025.pdf">Artprice — Contemporary Art Market Report 2025</a> · <a href="https://www.aasd.com.au/">Australian Art Sales Digest</a></li>
+  </ul>
+
+  <h3>Method and limitations</h3>
+  <p>Desk research only — no primary interviews with Sydney gallerists, no user survey, and no analytics from the live deployment, none of which appears to be instrumented <strong>[R]</strong>, which is why §13 begins there. Competitor rate cards are quote-only and were not obtained. ABS attendance data is from an older reference period and is used as a floor. Internal figures come from the repository: the venue and exhibition seeds, the pipeline functions, the API surface and the build configuration.</p>
+  <p>All <strong>[M]</strong> figures are estimates derived from the stated assumptions and should be rerun as real usage data arrives. <strong>The single largest source of error in this document is the absence of any observed retention or logging data for ART EYE itself</strong> — §13 exists to remove that uncertainty within 90 days.</p>
+</section>
+
+<div class="foot">
+  <span>ART EYE · Sydney</span>
+  <span>Multidimensional market analysis · August 2026</span>
+</div>
+
+</div>
