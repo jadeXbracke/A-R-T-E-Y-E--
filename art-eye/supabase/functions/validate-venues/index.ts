@@ -1,5 +1,5 @@
-// validate-venues — weekly. Checks the 20 active venues with the oldest
-// verified_date (nulls first, so the full set cycles in ~7 weeks) and files
+// validate-venues — weekly. Checks the 30 active venues with the oldest
+// verified_date (nulls first, so the full set cycles in ~5 weeks) and files
 // proposals in venue_review_queue. Propose, never apply: the ONLY direct
 // write is verified_date/verification_source on a high-confidence confirm.
 // Trigger manually with ?dry_run=1 to see what it would do without writing.
@@ -17,7 +17,7 @@ import {
   supabaseAdmin,
 } from "../_shared/pipeline.ts";
 
-const BATCH_SIZE = 20;
+const BATCH_SIZE = 30; // = MAX_CLAUDE_CALLS_PER_RUN: uses the full cost cap every run
 
 const VERDICT_SCHEMA = {
   type: "object",

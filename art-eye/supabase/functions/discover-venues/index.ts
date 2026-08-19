@@ -1,6 +1,8 @@
-// discover-venues — monthly. Searches for newly opened Sydney art spaces,
-// dedupes against the register and the open queue, and files `add` proposals.
-// Never writes to venues directly. Trigger manually with ?dry_run=1.
+// discover-venues — weekly. Searches for Sydney art spaces missing from the
+// register — both newly opened ones and long-standing ones the original
+// sweep simply missed — dedupes against the register and the open queue,
+// and files `add` proposals. Never writes to venues directly.
+// Trigger manually with ?dry_run=1.
 import {
   addUsageCost,
   anthropic,
@@ -80,14 +82,51 @@ Deno.serve(async (req) => {
 
   try {
     const [{ data: existing }, { data: queued }] = await Promise.all([
-      sb.from("venues").select("name, suburb"),
+      sb.from("venues").select("name, suburb, website"),
       sb.from("venue_review_queue").select("proposed_payload").eq("status", "pending").eq("action_type", "add"),
     ]);
+    // Match on domain as well as name: a renamed venue (e.g. Outsider
+    // Gallery -> Gallery 144) has a new normalised name but usually keeps
+    // its website, so domain matching catches what name matching alone
+    // misses.
+    const domain = (url: string | null | undefined) => {
+      if (!url) return null;
+      try {
+        return new URL(url).hostname.replace(/^www\./, "");
+      } catch {
+        return null;
+      }
+    };
     const known = new Set((existing ?? []).map((v) => norm(v.name)));
+    const knownDomains = new Set(
+      (existing ?? []).map((v) => domain((v as { website?: string }).website)).filter((d): d is string => !!d)
+    );
     for (const q of queued ?? []) {
-      const n = (q.proposed_payload as Record<string, unknown>)?.name;
-      if (typeof n === "string") known.add(norm(n));
+      const payload = q.proposed_payload as Record<string, unknown>;
+      if (typeof payload?.name === "string") known.add(norm(payload.name));
+      const d = domain(payload?.website as string | undefined);
+      if (d) knownDomains.add(d);
     }
+
+    // Rotate the "which gap to hunt" angle by week so a small model budget
+    // still covers the whole space over a month, instead of the same query
+    // every run. ISO week number, stable across a day's re-runs.
+    const isoWeek = Math.ceil(
+      (Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()) -
+        Date.UTC(new Date().getUTCFullYear(), 0, 1)) / 604800000
+    );
+    const angles = [
+      "Art spaces that have newly opened or announced opening in Sydney, Australia in the last ~2 months.",
+      "Sydney artist-run initiatives (ARIs) and small non-profit project spaces that are currently active but are " +
+        "easy to miss — check NAVA's ARI list and inner-west council creative-trail pages (Marrickville, Newtown, " +
+        "Alexandria, Waterloo) specifically.",
+      "Commercial galleries in Surry Hills, Redfern, and Chippendale that are currently active. This district turns " +
+        "over faster than the rest of the register, so check for anything not already covered.",
+      "Sydney art venues that renamed, rebranded, or changed ownership in the last 2 years — the old name may be " +
+        "known but the current name might not be in our records. Report under the CURRENT name and note the former " +
+        "name in `reason`.",
+    ];
+    const angle = angles[isoWeek % angles.length];
 
     if (run.claude_calls < MAX_CLAUDE_CALLS_PER_RUN) {
       run.claude_calls += 1;
@@ -95,13 +134,12 @@ Deno.serve(async (req) => {
         model: MODEL,
         max_tokens: 8192,
         thinking: { type: "adaptive" },
-        tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 10 }],
+        tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 15 }],
         output_config: { format: { type: "json_schema", schema: DISCOVERY_SCHEMA } },
         messages: [{
           role: "user",
           content:
-            "Find art venues that have newly opened (or announced opening) in Sydney, Australia in the last ~3 months: " +
-            "commercial galleries, public galleries, museums, and artist-run initiatives (ARIs). " +
+            `Find Sydney art venues (commercial galleries, public galleries, museums, ARIs) matching this brief: ${angle} ` +
             "Prioritise coverage from Art Guide Australia, Ocula, Time Out Sydney, and NAVA news. " +
             "Only include venues you found actual reporting for — every entry needs at least one evidence URL with a snippet. " +
             "Return an empty list rather than guessing.",
@@ -119,8 +157,9 @@ Deno.serve(async (req) => {
 
         for (const v of found) {
           run.venues_checked += 1;
-          if (known.has(norm(v.name))) {
-            report.push({ venue: v.name, outcome: "skipped (already known or queued)" });
+          const vDomain = domain(v.website);
+          if (known.has(norm(v.name)) || (vDomain && knownDomains.has(vDomain))) {
+            report.push({ venue: v.name, outcome: "skipped (already known or queued, by name or domain)" });
             continue;
           }
           const slug = slugify(v.name);
