@@ -1,7 +1,7 @@
 -- ============================================================================
 --  ART EYE — SYDNEY VENUE REGISTER  (seed / upsert)
 -- ============================================================================
---  137 real Sydney venues (galleries, museums, ARIs), verified July 2026.
+--  143 real Sydney venues (galleries, museums, ARIs), verified July–Aug 2026.
 --  Safe to run repeatedly: rows are matched on `slug`, so re-running updates
 --  existing venues instead of creating duplicates.
 --
@@ -178,6 +178,47 @@ update venues set status = 'archived', verification_source = 'owner register v2'
   where slug in ('may-space', 'liverpool-street-gallery');
 
 -- ---------------------------------------------------------------------------
+-- Five venues dropped during the v2 import (present in the app's demo seed
+-- and already targeted by the opening-hours / website completion passes
+-- below, but never inserted here — so those passes silently matched nothing
+-- and 6 exhibitions in exhibitions_seed.sql lost their venue join). Restored
+-- from src/lib/seed.ts.
+-- ---------------------------------------------------------------------------
+insert into venues (slug, name, type, address, suburb, website, instagram, city) values
+  ('cassandra-bird', 'Cassandra Bird', 'gallery', '54 Kellett Street, Potts Point NSW 2011', 'Potts Point', 'https://www.cassandrabird.com/', '@cassandrabird.gallery', 'Sydney'),
+  ('1301sw', '1301SW', 'gallery', '3 Hiles Street, Alexandria NSW 2015', 'Alexandria', 'https://www.1301sw.com/', '@1301sw_au', 'Sydney'),
+  ('ames-yavuz', 'Ames Yavuz', 'gallery', '114 Commonwealth Street, Surry Hills NSW 2010', 'Surry Hills', 'https://amesyavuz.com/', '@amesyavuz', 'Sydney'),
+  ('olsen-annexe', 'OLSEN Annexe', 'gallery', '74 Queen Street, Woollahra NSW 2025', 'Woollahra', 'https://www.olsengallery.com/', '@olsen_annexe', 'Sydney'),
+  ('grace-cossington-smith-gallery', 'Grace Cossington Smith Gallery', 'gallery', 'Gate 7, 1666 Pacific Highway, Wahroonga NSW 2076', 'Wahroonga', null, '@gcsgallery', 'Sydney')
+on conflict (slug) do update set
+  name      = excluded.name,
+  type      = excluded.type,
+  address   = excluded.address,
+  suburb    = excluded.suburb,
+  website   = coalesce(venues.website, excluded.website),
+  instagram = coalesce(venues.instagram, excluded.instagram),
+  city      = excluded.city;
+
+-- ---------------------------------------------------------------------------
+-- Two venues verified active but missing from the v2 register entirely:
+-- Gallery 144 (opened 2024 as Outsider Gallery, renamed) and The
+-- Photographic Gallery (opened Aug 2026, after the July v2 sweep).
+-- ---------------------------------------------------------------------------
+insert into venues (slug, name, type, address, suburb, website, instagram, city) values
+  ('gallery-144', 'Gallery 144', 'gallery', '144 Commonwealth Street, Surry Hills NSW 2010', 'Surry Hills', 'https://gallery144.com.au/', null, 'Sydney'),
+  ('the-photographic-gallery', 'The Photographic Gallery', 'gallery', 'Level 2, 16-28 Foster Street, Surry Hills NSW 2010', 'Surry Hills', 'https://www.thephotographic.gallery/', null, 'Sydney'),
+  ('airspace-projects', 'AIRspace Projects', 'ari', '10 Junction Street, Marrickville NSW 2204', 'Marrickville', 'https://www.airspaceprojects.com.au/', null, 'Sydney'),
+  ('tap-gallery', 'TAP Gallery', 'ari', '1/259 Riley Street, Surry Hills NSW 2010', 'Surry Hills', 'https://www.tapgallery.org.au/', null, 'Sydney')
+on conflict (slug) do update set
+  name      = excluded.name,
+  type      = excluded.type,
+  address   = excluded.address,
+  suburb    = excluded.suburb,
+  website   = excluded.website,
+  instagram = excluded.instagram,
+  city      = excluded.city;
+
+-- ---------------------------------------------------------------------------
 -- Opening hours — verified against the venues' own sites on 2026-07-21.
 -- (Requires migration 0009_opening_hours.sql.)
 -- ---------------------------------------------------------------------------
@@ -307,7 +348,7 @@ from (values
   ('defiance-gallery', null, '@defiancegallery'),
   ('kate-owen-gallery', null, '@kateowengallery'),
   ('16albermarle', null, '@16albermarleprojectspace'),
-  ('woollahra-gallery', null, '@woollahragallery'),
+  ('woollahra-gallery-at-redleaf', null, '@woollahragallery'),
   ('hyde-park-barracks', null, '@museumsofhistorynsw'),
   ('justice-police-museum', null, '@museumsofhistorynsw'),
   ('state-library-of-nsw-galleries', null, '@statelibrarynsw'),

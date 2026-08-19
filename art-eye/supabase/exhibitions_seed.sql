@@ -68,6 +68,38 @@ with seed (slug, title, artists, start_date, end_date, description, image_url, i
   ('art-gallery-of-new-south-wales', 'Nolan: Origins', 'Sidney Nolan', '2026-10-03', '2027-02-07', 'A major survey of Sidney Nolan''s formative years in Australia — the making of one of the country''s defining modern painters.', null, false),
   ('mca-australia', 'Tony Albert: Not a Souvenir', 'Tony Albert', '2026-05-21', '2026-10-19', 'A major survey across sculpture, photography, installation and painting — Albert turns The Rocks'' souvenir culture back on itself, confronting the commodification of Aboriginal people while celebrating survival and pride. Guest curated by Bruce Johnson McLean.', null, false)
 )
+-- Fails loudly instead of silently dropping rows: a plain `join venues`
+-- here would drop any show whose slug has no matching venue, with no error
+-- and no count mismatch to notice. That happened once already (5 missing
+-- venues silently cost 6 shows) — this raises an exception naming every
+-- orphaned slug instead.
+do $$
+declare missing text;
+begin
+  -- Every venue slug the seed below references (keep in sync if slugs change).
+  select string_agg(distinct s.slug, ', ')
+  into missing
+  from (values
+    ('1301sw'), ('4a-centre'), ('ames-yavuz'), ('art-gallery-of-new-south-wales'),
+    ('art-space-on-the-concourse'), ('artspace'), ('blue-mountains-cultural-centre'),
+    ('bundanon'), ('campbelltown-arts-centre'), ('carriageworks'), ('cassandra-bird'),
+    ('chau-chak-wing-museum'), ('dominik-mersch-gallery'), ('fairfield-city-museum-gallery'),
+    ('firstdraft'), ('gallery-lane-cove'), ('gosford-regional-gallery'),
+    ('grace-cossington-smith-gallery'), ('hawkesbury-regional-gallery'),
+    ('hazelhurst-arts-centre'), ('hurstville-museum-gallery'), ('king-street-gallery'),
+    ('manly-art-gallery-museum'), ('martin-browne-contemporary'), ('mca-australia'),
+    ('mosman-art-gallery'), ('nas-gallery'), ('newcastle-art-gallery'), ('ngununggula'),
+    ('olsen-annexe'), ('pari'), ('penrith-regional-gallery'), ('roslyn-oxley9-gallery'),
+    ('sh-ervin-gallery'), ('the-lock-up'), ('utopia-art-sydney'), ('white-rabbit-gallery'),
+    ('wollongong-art-gallery')
+  ) as check_slugs(slug) s
+  where not exists (select 1 from venues v where v.slug = s.slug);
+
+  if missing is not null then
+    raise exception 'exhibitions_seed.sql: no venue row for slug(s): %. Add them to venues_seed.sql first.', missing;
+  end if;
+end $$;
+
 insert into exhibitions (venue_id, title, artists, start_date, end_date, description, image_url, status, is_featured, city)
 select v.id, s.title, s.artists, s.start_date::date, s.end_date::date, s.description, s.image_url, 'approved', s.is_featured, 'Sydney'
 from seed s
