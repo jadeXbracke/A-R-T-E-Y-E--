@@ -17,6 +17,11 @@ export const PROFILE_TYPES: { value: ProfileType; label: string }[] = [
 
 export type VenueType = 'museum' | 'gallery' | 'ari';
 
+// Mirrors the `venue_status` enum in the database (migration 0005). A venue is
+// never deleted when it closes or moves on — it is archived, so the register
+// keeps a record of why it left and the discovery pipeline does not re-add it.
+export type VenueStatus = 'active' | 'archived' | 'pending';
+
 export const VENUE_TYPES: { value: VenueType; label: string }[] = [
   { value: 'gallery', label: 'GALLERY' },
   { value: 'museum', label: 'MUSEUM' },
@@ -220,6 +225,9 @@ export interface Venue {
   reel_url?: string | null; // link to an Instagram Reel or TikTok the venue posted
   opening_hours?: string | null; // e.g. "Tue–Sat 10:00–17:00" — verified from the venue's website
   hours_checked?: string | null; // YYYY-MM-DD the hours were last verified
+  status?: VenueStatus; // omitted means 'active'; archived venues stay in the register but leave the app
+  archived_reason?: string | null; // why it was archived — closed, moved on, merged
+  archived_date?: string | null; // YYYY-MM-DD the closure was verified
 }
 
 export interface Exhibition {

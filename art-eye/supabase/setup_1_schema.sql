@@ -850,3 +850,215 @@ create policy "feedback: admin reads" on feedback for select using (is_admin());
 drop policy if exists "feedback: admin updates" on feedback;
 create policy "feedback: admin updates" on feedback for update
   using (is_admin()) with check (is_admin());
+
+-- ============================================================
+-- migrations/0018_blocking_and_deletion.sql
+-- ============================================================
+-- 0018 — blocking, reports (reuses feedback), account deletion, push tokens.
+-- App Store readiness: guideline 1.2 (block + report for user-generated
+-- content) and 5.1.1(v) (in-app, self-service account deletion).
+
+create table if not exists blocks (
+  blocker_id uuid not null references profiles (id) on delete cascade,
+  blocked_id uuid not null references profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (blocker_id, blocked_id),
+  check (blocker_id <> blocked_id)
+);
+create index if not exists blocks_blocked_idx on blocks (blocked_id);
+
+alter table blocks enable row level security;
+
+-- You can see (and therefore only manage) your own blocklist.
+drop policy if exists "blocks: own read" on blocks;
+create policy "blocks: own read" on blocks for select using (blocker_id = auth.uid());
+drop policy if exists "blocks: own write" on blocks;
+create policy "blocks: own write" on blocks for all
+  using (blocker_id = auth.uid()) with check (blocker_id = auth.uid());
+
+-- Bidirectional check used by RLS on posts/messages/etc: true if either side
+-- has blocked the other.
+create or replace function is_blocked(a uuid, b uuid) returns boolean
+language sql stable as $$
+  select exists (
+    select 1 from blocks
+    where (blocker_id = a and blocked_id = b) or (blocker_id = b and blocked_id = a)
+  );
+$$;
+
+-- Reports reuse the feedback table (kind: 'profile' | 'post') — widen the
+-- check constraint rather than add a parallel moderation table.
+alter table feedback drop constraint if exists feedback_kind_check;
+alter table feedback add constraint feedback_kind_check
+  check (kind in ('general', 'venue', 'exhibition', 'profile', 'post'));
+
+-- A block also ends any existing follow, in either direction.
+create or replace function block_user(target uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if target = auth.uid() then
+    raise exception 'cannot block yourself';
+  end if;
+  insert into blocks (blocker_id, blocked_id) values (auth.uid(), target)
+    on conflict (blocker_id, blocked_id) do nothing;
+  delete from follows
+    where (follower_id = auth.uid() and followee_id = target)
+       or (follower_id = target and followee_id = auth.uid());
+end;
+$$;
+
+-- Fold the block into direct-message visibility: a blocked pair can no
+-- longer read or send to each other, on top of the existing mutual-follow
+-- gate from 0016.
+drop policy if exists "dm: participants read" on direct_messages;
+create policy "dm: participants read" on direct_messages for select
+  using (auth.uid() in (sender_id, recipient_id) and not is_blocked(sender_id, recipient_id));
+drop policy if exists "dm: send to mutuals" on direct_messages;
+create policy "dm: send to mutuals" on direct_messages for insert
+  with check (
+    sender_id = auth.uid()
+    and follows_each_other(sender_id, recipient_id)
+    and not is_blocked(sender_id, recipient_id)
+  );
+
+-- Push notification device tokens: one row per (user, token) so a person
+-- signed in on several devices gets pushes on all of them.
+create table if not exists push_tokens (
+  user_id uuid not null references profiles (id) on delete cascade,
+  token text not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, token)
+);
+
+alter table push_tokens enable row level security;
+drop policy if exists "push_tokens: own" on push_tokens;
+create policy "push_tokens: own" on push_tokens for all
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Self-service account deletion. SECURITY DEFINER so it can reach
+-- auth.users, which the client's anon/authenticated role cannot touch
+-- directly; every profiles-referencing table already cascades from
+-- profiles.id, which cascades from auth.users.id (0001_init.sql).
+create or replace function delete_own_account() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+revoke all on function delete_own_account() from public;
+grant execute on function delete_own_account() to authenticated;
+
+revoke all on function block_user(uuid) from public;
+grant execute on function block_user(uuid) to authenticated;
+
+-- ============================================================
+-- migrations/0019_engagement_plus.sql
+-- ============================================================
+-- 0019 — notification center, comment replies + comment likes, DM media.
+-- Adds the schema for the second round of social features: an in-app
+-- notification feed, threaded comment replies, likes on comments, and
+-- optional images attached to direct messages. "Friends who also saw this",
+-- streaks and the yearly wrap-up need no schema — they're derived client-side
+-- from user_visits/follows that already exist.
+
+-- ---- comment threading -------------------------------------------------
+-- null parent_comment_id = a top-level comment; otherwise a reply to it.
+-- One level deep by design (a reply's parent is always a top-level comment) —
+-- the UI never lets you reply to a reply, so nothing enforces that in SQL.
+alter table post_comments add column if not exists parent_comment_id uuid
+  references post_comments (id) on delete cascade;
+create index if not exists post_comments_parent_idx on post_comments (parent_comment_id);
+
+-- ---- comment likes ------------------------------------------------------
+create table if not exists comment_likes (
+  user_id uuid not null references profiles (id) on delete cascade,
+  comment_id uuid not null references post_comments (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, comment_id)
+);
+create index if not exists comment_likes_comment_idx on comment_likes (comment_id);
+
+alter table comment_likes enable row level security;
+
+drop policy if exists "comment_likes: read" on comment_likes;
+create policy "comment_likes: read" on comment_likes for select using (
+  exists (select 1 from post_comments c where c.id = comment_id and can_see_post(c.post_user_id))
+);
+drop policy if exists "comment_likes: own write" on comment_likes;
+create policy "comment_likes: own write" on comment_likes for all
+  using (user_id = auth.uid())
+  with check (
+    user_id = auth.uid()
+    and exists (select 1 from post_comments c where c.id = comment_id and can_see_post(c.post_user_id))
+  );
+
+-- ---- direct message media -------------------------------------------------
+-- A message can now carry an image with or instead of text.
+alter table direct_messages add column if not exists image_url text;
+alter table direct_messages alter column text set default '';
+alter table direct_messages drop constraint if exists direct_messages_text_check;
+alter table direct_messages add constraint direct_messages_text_check
+  check (image_url is not null or char_length(text) between 1 and 2000);
+
+-- ---- notification center ---------------------------------------------------
+-- One row per event a user should see in their in-app inbox (likes, comments,
+-- replies, comment likes, new/accepted follows, mentions, messages). Kept
+-- separate from push (push is fire-and-forget and unread state doesn't
+-- matter there; this is the durable, readable record).
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles (id) on delete cascade, -- recipient
+  kind text not null check (
+    kind in ('like', 'comment', 'reply', 'comment_like', 'follow', 'follow_request', 'message', 'mention')
+  ),
+  actor_id uuid references profiles (id) on delete set null,
+  exhibition_id uuid references exhibitions (id) on delete cascade,
+  post_user_id uuid references profiles (id) on delete cascade, -- the post this refers to, when relevant
+  comment_id uuid references post_comments (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+create index if not exists notifications_user_idx on notifications (user_id, created_at desc);
+create index if not exists notifications_unread_idx on notifications (user_id) where read_at is null;
+
+alter table notifications enable row level security;
+
+drop policy if exists "notifications: own read" on notifications;
+create policy "notifications: own read" on notifications for select using (user_id = auth.uid());
+-- The actor writes the notification at the moment they act (liking, commenting,
+-- following, messaging) — same trust level the existing push helper already
+-- uses (see send-push), just durable and readable in-app.
+drop policy if exists "notifications: actor write" on notifications;
+create policy "notifications: actor write" on notifications for insert
+  with check (actor_id = auth.uid());
+drop policy if exists "notifications: recipient marks read" on notifications;
+create policy "notifications: recipient marks read" on notifications for update
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ============================================================
+-- migrations/0020_post_photo_and_feed_media.sql
+-- ============================================================
+-- 0020 — a still photo alternative to the existing video clip on a post
+-- (0013_post_video.sql). A post carries one or the other, never both.
+
+alter table user_visits
+  add column if not exists photo_url text;
+
+-- ============================================================
+-- migrations/0021_venue_facts.sql
+-- ============================================================
+-- 0021 — the two venue facts the app already renders but the database never had.
+--
+-- venue-meta.ts builds the description block from type, founding year and entry
+-- price. `free_entry` arrived with the register, but `founded_year` and
+-- `entry_checked` existed only in the bundled demo seed — so in live mode the
+-- founding year silently disappeared and the "checked on" date with it.
+
+alter table venues
+  add column if not exists founded_year  int,
+  add column if not exists entry_checked date;
+
+comment on column venues.founded_year is
+  'Year the venue was established — verified, else null.';
+comment on column venues.entry_checked is
+  'Date the type / founded / entry facts were last verified.';

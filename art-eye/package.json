@@ -45,6 +45,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "placeholders": "node scripts/gen-placeholders.js",
+    "seed:sql": "node scripts/gen-seed-sql.js",
+    "check:seed": "node scripts/check-seed.js && node scripts/gen-seed-sql.js --check",
     "build:pages": "EXPO_BASE_URL=/D-I-S-APP- expo export -p web --output-dir ../docs && node scripts/finish-pages.js"
   },
   "private": true

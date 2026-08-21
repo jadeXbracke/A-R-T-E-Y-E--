@@ -3,7 +3,7 @@
 -- Safe to run more than once on the same project — every statement skips
 -- work that's already been done, so re-running after a partial failure
 -- (or just to double-check) is fine.
--- Contains: the full schema (every migration), the 137 real Sydney venues,
+-- Contains: the full schema (every migration), 160 published Sydney venues,
 -- and the 61 verified exhibitions.
 -- Afterwards: sign up in the app with jadebrack@gmail.com, then run
 -- make_owner.sql to promote that one account to admin.
@@ -861,228 +861,439 @@ drop policy if exists "feedback: admin updates" on feedback;
 create policy "feedback: admin updates" on feedback for update
   using (is_admin()) with check (is_admin());
 
--- ART EYE — SETUP STEP 2 of 2: THE 137 REAL SYDNEY VENUES.
+-- ============================================================
+-- migrations/0018_blocking_and_deletion.sql
+-- ============================================================
+-- 0018 — blocking, reports (reuses feedback), account deletion, push tokens.
+-- App Store readiness: guideline 1.2 (block + report for user-generated
+-- content) and 5.1.1(v) (in-app, self-service account deletion).
+
+create table if not exists blocks (
+  blocker_id uuid not null references profiles (id) on delete cascade,
+  blocked_id uuid not null references profiles (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (blocker_id, blocked_id),
+  check (blocker_id <> blocked_id)
+);
+create index if not exists blocks_blocked_idx on blocks (blocked_id);
+
+alter table blocks enable row level security;
+
+-- You can see (and therefore only manage) your own blocklist.
+drop policy if exists "blocks: own read" on blocks;
+create policy "blocks: own read" on blocks for select using (blocker_id = auth.uid());
+drop policy if exists "blocks: own write" on blocks;
+create policy "blocks: own write" on blocks for all
+  using (blocker_id = auth.uid()) with check (blocker_id = auth.uid());
+
+-- Bidirectional check used by RLS on posts/messages/etc: true if either side
+-- has blocked the other.
+create or replace function is_blocked(a uuid, b uuid) returns boolean
+language sql stable as $$
+  select exists (
+    select 1 from blocks
+    where (blocker_id = a and blocked_id = b) or (blocker_id = b and blocked_id = a)
+  );
+$$;
+
+-- Reports reuse the feedback table (kind: 'profile' | 'post') — widen the
+-- check constraint rather than add a parallel moderation table.
+alter table feedback drop constraint if exists feedback_kind_check;
+alter table feedback add constraint feedback_kind_check
+  check (kind in ('general', 'venue', 'exhibition', 'profile', 'post'));
+
+-- A block also ends any existing follow, in either direction.
+create or replace function block_user(target uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if target = auth.uid() then
+    raise exception 'cannot block yourself';
+  end if;
+  insert into blocks (blocker_id, blocked_id) values (auth.uid(), target)
+    on conflict (blocker_id, blocked_id) do nothing;
+  delete from follows
+    where (follower_id = auth.uid() and followee_id = target)
+       or (follower_id = target and followee_id = auth.uid());
+end;
+$$;
+
+-- Fold the block into direct-message visibility: a blocked pair can no
+-- longer read or send to each other, on top of the existing mutual-follow
+-- gate from 0016.
+drop policy if exists "dm: participants read" on direct_messages;
+create policy "dm: participants read" on direct_messages for select
+  using (auth.uid() in (sender_id, recipient_id) and not is_blocked(sender_id, recipient_id));
+drop policy if exists "dm: send to mutuals" on direct_messages;
+create policy "dm: send to mutuals" on direct_messages for insert
+  with check (
+    sender_id = auth.uid()
+    and follows_each_other(sender_id, recipient_id)
+    and not is_blocked(sender_id, recipient_id)
+  );
+
+-- Push notification device tokens: one row per (user, token) so a person
+-- signed in on several devices gets pushes on all of them.
+create table if not exists push_tokens (
+  user_id uuid not null references profiles (id) on delete cascade,
+  token text not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, token)
+);
+
+alter table push_tokens enable row level security;
+drop policy if exists "push_tokens: own" on push_tokens;
+create policy "push_tokens: own" on push_tokens for all
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Self-service account deletion. SECURITY DEFINER so it can reach
+-- auth.users, which the client's anon/authenticated role cannot touch
+-- directly; every profiles-referencing table already cascades from
+-- profiles.id, which cascades from auth.users.id (0001_init.sql).
+create or replace function delete_own_account() returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+revoke all on function delete_own_account() from public;
+grant execute on function delete_own_account() to authenticated;
+
+revoke all on function block_user(uuid) from public;
+grant execute on function block_user(uuid) to authenticated;
+
+-- ============================================================
+-- migrations/0019_engagement_plus.sql
+-- ============================================================
+-- 0019 — notification center, comment replies + comment likes, DM media.
+-- Adds the schema for the second round of social features: an in-app
+-- notification feed, threaded comment replies, likes on comments, and
+-- optional images attached to direct messages. "Friends who also saw this",
+-- streaks and the yearly wrap-up need no schema — they're derived client-side
+-- from user_visits/follows that already exist.
+
+-- ---- comment threading -------------------------------------------------
+-- null parent_comment_id = a top-level comment; otherwise a reply to it.
+-- One level deep by design (a reply's parent is always a top-level comment) —
+-- the UI never lets you reply to a reply, so nothing enforces that in SQL.
+alter table post_comments add column if not exists parent_comment_id uuid
+  references post_comments (id) on delete cascade;
+create index if not exists post_comments_parent_idx on post_comments (parent_comment_id);
+
+-- ---- comment likes ------------------------------------------------------
+create table if not exists comment_likes (
+  user_id uuid not null references profiles (id) on delete cascade,
+  comment_id uuid not null references post_comments (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, comment_id)
+);
+create index if not exists comment_likes_comment_idx on comment_likes (comment_id);
+
+alter table comment_likes enable row level security;
+
+drop policy if exists "comment_likes: read" on comment_likes;
+create policy "comment_likes: read" on comment_likes for select using (
+  exists (select 1 from post_comments c where c.id = comment_id and can_see_post(c.post_user_id))
+);
+drop policy if exists "comment_likes: own write" on comment_likes;
+create policy "comment_likes: own write" on comment_likes for all
+  using (user_id = auth.uid())
+  with check (
+    user_id = auth.uid()
+    and exists (select 1 from post_comments c where c.id = comment_id and can_see_post(c.post_user_id))
+  );
+
+-- ---- direct message media -------------------------------------------------
+-- A message can now carry an image with or instead of text.
+alter table direct_messages add column if not exists image_url text;
+alter table direct_messages alter column text set default '';
+alter table direct_messages drop constraint if exists direct_messages_text_check;
+alter table direct_messages add constraint direct_messages_text_check
+  check (image_url is not null or char_length(text) between 1 and 2000);
+
+-- ---- notification center ---------------------------------------------------
+-- One row per event a user should see in their in-app inbox (likes, comments,
+-- replies, comment likes, new/accepted follows, mentions, messages). Kept
+-- separate from push (push is fire-and-forget and unread state doesn't
+-- matter there; this is the durable, readable record).
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles (id) on delete cascade, -- recipient
+  kind text not null check (
+    kind in ('like', 'comment', 'reply', 'comment_like', 'follow', 'follow_request', 'message', 'mention')
+  ),
+  actor_id uuid references profiles (id) on delete set null,
+  exhibition_id uuid references exhibitions (id) on delete cascade,
+  post_user_id uuid references profiles (id) on delete cascade, -- the post this refers to, when relevant
+  comment_id uuid references post_comments (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+create index if not exists notifications_user_idx on notifications (user_id, created_at desc);
+create index if not exists notifications_unread_idx on notifications (user_id) where read_at is null;
+
+alter table notifications enable row level security;
+
+drop policy if exists "notifications: own read" on notifications;
+create policy "notifications: own read" on notifications for select using (user_id = auth.uid());
+-- The actor writes the notification at the moment they act (liking, commenting,
+-- following, messaging) — same trust level the existing push helper already
+-- uses (see send-push), just durable and readable in-app.
+drop policy if exists "notifications: actor write" on notifications;
+create policy "notifications: actor write" on notifications for insert
+  with check (actor_id = auth.uid());
+drop policy if exists "notifications: recipient marks read" on notifications;
+create policy "notifications: recipient marks read" on notifications for update
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ============================================================
+-- migrations/0020_post_photo_and_feed_media.sql
+-- ============================================================
+-- 0020 — a still photo alternative to the existing video clip on a post
+-- (0013_post_video.sql). A post carries one or the other, never both.
+
+alter table user_visits
+  add column if not exists photo_url text;
+
+-- ============================================================
+-- migrations/0021_venue_facts.sql
+-- ============================================================
+-- 0021 — the two venue facts the app already renders but the database never had.
+--
+-- venue-meta.ts builds the description block from type, founding year and entry
+-- price. `free_entry` arrived with the register, but `founded_year` and
+-- `entry_checked` existed only in the bundled demo seed — so in live mode the
+-- founding year silently disappeared and the "checked on" date with it.
+
+alter table venues
+  add column if not exists founded_year  int,
+  add column if not exists entry_checked date;
+
+comment on column venues.founded_year is
+  'Year the venue was established — verified, else null.';
+comment on column venues.entry_checked is
+  'Date the type / founded / entry facts were last verified.';
+
+-- ART EYE — SETUP STEP 2 of 2: DE SYDNEY VENUES.
 -- Run setup_1_schema.sql FIRST, then paste this file and press Run.
 -- Safe to run repeatedly (venues are matched on slug).
 
 -- ============================================================================
 --  ART EYE — SYDNEY VENUE REGISTER  (seed / upsert)
 -- ============================================================================
---  137 real Sydney venues (galleries, museums, ARIs), verified July 2026.
---  Safe to run repeatedly: rows are matched on `slug`, so re-running updates
---  existing venues instead of creating duplicates.
+--  GENERATED FILE — do not edit by hand.
+--  Source: art-eye/src/lib/seed.ts. Regenerate with `npm run seed:sql`.
 --
---  Run AFTER the migrations in ./migrations (needs the new columns + slug).
+--  167 venues, 160 of them published. Rows are matched on `slug`, so
+--  running this again updates the register instead of creating duplicates.
 --
---  To add another venue, copy a line, keep the comma between rows (no comma
---  after the very last row), and set type to 'gallery' | 'museum' | 'ari'.
+--  Run AFTER the migrations in ./migrations (needs the register columns).
+--
+--  Venues that have closed or left their space keep their row with
+--  status = 'archived' (or 'pending' where a closure is unconfirmed): the app
+--  and the live view publish only status = 'active', and keeping the row stops
+--  the discovery pipeline from proposing the venue all over again.
 -- ============================================================================
 
-insert into venues (slug, name, type, address, suburb, website, instagram, latitude, longitude, city) values
-  ('articulate-project-space', 'Articulate Project Space', 'ari', '497 Parramatta Road, Leichhardt NSW', 'Leichhardt', 'https://www.articulateprojectspace.org', '@articulateprojectspace', -33.8776, 151.1552, 'Sydney'),
-  ('boomalli', 'Boomalli Aboriginal Artists Co-operative', 'ari', '55–59 Flood Street, Leichhardt NSW', 'Leichhardt', 'https://boomalli.com.au', '@boomalli_aboriginal_art', -33.8858, 151.1504, 'Sydney'),
-  ('firstdraft', 'Firstdraft', 'ari', '13–17 Riley Street, Woolloomooloo NSW', 'Woolloomooloo', 'https://firstdraft.org.au', '@firstdraft_', -33.8725, 151.2155, 'Sydney'),
-  ('frontyard-projects', 'Frontyard Projects', 'ari', '228 Illawarra Road, Marrickville NSW', 'Marrickville', 'https://www.frontyardprojects.org', '@frontyardorg', -33.9107, 151.1549, 'Sydney'),
-  ('pari', 'Pari', 'ari', 'Shop 7, 14 Hunter Street, Parramatta NSW', 'Parramatta', 'https://pariari.org', '@pari_ari_', -33.813, 150.9987, 'Sydney'),
-  ('scratch-art-space', 'Scratch Art Space', 'ari', '67 Sydenham Road, Marrickville NSW', 'Marrickville', 'https://www.scratchartspace.com', '@scratchartspace', -33.9065, 151.1614, 'Sydney'),
-  ('tortuga-studios', 'Tortuga Studios', 'ari', '31 Princes Highway, St Peters NSW', 'St Peters', 'https://tortugastudios.org.au', '@tortuga.studios', -33.91, 151.1808, 'Sydney'),
-  ('4a-centre', '4A Centre for Contemporary Asian Art', 'gallery', '181–187 Hay Street, Haymarket NSW', 'Haymarket', 'https://4a.com.au', '@4a_aus', -33.879, 151.2037, 'Sydney'),
-  ('arthouse-gallery', 'Arthouse Gallery', 'gallery', '66 McLachlan Avenue, Rushcutters Bay NSW', 'Rushcutters Bay', 'https://arthousegallery.com.au', '@arthousegallery', -33.8781, 151.2236, 'Sydney'),
-  ('artspace', 'Artspace', 'gallery', '43–51 Cowper Wharf Roadway (The Gunnery), Woolloomooloo NSW', 'Woolloomooloo', 'https://www.artspace.org.au', '@artspacesydney', -33.8696, 151.2205, 'Sydney'),
-  ('australian-galleries-sydney', 'Australian Galleries', 'gallery', '15 Roylston Street, Paddington NSW', 'Paddington', 'https://australiangalleries.com.au', '@australiangalleries', -33.881, 151.2246, 'Sydney'),
-  ('bankstown-arts-centre', 'Bankstown Arts Centre', 'gallery', '5 Olympic Parade, Bankstown NSW', 'Bankstown', 'https://www.bankstownartscentre.com.au', '@bankstownartscentre', -33.9185, 151.0342, 'Sydney'),
-  ('coma-gallery', 'COMA Gallery', 'gallery', '37 Chapel Street, Marrickville NSW', 'Marrickville', 'https://www.comagallery.com', '@comagallery', -33.9078, 151.164, 'Sydney'),
-  ('campbelltown-arts-centre', 'Campbelltown Arts Centre', 'gallery', '1 Art Gallery Road, Campbelltown NSW', 'Campbelltown', 'https://c-a-c.com.au', '@campbelltownartscentre', -34.0728, 150.809, 'Sydney'),
-  ('carriageworks', 'Carriageworks', 'gallery', '245 Wilson Street, Eveleigh NSW', 'Eveleigh', 'https://carriageworks.com.au', '@carriageworks', -33.8946, 151.1935, 'Sydney'),
-  ('chalk-horse', 'Chalk Horse', 'gallery', '167 William Street (lower ground), Darlinghurst NSW', 'Darlinghurst', 'https://www.chalkhorse.com.au', '@chalkhorsegallery', -33.875, 151.2189, 'Sydney'),
-  ('china-heights', 'China Heights Gallery', 'gallery', 'Level 3, 16–28 Foster Street, Surry Hills NSW', 'Surry Hills', 'https://chinaheights.com', '@chinaheights', -33.8797, 151.2103, 'Sydney'),
-  ('darren-knight-gallery', 'Darren Knight Gallery', 'gallery', '840 Elizabeth Street, Waterloo NSW', 'Waterloo', 'https://darrenknightgallery.com', '@darrenknightgallery', -33.907, 151.2072, 'Sydney'),
-  ('dominik-mersch-gallery', 'Dominik Mersch Gallery', 'gallery', '1/75 McLachlan Avenue, Rushcutters Bay NSW', 'Rushcutters Bay', 'https://dominikmerschgallery.com', '@dominikmerschgallery', -33.8783, 151.2238, 'Sydney'),
-  ('fine-arts-sydney', 'Fine Arts, Sydney', 'gallery', '23 Hampden Street, Paddington NSW', 'Paddington', 'https://www.finearts.sydney', '@fineartssydney', -33.8828, 151.2211, 'Sydney'),
-  ('gallery-lane-cove', 'Gallery Lane Cove', 'gallery', 'Level 3, 164 Longueville Road, Lane Cove NSW', 'Lane Cove', 'https://www.gallerylanecove.com.au', '@gallerylanecove', -33.816, 151.1697, 'Sydney'),
-  ('granville-centre-art-gallery', 'Granville Centre Art Gallery', 'gallery', '1 Memorial Drive, Granville NSW', 'Granville', 'https://www.cumberland.nsw.gov.au/granville-centre-art-gallery', '@granvillecentreartgallery', -33.831, 151.014, 'Sydney'),
-  ('hazelhurst-arts-centre', 'Hazelhurst Arts Centre', 'gallery', '782 Kingsway, Gymea NSW', 'Gymea', 'https://hazelhurst.sutherlandshire.nsw.gov.au', '@hazelhurstartscentre', -34.0329, 151.0874, 'Sydney'),
-  ('king-street-gallery', 'King Street Gallery on William', 'gallery', '177 William Street, Darlinghurst NSW', 'Darlinghurst', 'https://kingstreetgallery.com.au', '@kingstreetgallery', -33.8747, 151.2184, 'Sydney'),
-  ('liverpool-powerhouse', 'Casula Powerhouse Arts Centre', 'gallery', '1 Powerhouse Road, Casula NSW', 'Casula', 'https://www.liverpoolpowerhouse.com.au', '@liverpoolpowerhouse', -33.9493, 150.9129, 'Sydney'),
-  ('manly-art-gallery-museum', 'Manly Art Gallery & Museum', 'gallery', '1a West Esplanade, Manly NSW', 'Manly', 'https://www.northernbeaches.nsw.gov.au/things-to-do/arts-and-culture/manly-art-gallery-museum', '@magamnsw', -33.7986, 151.2814, 'Sydney'),
-  ('martin-browne-contemporary', 'Martin Browne Contemporary', 'gallery', '15 Hampden Street, Paddington NSW', 'Paddington', 'https://martinbrownecontemporary.com', '@martinbrownecontemporary', -33.8825, 151.2338, 'Sydney'),
-  ('michael-reid-sydney', 'Michael Reid Sydney', 'gallery', '109 Shepherd Street, Chippendale NSW', 'Chippendale', 'https://michaelreid.com.au', '@michaelreidsydney', -33.8877, 151.1951, 'Sydney'),
-  ('mosman-art-gallery', 'Mosman Art Gallery', 'gallery', '1 Art Gallery Way, Mosman NSW', 'Mosman', 'https://mosmanartgallery.org.au', '@mosmanart', -33.8279, 151.2406, 'Sydney'),
-  ('n-smith-gallery', 'N.Smith Gallery', 'gallery', '15 Foster Street, Surry Hills NSW', 'Surry Hills', 'https://www.nsmithgallery.com', '@n.smithgallery', -33.88, 151.2097, 'Sydney'),
-  ('nanda-hobbs', 'Nanda\Hobbs', 'gallery', '12–14 Meagher Street, Chippendale NSW', 'Chippendale', 'https://nandahobbs.com', '@nandahobbs', -33.8867, 151.1986, 'Sydney'),
-  ('nas-gallery', 'National Art School Gallery', 'gallery', '156 Forbes Street, Darlinghurst NSW', 'Darlinghurst', 'https://nas.edu.au', '@nas_au', -33.8788, 151.2172, 'Sydney'),
-  ('olsen-gallery', 'Olsen Gallery', 'gallery', '63 Jersey Road, Woollahra NSW', 'Woollahra', 'https://www.olsengallery.com', '@olsen_gallery', -33.8875, 151.2337, 'Sydney'),
-  ('penrith-regional-gallery', 'Penrith Regional Gallery', 'gallery', '86 River Road, Emu Plains NSW', 'Emu Plains', 'https://www.penrithregionalgallery.com.au', '@penrithregionalgallery', -33.7458, 150.6669, 'Sydney'),
-  ('phoenix-central-park', 'Phoenix Central Park', 'gallery', '37–49 O''Connor Street, Chippendale NSW', 'Chippendale', 'https://phoenixcentralpark.com.au', '@phoenixcentralpark', -33.8865, 151.199, 'Sydney'),
-  ('roslyn-oxley9-gallery', 'Roslyn Oxley9 Gallery', 'gallery', '8 Soudan Lane, Paddington NSW', 'Paddington', 'https://www.roslynoxley9.com.au', '@roslynoxley9', -33.8826, 151.2341, 'Sydney'),
-  ('sh-ervin-gallery', 'S.H. Ervin Gallery', 'gallery', 'Watson Road, Observatory Hill, Millers Point NSW', 'Millers Point', 'https://www.shervingallery.com.au', '@shervingallery', -33.8599, 151.2049, 'Sydney'),
-  ('station-sydney', 'STATION Sydney', 'gallery', '91 Campbell Street, Surry Hills NSW', 'Surry Hills', 'https://stationgallery.com', '@stationgalleryaustralia', -33.8796, 151.2102, 'Sydney'),
-  ('saint-cloche', 'Saint Cloche', 'gallery', '37 MacDonald Street, Paddington NSW', 'Paddington', 'https://saintcloche.com', '@saint_cloche', -33.8824, 151.2231, 'Sydney'),
-  ('sullivan-strumpf', 'Sullivan+Strumpf', 'gallery', '799 Elizabeth Street, Zetland NSW', 'Zetland', 'https://www.sullivanstrumpf.com', '@sullivanstrumpf', -33.9065, 151.2067, 'Sydney'),
-  ('unsw-galleries', 'UNSW Galleries', 'gallery', 'Cnr Oxford Street & Greens Road, Paddington NSW', 'Paddington', 'https://www.galleries.unsw.edu.au', '@unswgalleries', -33.8845, 151.2223, 'Sydney'),
-  ('uts-gallery', 'UTS Gallery', 'gallery', 'Level 4, Building 6, 702 Harris Street, Ultimo NSW', 'Ultimo', 'https://art.uts.edu.au', '@uts_art', -33.8805, 151.2, 'Sydney'),
-  ('utopia-art-sydney', 'Utopia Art Sydney', 'gallery', '983 Bourke Street, Waterloo NSW', 'Waterloo', 'https://utopiaartsydney.com.au', '@utopiaartsydney', -33.9, 151.2106, 'Sydney'),
-  ('verge-gallery', 'Verge Gallery', 'gallery', 'Jane Foss Russell Plaza, 154 City Road, Darlington NSW', 'Darlington', 'https://www.verge-gallery.net', '@vergegallery', -33.8888, 151.1866, 'Sydney'),
-  ('art-gallery-of-new-south-wales', 'Art Gallery of New South Wales', 'museum', 'Art Gallery Road, The Domain, Sydney NSW', 'Sydney', 'https://www.artgallery.nsw.gov.au', '@artgalleryofnsw', -33.8688, 151.2173, 'Sydney'),
-  ('australian-museum', 'Australian Museum', 'museum', '1 William Street, Sydney NSW', 'Sydney', 'https://australian.museum', '@australianmuseum', -33.8712, 151.2133, 'Sydney'),
-  ('chau-chak-wing-museum', 'Chau Chak Wing Museum', 'museum', 'University Place, University of Sydney, Camperdown NSW', 'Camperdown', 'https://www.sydney.edu.au/museum/', '@ccwm_sydney', -33.8853, 151.1905, 'Sydney'),
-  ('fairfield-city-museum-gallery', 'Fairfield City Museum & Gallery', 'museum', '634 The Horsley Drive, Smithfield NSW', 'Smithfield', 'https://www.fcmg.nsw.gov.au', '@fairfieldcitymuseumgallery', -33.8481, 150.9427, 'Sydney'),
-  ('mca-australia', 'Museum of Contemporary Art Australia', 'museum', '140 George Street, The Rocks NSW', 'The Rocks', 'https://www.mca.com.au', '@mca_australia', -33.8601, 151.209, 'Sydney'),
-  ('museum-of-sydney', 'Museum of Sydney', 'museum', 'Cnr Phillip & Bridge Streets, Sydney NSW', 'Sydney', 'https://mhnsw.au/visit-us/museum-of-sydney/', '@museumsofhistorynsw', -33.8636, 151.2114, 'Sydney'),
-  ('powerhouse-parramatta', 'Powerhouse Parramatta', 'museum', '34 Phillip Street, Parramatta NSW', 'Parramatta', 'https://powerhouse.com.au/visit/parramatta', '@powerhousemuseum', -33.81, 151.0044, 'Sydney'),
-  ('sydney-jewish-museum', 'Sydney Jewish Museum', 'museum', '148 Darlinghurst Road, Darlinghurst NSW', 'Darlinghurst', 'https://sydneyjewishmuseum.com.au', '@sydneyjewishmuseum', -33.879, 151.2203, 'Sydney'),
-  ('white-rabbit-gallery', 'White Rabbit Gallery', 'museum', '30 Balfour Street, Chippendale NSW', 'Chippendale', 'https://whiterabbitcollection.org', '@whiterabbitgallery', -33.8865, 151.2003, 'Sydney'),
-  ('cement-fondu', 'Cement Fondu', 'gallery', '36 Gosbell Street, Paddington NSW', 'Paddington', 'https://cementfondu.org', '@cementfondu', -33.8776, 151.2222, 'Sydney'),
-  ('vermilion-art', 'Vermilion Art', 'gallery', '16 Hickson Road, Dawes Point NSW', 'Dawes Point', 'https://www.vermilionart.com.au', null, -33.8563, 151.2044, 'Sydney'),
-  ('107-projects', '107 Projects', 'ari', '107 Redfern Street, Redfern NSW', 'Redfern', 'https://107.org.au', '@107projects', -33.8925, 151.2044, 'Sydney'),
-  ('australian-design-centre', 'Australian Design Centre', 'gallery', '101–115 William Street, Darlinghurst NSW', 'Darlinghurst', 'https://australiandesigncentre.com', '@austdesigncentre', -33.8755, 151.2166, 'Sydney'),
-  ('galerie-pompom', 'Galerie pompom', 'gallery', '2/39 Abercrombie Street, Chippendale NSW', 'Chippendale', 'https://galeriepompom.com', '@galeriepompom', -33.8877, 151.1984, 'Sydney'),
-  ('artereal-gallery', 'Artereal Gallery', 'gallery', '747 Darling Street, Rozelle NSW', 'Rozelle', 'https://artereal.com.au', '@arterealgallery', -33.8614, 151.171, 'Sydney'),
-  ('defiance-gallery', 'Defiance Gallery', 'gallery', '47 Enmore Road, Newtown NSW', 'Newtown', 'https://www.defiancegallery.com', null, -33.899, 151.177, 'Sydney'),
-  ('gallery-9', 'Gallery 9', 'gallery', '9 Darley Street, Darlinghurst NSW', 'Darlinghurst', 'https://www.gallery9.com.au', null, -33.883, 151.217, 'Sydney'),
-  ('incinerator-art-space', 'Incinerator Art Space', 'gallery', '2 Small Street, Willoughby NSW', 'Willoughby', 'https://www.willoughby.nsw.gov.au/community/community-spaces/incinerator-art-space', null, -33.803, 151.19, 'Sydney'),
-  ('delmar-gallery', 'Delmar Gallery', 'gallery', '144 Victoria Street, Ashfield NSW', 'Ashfield', null, null, -33.883, 151.125, 'Sydney'),
-  ('woollahra-gallery-at-redleaf', 'Woollahra Gallery at Redleaf', 'gallery', '548 New South Head Road, Double Bay NSW', 'Double Bay', 'https://www.woollahra.nsw.gov.au/woollahragallery', null, -33.877, 151.245, 'Sydney'),
-  ('16albermarle', '16albermarle Project Space', 'gallery', '16 Albermarle Street, Newtown NSW', 'Newtown', 'https://www.16albermarle.com', null, -33.898, 151.181, 'Sydney')
+insert into venues (slug, name, type, category, tier, editorial_note, address, suburb, website, instagram, latitude, longitude, city, founded_year, free_entry, entry_checked, opening_hours, hours_checked, status) values
+  ('art-gallery-of-new-south-wales', 'Art Gallery of New South Wales', 'museum', null, null, null, 'Art Gallery Road, The Domain, Sydney NSW 2000', 'The Domain', 'https://www.artgallery.nsw.gov.au', '@artgalleryofnsw', -33.8688, 151.2173, 'Sydney', 1871, true, '2026-07-22', 'Daily 10:00–17:00, Wed until 22:00', '2026-07-21', 'active'),
+  ('mca-australia', 'MCA Australia', 'museum', null, null, null, '140 George Street, The Rocks, Sydney NSW 2000', 'The Rocks', 'https://www.mca.com.au', '@mca_australia', -33.8599, 151.2088, 'Sydney', 1991, false, '2026-07-22', 'Wed–Mon 10:00–17:00, closed Tue', '2026-07-21', 'active'),
+  ('roslyn-oxley9-gallery', 'Roslyn Oxley9 Gallery', 'gallery', null, null, null, '8 Soudan Lane, Paddington NSW 2021', 'Paddington', 'https://www.roslynoxley9.com.au', '@roslynoxley9', null, null, 'Sydney', null, null, null, 'Tue–Fri 10:00–18:00, Sat 11:00–18:00', '2026-07-21', 'active'),
+  ('cassandra-bird', 'Cassandra Bird', 'gallery', null, null, null, '54 Kellett Street, Potts Point NSW 2011', 'Potts Point', 'https://www.cassandrabird.com/', '@cassandrabird.gallery', null, null, 'Sydney', null, null, null, 'Tue–Fri 10:00–17:00, Sat 11:00–17:00', '2026-07-21', 'active'),
+  ('1301sw', '1301SW', 'gallery', null, null, null, '3 Hiles Street, Alexandria NSW 2015', 'Alexandria', 'https://www.1301sw.com/', '@1301sw_au', null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('ames-yavuz', 'Ames Yavuz', 'gallery', null, null, null, '114 Commonwealth Street, Surry Hills NSW 2010', 'Surry Hills', 'https://amesyavuz.com/', '@amesyavuz', null, null, 'Sydney', null, null, null, 'Tue–Sat 10:00–18:00', '2026-07-21', 'active'),
+  ('olsen-annexe', 'OLSEN Annexe', 'gallery', null, null, null, '74 Queen Street, Woollahra NSW 2025', 'Woollahra', 'https://www.olsengallery.com/', '@olsen_annexe', null, null, 'Sydney', null, null, null, 'Tue–Fri 10:00–18:00, Sat 10:00–17:00', '2026-07-21', 'active'),
+  ('grace-cossington-smith-gallery', 'Grace Cossington Smith Gallery', 'gallery', null, null, null, 'Gate 7, 1666 Pacific Highway, Wahroonga NSW 2076', 'Wahroonga', null, '@gcsgallery', null, null, 'Sydney', null, null, null, 'Tue–Sat 10:00–17:00 (during exhibitions)', '2026-07-21', 'active'),
+  ('articulate-project-space', 'Articulate Project Space', 'ari', null, null, null, '497 Parramatta Road, Leichhardt NSW', 'Leichhardt', 'https://www.articulateprojectspace.org', '@articulateprojectspace', -33.8776, 151.1552, 'Sydney', null, null, null, null, null, 'active'),
+  ('boomalli', 'Boomalli Aboriginal Artists Co-operative', 'ari', null, null, null, '55–59 Flood Street, Leichhardt NSW', 'Leichhardt', 'https://boomalli.com.au', '@boomalli_aboriginal_art', -33.8858, 151.1504, 'Sydney', null, null, null, null, null, 'active'),
+  ('firstdraft', 'Firstdraft', 'ari', null, null, null, '13–17 Riley Street, Woolloomooloo NSW', 'Woolloomooloo', 'https://firstdraft.org.au', '@firstdraft_', -33.8725, 151.2155, 'Sydney', null, null, null, 'Wed 11:00–20:00, Thu–Sat 11:00–17:00', '2026-07-21', 'active'),
+  ('frontyard-projects', 'Frontyard Projects', 'ari', null, null, null, '228 Illawarra Road, Marrickville NSW', 'Marrickville', 'https://www.frontyardprojects.org', '@frontyardorg', -33.9107, 151.1549, 'Sydney', null, null, null, null, null, 'active'),
+  ('pari', 'Pari', 'ari', null, null, null, 'Shop 7, 14 Hunter Street, Parramatta NSW', 'Parramatta', 'https://pariari.org', '@pari_ari_', -33.813, 150.9987, 'Sydney', null, null, null, null, null, 'active'),
+  ('scratch-art-space', 'Scratch Art Space', 'ari', null, null, null, '67 Sydenham Road, Marrickville NSW', 'Marrickville', 'https://www.scratchartspace.com', '@scratchartspace', -33.9065, 151.1614, 'Sydney', null, null, null, null, null, 'active'),
+  ('tortuga-studios', 'Tortuga Studios', 'ari', null, null, null, '31 Princes Highway, St Peters NSW', 'St Peters', 'https://tortugastudios.org.au', '@tortuga.studios', -33.91, 151.1808, 'Sydney', null, null, null, null, null, 'active'),
+  ('4a-centre', '4A Centre for Contemporary Asian Art', 'gallery', null, null, null, '181–187 Hay Street, Haymarket NSW', 'Haymarket', 'https://4a.com.au', '@4a_aus', -33.879, 151.2037, 'Sydney', 1996, true, '2026-07-22', null, null, 'active'),
+  ('arthouse-gallery', 'Arthouse Gallery', 'gallery', null, null, null, '66 McLachlan Avenue, Rushcutters Bay NSW', 'Rushcutters Bay', 'https://arthousegallery.com.au', '@arthousegallery', -33.8781, 151.2236, 'Sydney', null, null, null, null, null, 'active'),
+  ('artspace', 'Artspace', 'gallery', null, null, null, '43–51 Cowper Wharf Roadway (The Gunnery), Woolloomooloo NSW', 'Woolloomooloo', 'https://www.artspace.org.au', '@artspacesydney', -33.8696, 151.2205, 'Sydney', 1983, true, '2026-07-22', 'Tue–Sun 11:00–17:00', '2026-07-21', 'active'),
+  ('australian-galleries-sydney', 'Australian Galleries', 'gallery', null, null, null, '15 Roylston Street, Paddington NSW', 'Paddington', 'https://australiangalleries.com.au', '@australiangalleries', -33.881, 151.2246, 'Sydney', null, null, null, null, null, 'active'),
+  ('bankstown-arts-centre', 'Bankstown Arts Centre', 'gallery', null, null, null, '5 Olympic Parade, Bankstown NSW', 'Bankstown', 'https://www.bankstownartscentre.com.au', '@bankstownartscentre', -33.9185, 151.0342, 'Sydney', null, null, null, null, null, 'active'),
+  ('coma-gallery', 'COMA Gallery', 'gallery', null, null, null, '37 Chapel Street, Marrickville NSW', 'Marrickville', 'https://www.comagallery.com', '@comagallery', -33.9078, 151.164, 'Sydney', null, null, null, null, null, 'active'),
+  ('campbelltown-arts-centre', 'Campbelltown Arts Centre', 'gallery', null, null, null, '1 Art Gallery Road, Campbelltown NSW', 'Campbelltown', 'https://c-a-c.com.au', '@campbelltownartscentre', -34.0728, 150.809, 'Sydney', null, null, null, 'Daily 10:00–16:00', '2026-07-21', 'active'),
+  ('carriageworks', 'Carriageworks', 'gallery', null, null, null, '245 Wilson Street, Eveleigh NSW', 'Eveleigh', 'https://carriageworks.com.au', '@carriageworks', -33.8946, 151.1935, 'Sydney', 2007, true, '2026-07-22', null, null, 'active'),
+  ('chalk-horse', 'Chalk Horse', 'gallery', null, null, null, '167 William Street (lower ground), Darlinghurst NSW', 'Darlinghurst', 'https://www.chalkhorse.com.au', '@chalkhorsegallery', -33.875, 151.2189, 'Sydney', null, null, null, null, null, 'active'),
+  ('china-heights', 'China Heights Gallery', 'gallery', null, null, null, 'Level 3, 16–28 Foster Street, Surry Hills NSW', 'Surry Hills', 'https://chinaheights.com', '@chinaheights', -33.8797, 151.2103, 'Sydney', null, null, null, null, null, 'active'),
+  ('darren-knight-gallery', 'Darren Knight Gallery', 'gallery', null, null, null, '840 Elizabeth Street, Waterloo NSW', 'Waterloo', 'https://darrenknightgallery.com', '@darrenknightgallery', -33.907, 151.2072, 'Sydney', null, null, null, null, null, 'active'),
+  ('dominik-mersch-gallery', 'Dominik Mersch Gallery', 'gallery', null, null, null, '1/75 McLachlan Avenue, Rushcutters Bay NSW', 'Rushcutters Bay', 'https://dominikmerschgallery.com', '@dominikmerschgallery', -33.8783, 151.2238, 'Sydney', null, null, null, null, null, 'active'),
+  ('fine-arts-sydney', 'Fine Arts, Sydney', 'gallery', null, null, null, '23 Hampden Street, Paddington NSW', 'Paddington', 'https://www.finearts.sydney', '@fineartssydney', -33.8828, 151.2211, 'Sydney', null, null, null, null, null, 'active'),
+  ('gallery-lane-cove', 'Gallery Lane Cove', 'gallery', null, null, null, 'Level 3, 164 Longueville Road, Lane Cove NSW', 'Lane Cove', 'https://www.gallerylanecove.com.au', '@gallerylanecove', -33.816, 151.1697, 'Sydney', null, null, null, null, null, 'active'),
+  ('granville-centre-art-gallery', 'Granville Centre Art Gallery', 'gallery', null, null, null, '1 Memorial Drive, Granville NSW', 'Granville', 'https://www.cumberland.nsw.gov.au/granville-centre-art-gallery', '@granvillecentreartgallery', -33.831, 151.014, 'Sydney', null, null, null, null, null, 'active'),
+  ('hazelhurst-arts-centre', 'Hazelhurst Arts Centre', 'gallery', null, null, null, '782 Kingsway, Gymea NSW', 'Gymea', 'https://hazelhurst.sutherlandshire.nsw.gov.au', '@hazelhurstartscentre', -34.0329, 151.0874, 'Sydney', null, null, null, null, null, 'active'),
+  ('king-street-gallery', 'King Street Gallery on William', 'gallery', null, null, null, '177 William Street, Darlinghurst NSW', 'Darlinghurst', 'https://kingstreetgallery.com.au', '@kingstreetgallery', -33.8747, 151.2184, 'Sydney', null, null, null, 'Tue–Sat 10:00–18:00', '2026-07-21', 'active'),
+  ('liverpool-powerhouse', 'Casula Powerhouse Arts Centre', 'gallery', null, null, null, '1 Powerhouse Road, Casula NSW', 'Casula', 'https://www.liverpoolpowerhouse.com.au', '@liverpoolpowerhouse', -33.9493, 150.9129, 'Sydney', null, null, null, null, null, 'active'),
+  ('manly-art-gallery-museum', 'Manly Art Gallery & Museum', 'gallery', null, null, null, '1a West Esplanade, Manly NSW', 'Manly', 'https://www.northernbeaches.nsw.gov.au/things-to-do/arts-and-culture/manly-art-gallery-museum', '@magamnsw', -33.7986, 151.2814, 'Sydney', null, null, null, 'Tue–Sun 10:00–17:00', '2026-07-21', 'active'),
+  ('martin-browne-contemporary', 'Martin Browne Contemporary', 'gallery', null, null, null, '15 Hampden Street, Paddington NSW', 'Paddington', 'https://martinbrownecontemporary.com', '@martinbrownecontemporary', -33.8825, 151.2338, 'Sydney', null, null, null, null, null, 'active'),
+  ('michael-reid-sydney', 'Michael Reid Sydney', 'gallery', null, null, null, '109 Shepherd Street, Chippendale NSW', 'Chippendale', 'https://michaelreid.com.au', '@michaelreidsydney', -33.8877, 151.1951, 'Sydney', null, null, null, null, null, 'active'),
+  ('mosman-art-gallery', 'Mosman Art Gallery', 'gallery', null, null, null, '1 Art Gallery Way, Mosman NSW', 'Mosman', 'https://mosmanartgallery.org.au', '@mosmanart', -33.8279, 151.2406, 'Sydney', null, null, null, 'Daily 10:00–17:00', '2026-07-21', 'active'),
+  ('n-smith-gallery', 'N.Smith Gallery', 'gallery', null, null, null, '15 Foster Street, Surry Hills NSW', 'Surry Hills', 'https://www.nsmithgallery.com', '@n.smithgallery', -33.88, 151.2097, 'Sydney', null, null, null, null, null, 'active'),
+  ('nanda-hobbs', 'Nanda\Hobbs', 'gallery', null, null, null, '12–14 Meagher Street, Chippendale NSW', 'Chippendale', 'https://nandahobbs.com', '@nandahobbs', -33.8867, 151.1986, 'Sydney', null, null, null, null, null, 'active'),
+  ('nas-gallery', 'National Art School Gallery', 'gallery', null, null, null, '156 Forbes Street, Darlinghurst NSW', 'Darlinghurst', 'https://nas.edu.au', '@nas_au', -33.8788, 151.2172, 'Sydney', null, null, null, null, null, 'active'),
+  ('olsen-gallery', 'Olsen Gallery', 'gallery', null, null, null, '63 Jersey Road, Woollahra NSW', 'Woollahra', 'https://www.olsengallery.com', '@olsen_gallery', -33.8875, 151.2337, 'Sydney', null, null, null, null, null, 'active'),
+  ('penrith-regional-gallery', 'Penrith Regional Gallery', 'gallery', null, null, null, '86 River Road, Emu Plains NSW', 'Emu Plains', 'https://www.penrithregionalgallery.com.au', '@penrithregionalgallery', -33.7458, 150.6669, 'Sydney', null, null, null, null, null, 'active'),
+  ('phoenix-central-park', 'Phoenix Central Park', 'gallery', null, null, null, '37–49 O''Connor Street, Chippendale NSW', 'Chippendale', 'https://phoenixcentralpark.com.au', '@phoenixcentralpark', -33.8865, 151.199, 'Sydney', null, null, null, null, null, 'active'),
+  ('sh-ervin-gallery', 'S.H. Ervin Gallery', 'gallery', null, null, null, 'Watson Road, Observatory Hill, Millers Point NSW', 'Millers Point', 'https://www.shervingallery.com.au', '@shervingallery', -33.8599, 151.2049, 'Sydney', null, null, null, 'Tue–Sun 11:00–17:00', '2026-07-21', 'active'),
+  ('station-sydney', 'STATION Sydney', 'gallery', null, null, null, '91 Campbell Street, Surry Hills NSW', 'Surry Hills', 'https://stationgallery.com', '@stationgalleryaustralia', -33.8796, 151.2102, 'Sydney', null, null, null, null, null, 'active'),
+  ('saint-cloche', 'Saint Cloche', 'gallery', null, null, null, '37 MacDonald Street, Paddington NSW', 'Paddington', 'https://saintcloche.com', '@saint_cloche', -33.8824, 151.2231, 'Sydney', null, null, null, null, null, 'active'),
+  ('sullivan-strumpf', 'Sullivan+Strumpf', 'gallery', null, null, null, '799 Elizabeth Street, Zetland NSW', 'Zetland', 'https://www.sullivanstrumpf.com', '@sullivanstrumpf', -33.9065, 151.2067, 'Sydney', null, null, null, null, null, 'active'),
+  ('unsw-galleries', 'UNSW Galleries', 'gallery', null, null, null, 'Cnr Oxford Street & Greens Road, Paddington NSW', 'Paddington', 'https://www.galleries.unsw.edu.au', '@unswgalleries', -33.8845, 151.2223, 'Sydney', null, null, null, null, null, 'active'),
+  ('uts-gallery', 'UTS Gallery', 'gallery', null, null, null, 'Level 4, Building 6, 702 Harris Street, Ultimo NSW', 'Ultimo', 'https://art.uts.edu.au', '@uts_art', -33.8805, 151.2, 'Sydney', null, null, null, null, null, 'active'),
+  ('utopia-art-sydney', 'Utopia Art Sydney', 'gallery', null, null, null, '983 Bourke Street, Waterloo NSW', 'Waterloo', 'https://utopiaartsydney.com.au', '@utopiaartsydney', -33.9, 151.2106, 'Sydney', null, null, null, null, null, 'active'),
+  ('verge-gallery', 'Verge Gallery', 'gallery', null, null, null, 'Jane Foss Russell Plaza, 154 City Road, Darlington NSW', 'Darlington', 'https://www.verge-gallery.net', '@vergegallery', -33.8888, 151.1866, 'Sydney', null, null, null, null, null, 'active'),
+  ('australian-museum', 'Australian Museum', 'museum', null, null, null, '1 William Street, Sydney NSW', 'Sydney', 'https://australian.museum', '@australianmuseum', -33.8712, 151.2133, 'Sydney', 1827, true, '2026-07-22', null, null, 'active'),
+  ('chau-chak-wing-museum', 'Chau Chak Wing Museum', 'museum', null, null, null, 'University Place, University of Sydney, Camperdown NSW', 'Camperdown', 'https://www.sydney.edu.au/museum/', '@ccwm_sydney', -33.8853, 151.1905, 'Sydney', 2020, true, '2026-07-22', 'Mon–Fri 10:00–17:00, Sat–Sun 12:00–16:00', '2026-07-21', 'active'),
+  ('fairfield-city-museum-gallery', 'Fairfield City Museum & Gallery', 'museum', null, null, null, '634 The Horsley Drive, Smithfield NSW', 'Smithfield', 'https://www.fcmg.nsw.gov.au', '@fairfieldcitymuseumgallery', -33.8481, 150.9427, 'Sydney', null, null, null, null, null, 'active'),
+  ('museum-of-sydney', 'Museum of Sydney', 'museum', null, null, null, 'Cnr Phillip & Bridge Streets, Sydney NSW', 'Sydney', 'https://mhnsw.au/visit-us/museum-of-sydney/', '@museumsofhistorynsw', -33.8636, 151.2114, 'Sydney', null, true, '2026-07-22', null, null, 'active'),
+  ('powerhouse-parramatta', 'Powerhouse Parramatta', 'museum', null, null, null, '34 Phillip Street, Parramatta NSW', 'Parramatta', 'https://powerhouse.com.au/visit/parramatta', '@powerhousemuseum', -33.81, 151.0044, 'Sydney', null, null, null, null, null, 'active'),
+  ('sydney-jewish-museum', 'Sydney Jewish Museum', 'museum', null, null, null, '148 Darlinghurst Road, Darlinghurst NSW', 'Darlinghurst', 'https://sydneyjewishmuseum.com.au', '@sydneyjewishmuseum', -33.879, 151.2203, 'Sydney', 1992, false, '2026-07-22', null, null, 'active'),
+  ('white-rabbit-gallery', 'White Rabbit Gallery', 'museum', null, null, null, '30 Balfour Street, Chippendale NSW', 'Chippendale', 'https://whiterabbitcollection.org', '@whiterabbitgallery', -33.8865, 151.2003, 'Sydney', null, null, null, 'Wed–Sun 10:00–17:00', '2026-07-21', 'active'),
+  ('cement-fondu', 'Cement Fondu', 'gallery', null, null, null, '36 Gosbell Street, Paddington NSW', 'Paddington', 'https://cementfondu.org', '@cementfondu', -33.8776, 151.2222, 'Sydney', null, null, null, null, null, 'archived'),
+  ('vermilion-art', 'Vermilion Art', 'gallery', null, null, null, '16 Hickson Road, Walsh Bay NSW', 'Walsh Bay', 'https://www.vermilionart.com.au', null, -33.8563, 151.2044, 'Sydney', null, null, null, null, null, 'active'),
+  ('107-projects', '107 Projects', 'ari', null, null, null, '107 Redfern Street, Redfern NSW', 'Redfern', 'https://107.org.au', '@107projects', -33.8925, 151.2044, 'Sydney', null, null, null, null, null, 'active'),
+  ('australian-design-centre', 'Australian Design Centre', 'gallery', null, null, null, '101–115 William Street, Darlinghurst NSW', 'Darlinghurst', 'https://australiandesigncentre.com', '@austdesigncentre', -33.8755, 151.2166, 'Sydney', null, null, null, null, null, 'pending'),
+  ('galerie-pompom', 'Galerie pompom', 'gallery', null, null, null, '2/39 Abercrombie Street, Chippendale NSW', 'Chippendale', 'https://galeriepompom.com', '@galeriepompom', -33.8877, 151.1984, 'Sydney', null, null, null, null, null, 'archived'),
+  ('artereal-gallery', 'Artereal Gallery', 'gallery', null, null, null, '747 Darling Street, Rozelle NSW', 'Rozelle', 'https://artereal.com.au', '@arterealgallery', -33.8614, 151.171, 'Sydney', null, null, null, null, null, 'active'),
+  ('defiance-gallery', 'Defiance Gallery', 'gallery', null, null, null, '47 Enmore Road, Newtown NSW', 'Newtown', 'https://www.defiancegallery.com', '@defiancegallery', -33.899, 151.177, 'Sydney', null, null, null, null, null, 'active'),
+  ('gallery-9', 'Gallery 9', 'gallery', null, null, null, '9 Darley Street, Darlinghurst NSW', 'Darlinghurst', 'https://www.gallery9.com.au', null, -33.883, 151.217, 'Sydney', null, null, null, null, null, 'active'),
+  ('incinerator-art-space', 'Incinerator Art Space', 'gallery', null, null, null, '2 Small Street, Willoughby NSW', 'Willoughby', 'https://www.willoughby.nsw.gov.au/community/community-spaces/incinerator-art-space', null, -33.803, 151.19, 'Sydney', null, null, null, null, null, 'pending'),
+  ('delmar-gallery', 'Delmar Gallery', 'gallery', null, null, null, '144 Victoria Street, Ashfield NSW', 'Ashfield', 'https://www.trinity.nsw.edu.au/community/delmar-gallery/', '@delmargallery', -33.883, 151.125, 'Sydney', null, null, null, null, null, 'active'),
+  ('woollahra-gallery-at-redleaf', 'Woollahra Gallery at Redleaf', 'gallery', null, null, null, '548 New South Head Road, Double Bay NSW', 'Double Bay', 'https://www.woollahra.nsw.gov.au/woollahragallery', '@woollahragallery', -33.877, 151.245, 'Sydney', null, null, null, null, null, 'active'),
+  ('16albermarle', '16albermarle Project Space', 'gallery', null, null, null, '16 Albermarle Street, Newtown NSW', 'Newtown', 'https://www.16albermarle.com', '@16albermarleprojectspace', -33.898, 151.181, 'Sydney', null, null, null, null, null, 'active'),
+  ('hyde-park-barracks', 'Hyde Park Barracks', 'museum', 'institution', '1', 'UNESCO-listed convict barracks on Macquarie Street.', null, 'Sydney', 'https://mhnsw.au', '@museumsofhistorynsw', -33.8712, 151.2124, 'Sydney', null, true, '2026-07-22', null, null, 'active'),
+  ('justice-police-museum', 'Justice & Police Museum', 'museum', 'institution', '1', 'Forensic photography and crime history in the old water police court - weekends only.', null, 'Sydney', 'https://mhnsw.au', '@museumsofhistorynsw', -33.8623, 151.2119, 'Sydney', null, null, null, null, null, 'active'),
+  ('state-library-of-nsw-galleries', 'State Library of NSW Galleries', 'museum', 'institution', '1', 'Underrated free exhibitions from the state collection.', null, 'Sydney', 'https://www.sl.nsw.gov.au', '@statelibrarynsw', -33.8668, 151.213, 'Sydney', null, null, null, null, null, 'active'),
+  ('brett-whiteley-studio', 'Brett Whiteley Studio', 'museum', 'institution', '1', 'Whiteley''s studio kept as he left it, run by the Art Gallery of NSW.', null, 'Surry Hills', 'https://www.brettwhiteley.org/', '@brettwhiteleystudio', -33.8845, 151.2153, 'Sydney', null, null, null, null, null, 'active'),
+  ('australian-national-maritime-museum', 'Australian National Maritime Museum', 'museum', 'institution', '1', 'Wildlife Photographer of the Year among the masts.', null, 'Darling Harbour', 'https://www.sea.museum', '@sea.museum', -33.869, 151.1985, 'Sydney', 1991, true, '2026-07-22', null, null, 'active'),
+  ('customs-house', 'Customs House', 'gallery', 'institution', '1', 'Free City of Sydney exhibitions opposite Circular Quay.', null, 'Sydney', 'https://www.sydneycustomshouse.com.au/', null, -33.8623, 151.2107, 'Sydney', null, null, null, null, null, 'active'),
+  ('rose-seidler-house', 'Rose Seidler House', 'museum', 'institution', '1b', 'Harry Seidler''s mid-century masterpiece; home of the Fifties Fair.', null, 'Wahroonga', 'https://mhnsw.au', '@museumsofhistorynsw', -33.7275, 151.1092, 'Sydney', null, null, null, null, null, 'active'),
+  ('vaucluse-house', 'Vaucluse House', 'museum', 'institution', '1b', 'Colonial estate with intact interiors and gardens.', null, 'Vaucluse', 'https://mhnsw.au', '@estatevauclusehouse', -33.8554, 151.278, 'Sydney', null, null, null, null, null, 'active'),
+  ('elizabeth-bay-house', 'Elizabeth Bay House', 'museum', 'institution', '1b', '''The finest house in the colony'' - an architecture icon.', null, 'Elizabeth Bay', 'https://mhnsw.au', '@museumsofhistorynsw', -33.8702, 151.2262, 'Sydney', null, null, null, null, null, 'active'),
+  ('old-government-house', 'Old Government House', 'museum', 'institution', '1b', 'Australia''s oldest public building, in Parramatta Park.', null, 'Parramatta', 'https://www.nationaltrust.org.au/places/old-government-house/', null, -33.811, 150.999, 'Sydney', null, null, null, null, null, 'active'),
+  ('nutcote-may-gibbs-house', 'Nutcote (May Gibbs'' House)', 'museum', 'institution', '1b', 'The illustrator of the gumnut babies, at home.', null, 'Neutral Bay', null, null, -33.839, 151.222, 'Sydney', null, null, null, null, null, 'active'),
+  ('macquarie-university-art-gallery', 'Macquarie University Art Gallery', 'gallery', 'public', '2', 'University collection and program on the north side.', null, 'Macquarie Park', 'https://www.mq.edu.au/about/facilities/museums-collections/macquarie-university-art-gallery', null, -33.777, 151.113, 'Sydney', null, null, null, null, null, 'active'),
+  ('margaret-whitlam-galleries', 'Margaret Whitlam Galleries', 'gallery', 'public', '2', 'Western Sydney University galleries in the Female Orphan School.', null, 'Parramatta', 'https://www.whitlam.org/mwg', null, -33.818, 151.023, 'Sydney', null, null, null, null, null, 'active'),
+  ('the-cross-art-projects', 'The Cross Art Projects', 'gallery', 'public', '2', 'Small curatorial non-profit with a political edge.', null, 'Kings Cross', 'https://www.crossart.com.au/', '@thecrossartprojects', -33.874, 151.2225, 'Sydney', null, null, null, null, null, 'active'),
+  ('bondi-pavilion-gallery', 'Bondi Pavilion Gallery', 'gallery', 'public', '2', 'Waverley Council''s gallery in the restored beachfront pavilion.', null, 'Bondi Beach', 'https://www.bondipavilion.com.au/discover/creative_spaces/art_gallery', '@bondipavilionofficial', -33.891, 151.276, 'Sydney', null, null, null, null, null, 'active'),
+  ('art-space-on-the-concourse', 'Art Space on The Concourse', 'gallery', 'public', '2', 'Willoughby Council''s exhibition space on the North Shore.', null, 'Chatswood', 'https://www.willoughby.nsw.gov.au/Council/Venues/Art-Space-Gallery-The-Concourse', null, -33.796, 151.183, 'Sydney', null, null, null, null, null, 'active'),
+  ('juniper-hall', 'Juniper Hall', 'gallery', 'public', '2', 'Georgian landmark, home of the Moran Prizes.', null, 'Paddington', 'https://moranarts.org.au/galleries/', null, -33.884, 151.227, 'Sydney', null, null, null, null, null, 'active'),
+  ('artbank', 'Artbank', 'gallery', 'public', '2', 'The government''s lending collection - occasional public program.', null, 'Waterloo', 'https://www.artbank.gov.au/', '@artbankau', -33.9, 151.207, 'Sydney', null, null, null, null, null, 'active'),
+  ('blacktown-arts', 'Blacktown Arts', 'gallery', 'public', '2b', 'First Nations and Western Sydney focus in the Leo Kelly Centre.', null, 'Blacktown', null, null, -33.771, 150.906, 'Sydney', null, null, null, null, null, 'archived'),
+  ('parramatta-artists-studios', 'Parramatta Artists'' Studios', 'ari', 'public', '2b', 'Council studios with open-studio nights.', null, 'Parramatta', null, null, -33.815, 151.005, 'Sydney', null, null, null, null, null, 'active'),
+  ('hawkesbury-regional-gallery', 'Hawkesbury Regional Gallery', 'gallery', 'public', '2b', 'Regional gallery on Sydney''s north-west edge.', null, 'Windsor', 'https://www.hawkesbury.nsw.gov.au/gallery', '@hawkesburyregional_gallery', -33.613, 150.814, 'Sydney', null, null, null, null, null, 'active'),
+  ('hurstville-museum-gallery', 'Hurstville Museum & Gallery', 'museum', 'public', '2b', 'Georges River Council museum and gallery.', null, 'Hurstville', 'https://www.georgesriver.nsw.gov.au/Community/Art-and-Culture/Hurstville-Museum-Gallery', '@hurstvillemuseumgallery', -33.967, 151.103, 'Sydney', null, null, null, null, null, 'active'),
+  ('peacock-gallery', 'Peacock Gallery', 'gallery', 'public', '2b', 'Small gallery in the Auburn Botanic Gardens.', null, 'Auburn', 'https://www.cumberland.nsw.gov.au/peacock-gallery', null, -33.853, 151.028, 'Sydney', null, null, null, null, null, 'active'),
+  ('museums-discovery-centre', 'Museums Discovery Centre', 'museum', 'public', '2b', 'The Powerhouse''s open store - tours through the collection.', null, 'Castle Hill', 'https://powerhouse.com.au/visit/castle-hill', null, -33.732, 150.98, 'Sydney', null, null, null, null, null, 'active'),
+  ('sarah-cottier-gallery', 'Sarah Cottier Gallery', 'gallery', 'commercial', '3', 'Minimal and conceptual since the nineties.', null, 'Paddington', null, null, -33.884, 151.226, 'Sydney', null, null, null, null, null, 'archived'),
+  ('the-commercial', 'The Commercial', 'gallery', 'commercial', '3', 'Sharp conceptual program with a devoted following.', null, 'Marrickville', 'https://www.thecommercialgallery.com/', null, -33.911, 151.155, 'Sydney', null, null, null, null, null, 'active'),
+  ('wagner-contemporary', 'Wagner Contemporary', 'gallery', 'commercial', '3', 'Approachable contemporary painting on Oxford Street.', null, 'Paddington', 'https://wagnercontemporary.com.au/', '@wagnercontemporary', -33.885, 151.227, 'Sydney', null, null, null, null, null, 'active'),
+  ('piermarq', 'Piermarq', 'gallery', 'commercial', '3', 'International program pitched at a younger crowd.', 'Ground Floor, 23 Foster Street, Surry Hills NSW', 'Surry Hills', 'https://www.piermarq.com.au/', '@piermarqart', null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('gallery-sally-dan-cuthbert', 'Gallery Sally Dan-Cuthbert', 'gallery', 'commercial', '3', 'Art crossed with collectible design.', null, 'Rushcutters Bay', 'https://gallerysallydancuthbert.com/', '@gallerysallydancuthbert', -33.875, 151.225, 'Sydney', null, null, null, null, null, 'active'),
+  ('annette-larkin-fine-art', 'Annette Larkin Fine Art', 'gallery', 'commercial', '3', 'Secondary-market specialist.', null, 'Darlinghurst', 'https://annettelarkin.com/', '@annettelarkinfineart', -33.879, 151.217, 'Sydney', null, null, null, null, null, 'active'),
+  ('maunsell-wickes', 'Maunsell Wickes', 'gallery', 'commercial', '3', 'Long-established rooms on Glenmore Road.', null, 'Paddington', 'https://maunsellwickes.com/', '@maunsellwickesgallery', -33.885, 151.224, 'Sydney', null, null, null, null, null, 'active'),
+  ('richard-martin-art', 'Richard Martin Art', 'gallery', 'commercial', '3', 'Modern and contemporary secondary market.', null, 'Woollahra', 'https://www.richardmartinart.com.au/', null, -33.888, 151.24, 'Sydney', null, null, null, null, null, 'active'),
+  ('harvey-galleries', 'Harvey Galleries', 'gallery', 'commercial', '3', 'Commercial stalwart with harbourside clientele.', null, 'Mosman', 'https://harveygalleries.com.au/', '@harveygalleries', -33.828, 151.244, 'Sydney', null, null, null, null, null, 'active'),
+  ('wentworth-galleries', 'Wentworth Galleries', 'gallery', 'commercial', '3', 'CBD commercial gallery.', null, 'Sydney', null, null, -33.868, 151.211, 'Sydney', null, null, null, null, null, 'active'),
+  ('jerico-contemporary', 'Jerico Contemporary', 'gallery', 'commercial', '3b', 'Young and elegant, by the finger wharf.', null, 'Woolloomooloo', 'http://www.jericocontemporary.com/', '@jerico_contemporary', -33.87, 151.22, 'Sydney', null, null, null, null, null, 'active'),
+  ('m-contemporary', 'M Contemporary', 'gallery', 'commercial', '3b', 'Strong curation on Ocean Street.', null, 'Woollahra', 'https://mcontemp.com/', '@mcontemporary', -33.885, 151.24, 'Sydney', null, null, null, null, null, 'active'),
+  ('stanley-street-gallery', 'Stanley Street Gallery', 'gallery', 'commercial', '3b', 'Contemporary art and studio jewellery.', null, 'Darlinghurst', 'https://stanleystreetgallery.com.au/', '@stanley_street_gallery', -33.878, 151.218, 'Sydney', null, null, null, null, null, 'active'),
+  ('curatorial-co', 'Curatorial+Co', 'gallery', 'commercial', '3b', 'Online-first gallery with a physical space.', 'Shop G01/02, 80 William Street, Woolloomooloo NSW', 'Woolloomooloo', 'https://curatorialandco.com', '@curatorialandco', null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('flinders-street-gallery', 'Flinders Street Gallery', 'gallery', 'commercial', '3b', 'Painting-focused program.', null, 'Surry Hills', 'https://www.flindersstreetgallery.com', '@flindersstgallery', -33.886, 151.214, 'Sydney', null, null, null, null, null, 'active'),
+  ('black-eye-gallery', 'Black Eye Gallery', 'gallery', 'commercial', '3b', 'Photography specialist.', null, 'Darlinghurst', 'https://blackeyegallery.com.au', '@blackeyegallery', -33.879, 151.218, 'Sydney', null, null, null, null, null, 'active'),
+  ('gaffa-gallery', 'Gaffa Gallery', 'gallery', 'commercial', '3b', 'Craft and photography across two floors.', null, 'Sydney', 'https://www.gaffa.com.au', '@gaffagallery', -33.876, 151.207, 'Sydney', null, null, null, null, null, 'active'),
+  ('sabbia-gallery', 'Sabbia Gallery', 'gallery', 'commercial', '3b', 'Glass and ceramics at the highest level.', null, 'Redfern', 'https://sabbiagallery.com', '@sabbiagallery', -33.893, 151.205, 'Sydney', null, null, null, null, null, 'active'),
+  ('ambush-gallery', 'Ambush Gallery', 'gallery', 'commercial', '3b', 'Street-leaning contemporary at Central Park.', 'Level 3, Central Park, 28 Broadway, Chippendale NSW', 'Chippendale', 'https://ambushgallery.com', '@ambushgallery', -33.887, 151.2, 'Sydney', null, null, null, null, null, 'active'),
+  ('traffic-jam-galleries', 'Traffic Jam Galleries', 'gallery', 'commercial', '3b', 'Lower North Shore contemporary.', null, 'Neutral Bay', 'https://trafficjamgalleries.com', '@trafficjamgalleries', -33.832, 151.218, 'Sydney', null, null, null, null, null, 'active'),
+  ('art2muse', 'Art2Muse', 'gallery', 'commercial', '3b', 'Eastern-suburbs contemporary.', null, 'Double Bay', 'https://art2muse.com.au', '@art2muse', -33.877, 151.243, 'Sydney', null, null, null, null, null, 'active'),
+  ('studio-gallery', 'Studio Gallery', 'gallery', 'commercial', '3b', 'Melbourne group with a Sydney room.', null, 'Waterloo', null, '@studiogallerygroup', -33.9, 151.206, 'Sydney', null, null, null, null, null, 'active'),
+  ('badger-fox-gallery', 'Badger & Fox Gallery', 'gallery', 'commercial', '3b', 'Contemporary rooms off Crown Street.', null, 'Surry Hills', 'https://badgerandfoxgallery.com', '@badfox201', -33.886, 151.212, 'Sydney', null, null, null, null, null, 'active'),
+  ('goodspace', 'Goodspace', 'gallery', 'commercial', '3b', 'Young, fast-moving program.', null, 'Chippendale', null, '@goodspacegallery', -33.887, 151.199, 'Sydney', null, null, null, null, null, 'active'),
+  ('sno-contemporary-art-projects', 'SNO Contemporary Art Projects', 'ari', 'ari', '4', 'Non-objective art, uncompromising.', 'Level 2, 30–40 Harcourt Parade, Rosebery NSW', 'Rosebery', 'http://www.sno.org.au', null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('knulp', 'Knulp', 'ari', 'ari', '4', 'Tiny, deeply insider artist-run space.', null, 'Sydney', 'http://www.knulps.org', '@knulpknulpknulp', -33.89, 151.19, 'Sydney', null, null, null, null, null, 'active'),
+  ('harrington-street-gallery', 'Harrington Street Gallery', 'ari', 'ari', '4', 'Sydney''s oldest artists'' co-operative.', null, 'Chippendale', 'http://www.harringtonstreetgallery.com', '@theharringtonstreetartscentre', -33.887, 151.198, 'Sydney', null, null, null, null, null, 'active'),
+  ('art-leven', 'Art Leven', 'gallery', 'first_nations', '3', 'The oldest specialist First Nations gallery, formerly Cooee Art.', null, 'Redfern', 'https://www.cooeeart.com.au', '@art.leven', -33.893, 151.204, 'Sydney', null, null, null, null, null, 'active'),
+  ('kate-owen-gallery', 'Kate Owen Gallery', 'gallery', 'first_nations', '3', 'Three floors of Aboriginal art.', null, 'Rozelle', 'https://www.kateowengallery.com', '@kateowengallery', -33.861, 151.171, 'Sydney', null, null, null, null, null, 'active'),
+  ('aboriginal-contemporary', 'Aboriginal Contemporary', 'gallery', 'first_nations', '3', 'Community-sourced work from the deserts and the Top End.', null, 'Bronte', 'https://www.aboriginalcontemporary.com.au', '@aboriginal.contemporary', -33.905, 151.264, 'Sydney', null, null, null, null, null, 'active'),
+  ('gannon-house-gallery', 'Gannon House Gallery', 'gallery', 'first_nations', '3', 'Aboriginal and Australian art in The Rocks.', null, 'The Rocks', 'https://gannonhousegallery.com/', '@gannonhouse', -33.859, 151.209, 'Sydney', null, null, null, null, null, 'active'),
+  ('spirit-gallery', 'Spirit Gallery', 'gallery', 'first_nations', '3', 'Accessible First Nations art and objects.', null, 'The Rocks', 'https://www.spiritgallery.com.au/', null, -33.859, 151.209, 'Sydney', null, null, null, null, null, 'active'),
+  ('apy-gallery', 'APY Gallery', 'gallery', 'first_nations', '3', 'Artist-owned gallery of the APY Lands studios.', null, 'Darlinghurst', 'https://www.apygallery.com/', null, -33.879, 151.217, 'Sydney', null, null, null, null, null, 'active'),
+  ('d-lan-contemporary', 'D''Lan Contemporary', 'gallery', 'first_nations', '3', 'Blue-chip secondary market for First Nations masters.', null, 'Sydney', null, null, -33.87, 151.21, 'Sydney', null, null, null, null, null, 'active'),
+  ('wollongong-art-gallery', 'Wollongong Art Gallery', 'gallery', 'day_trip', '2', 'The largest regional gallery south of Sydney.', null, 'Wollongong', 'https://wollongongartgallery.au', '@wollongongartgallery', -34.424, 150.893, 'Sydney', null, null, null, null, null, 'active'),
+  ('ngununggula', 'Ngununggula', 'gallery', 'day_trip', '2', 'Southern Highlands regional with a sharp program.', null, 'Bowral', 'https://ngununggula.com', '@ngununggula', -34.478, 150.42, 'Sydney', null, null, null, null, null, 'active'),
+  ('bundanon', 'Bundanon', 'museum', 'day_trip', '1', 'Arthur Boyd''s gift - art museum and the Kerstin Thompson bridge in the bush.', null, 'Illaroo', 'https://www.bundanon.com.au', '@bundanontrust', -34.85, 150.51, 'Sydney', null, null, null, null, null, 'active'),
+  ('blue-mountains-cultural-centre', 'Blue Mountains Cultural Centre', 'gallery', 'day_trip', '2', 'Regional gallery with an escarpment view.', null, 'Katoomba', 'https://bluemountainsculturalcentre.com.au', '@bluemountainsculturalcentre', -33.712, 150.312, 'Sydney', null, null, null, null, null, 'active'),
+  ('newcastle-art-gallery', 'Newcastle Art Gallery', 'gallery', 'day_trip', '2', 'Reopened after a major expansion.', null, 'Newcastle', 'https://newcastleartgallery.nsw.gov.au', '@newcastleartgalleryaustralia', -32.928, 151.771, 'Sydney', null, null, null, null, null, 'active'),
+  ('the-lock-up', 'The Lock-Up', 'gallery', 'day_trip', '2', 'Contemporary art in the old police lock-up.', null, 'Newcastle', 'https://thelockup.org.au', '@thelockupartspace', -32.927, 151.779, 'Sydney', null, null, null, null, null, 'active'),
+  ('maitland-regional-art-gallery', 'Maitland Regional Art Gallery', 'gallery', 'day_trip', '2', 'Hunter Valley regional with generous programming.', null, 'Maitland', 'https://www.mrag.org.au', '@maitlandregionalartgallery', -32.733, 151.557, 'Sydney', null, null, null, null, null, 'active'),
+  ('gosford-regional-gallery', 'Gosford Regional Gallery', 'gallery', 'day_trip', '2', 'Central Coast gallery with the Edogawa garden.', null, 'Gosford', 'https://gosfordregionalgallery.com', '@gosfordregionalgallery', -33.426, 151.342, 'Sydney', null, null, null, null, null, 'active'),
+  ('smith-singer', 'Smith & Singer', 'gallery', 'auction', '3', 'Sotheby''s-licensed auction house.', null, 'Sydney', 'https://www.smithandsinger.com.au', '@smith_singer', -33.869, 151.21, 'Sydney', null, null, null, null, null, 'active'),
+  ('deutscher-and-hackett', 'Deutscher and Hackett', 'gallery', 'auction', '3', 'Major Australian art auctions.', null, 'Paddington', 'https://www.deutscherandhackett.com', '@deutscherandhackett', -33.884, 151.226, 'Sydney', null, null, null, null, null, 'active'),
+  ('menzies', 'Menzies', 'gallery', 'auction', '3', 'Australian and international art auctions.', null, 'Kensington', 'https://www.menziesartbrands.com', '@menziesauctions', -33.92, 151.222, 'Sydney', null, null, null, null, null, 'active'),
+  ('shapiro-auctioneers', 'Shapiro Auctioneers', 'gallery', 'auction', '3', 'Art, design and decorative arts.', null, 'Woollahra', 'https://www.shapiro.com.au', '@shapirosydney', -33.888, 151.24, 'Sydney', null, null, null, null, null, 'active'),
+  ('bonhams-australia', 'Bonhams Australia', 'gallery', 'auction', '3', 'International house, Australian salerooms.', null, 'Double Bay', 'https://www.bonhams.com/location/SYD/sydney/', '@bonhams1793', -33.877, 151.243, 'Sydney', null, null, null, null, null, 'active'),
+  ('leonard-joel-sydney', 'Leonard Joel Sydney', 'gallery', 'auction', '3', 'Auctions across art and objects.', null, 'Woollahra', 'https://www.leonardjoel.com.au', '@leonardjoelauctions', -33.888, 151.24, 'Sydney', null, null, null, null, null, 'active'),
+  ('palas', 'PALAS', 'gallery', 'commercial', '2b', 'Ambitious young Zetland gallery working across painting and installation.', '42 Hansard Street, Zetland NSW', 'Zetland', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('michael-reid-northern-beaches', 'Michael Reid Northern Beaches', 'gallery', 'commercial', '3', 'Michael Reid’s beach outpost — Studio Direct and Michael Reid CLAY.', 'Shop 2/358 Barrenjoey Road, Newport NSW', 'Newport', 'https://michaelreidnorthernbeaches.com.au/', '@michaelreidnorthernbeaches', null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('soho-galleries', 'SOHO Galleries', 'gallery', 'commercial', '3b', 'Long-running Woollahra dealer, broad contemporary stable.', '150 Edgecliff Road, Woollahra NSW', 'Woollahra', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('robin-gibson-gallery', 'Robin Gibson Gallery', 'gallery', 'commercial', '3', 'A Darlinghurst fixture since 1977, painting-led.', '278 Liverpool Street, Darlinghurst NSW', 'Darlinghurst', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('stella-downer-fine-art', 'Stella Downer Fine Art', 'gallery', 'commercial', '3b', 'Works on paper and prints, with a long secondary-market list.', '1/24 Wellington Street, Waterloo NSW', 'Waterloo', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('the-renshaws-sydney', 'The Renshaws, Sydney', 'gallery', 'commercial', '3', 'The Brisbane dealer’s Sydney room in Alexandria.', '111–117 McEvoy Street, Alexandria NSW', 'Alexandria', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('airspace-projects', 'AIRspace Projects', 'ari', 'ari', '2b', 'Artist-run, board-led; a new show on the first Friday of every month.', '10 Junction Street, Marrickville NSW', 'Marrickville', 'https://www.airspaceprojects.com.au', '@airspaceprojects', null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('chrissie-cotter-gallery', 'Chrissie Cotter Gallery', 'gallery', 'public', '3', 'Inner West Council’s Camperdown space — thirty years of artist-proposed shows in 2026.', '31A Pidcock Street, Camperdown NSW', 'Camperdown', 'https://www.innerwest.nsw.gov.au/exhibitions-and-public-art/chrissie-cotter-gallery', null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('barometer', 'Barometer', 'ari', 'ari', '3b', 'Artist-run room with an eye for fibre, textile and photography.', '13 Gurner Street, Paddington NSW', 'Paddington', 'https://barometer.net.au/', null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('ken-done-gallery', 'Ken Done Gallery', 'gallery', 'commercial', '3b', 'The harbour painter’s own gallery, open daily on Hickson Road.', '1 Hickson Road, The Rocks NSW', 'The Rocks', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('cbd-gallery', 'CBD Gallery', 'gallery', 'commercial', '3b', 'Small CBD room showing emerging painters.', '72 Erskine Street, Sydney NSW', 'Sydney', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('gallery-371', 'Gallery 371', 'gallery', 'commercial', '3b', 'Enmore Road shopfront gallery.', '371 Enmore Road, Marrickville NSW', 'Marrickville', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('laila', 'LAILA', 'gallery', 'commercial', '3', 'Marrickville warehouse space for contemporary practice.', 'Level 1, 158 Edinburgh Road, Marrickville NSW', 'Marrickville', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('syrup', 'Syrup', 'ari', 'ari', '3b', 'Small independent Marrickville project space.', '20 Farr Street, Marrickville NSW', 'Marrickville', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('upspace-gallery', 'UPSpace Gallery + Studio', 'ari', 'ari', '3b', 'Studio and gallery in the Addison Road community centre.', 'Building 24, 142 Addison Road, Marrickville NSW', 'Marrickville', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('gallery-lnl', 'Gallery LNL', 'gallery', 'commercial', '3b', 'King Street gallery at the Newtown end.', '49–51 King Street, Newtown NSW', 'Newtown', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('studio-551', 'Studio 551', 'gallery', 'commercial', '4', 'Small Newtown studio gallery.', '551 King Street, Newtown NSW', 'Newtown', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('art-moment-gallery', 'Art Moment Gallery', 'gallery', 'commercial', '4', 'Bondi Beach shopfront gallery.', '99 Curlewis Street, Bondi Beach NSW', 'Bondi Beach', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('revolve-gallery', 'Revolve Gallery & Studios', 'ari', 'ari', '3b', 'Studios and a gallery in a Little Eveleigh Street terrace.', '138 Little Eveleigh Street, Redfern NSW', 'Redfern', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('scieppan-gallery', 'Scieppan Gallery', 'gallery', 'commercial', '4', 'Darlinghurst shopfront.', 'Shop 2/1 Francis Street, Darlinghurst NSW', 'Darlinghurst', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('freeman-gallery', 'Freeman Gallery', 'gallery', 'commercial', '3b', 'Macleay Street gallery in Potts Point.', '03/46a Macleay Street, Potts Point NSW', 'Potts Point', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('numbers', 'Numbers', 'gallery', 'commercial', '3', 'Kellett Street room, a few doors from Cassandra Bird.', '8 Kellett Street, Potts Point NSW', 'Potts Point', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('the-garden-gallery', 'The Garden Gallery', 'gallery', 'public', '3b', 'Exhibition room inside the Royal Botanic Garden.', 'Royal Botanic Garden, Mrs Macquaries Road, Sydney NSW', 'Sydney', null, null, null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('powerhouse-castle-hill', 'Powerhouse Castle Hill', 'museum', 'institution', '2', 'The visible store — 500,000 objects, open free every weekend.', '172 Showground Road, Castle Hill NSW', 'Castle Hill', 'https://powerhouse.com.au/visit/castle-hill', '@powerhousemuseum', null, null, 'Sydney', null, null, null, null, null, 'active'),
+  ('powerhouse-ultimo', 'Powerhouse Ultimo', 'museum', 'institution', '1', 'The Ultimo original — closed for the heritage revitalisation.', '500 Harris Street, Ultimo NSW', 'Ultimo', 'https://powerhouse.com.au', '@powerhousemuseum', null, null, 'Sydney', null, null, null, null, null, 'pending')
 on conflict (slug) do update set
-  name      = excluded.name,
-  type      = excluded.type,
-  address   = excluded.address,
-  suburb    = excluded.suburb,
-  website   = excluded.website,
-  instagram = excluded.instagram,
-  latitude  = excluded.latitude,
-  longitude = excluded.longitude,
-  city      = excluded.city;
+  name           = excluded.name,
+  type           = excluded.type,
+  category       = excluded.category,
+  tier           = excluded.tier,
+  editorial_note = excluded.editorial_note,
+  address        = coalesce(excluded.address, venues.address),
+  suburb         = excluded.suburb,
+  website        = coalesce(excluded.website, venues.website),
+  instagram      = coalesce(excluded.instagram, venues.instagram),
+  latitude       = coalesce(excluded.latitude, venues.latitude),
+  longitude      = coalesce(excluded.longitude, venues.longitude),
+  city           = excluded.city,
+  founded_year   = coalesce(excluded.founded_year, venues.founded_year),
+  free_entry     = coalesce(excluded.free_entry, venues.free_entry),
+  entry_checked  = coalesce(excluded.entry_checked, venues.entry_checked),
+  opening_hours  = coalesce(excluded.opening_hours, venues.opening_hours),
+  hours_checked  = coalesce(excluded.hours_checked, venues.hours_checked),
+  status         = excluded.status;
 
-
--- ---------------------------------------------------------------------------
--- v2 dataset (owner-supplied, July 2026): institutions, house museums, public
--- galleries, commercial tiers, ARIs, First Nations, day trips and auction
--- houses. verified_date stays null so the validation pipeline checks each one
--- (the ~35 verify-flagged entries surface in the first cycles).
-insert into venues (slug, name, type, category, tier, editorial_note, address, suburb, website, instagram, latitude, longitude, city) values
-  ('hyde-park-barracks', 'Hyde Park Barracks', 'museum', 'institution', '1', 'UNESCO-listed convict barracks on Macquarie Street.', null, 'Sydney', 'https://mhnsw.au', null, -33.8712, 151.2124, 'Sydney'),
-  ('justice-police-museum', 'Justice & Police Museum', 'museum', 'institution', '1', 'Forensic photography and crime history in the old water police court - weekends only.', null, 'Sydney', 'https://mhnsw.au', null, -33.8623, 151.2119, 'Sydney'),
-  ('state-library-of-nsw-galleries', 'State Library of NSW Galleries', 'museum', 'institution', '1', 'Underrated free exhibitions from the state collection.', null, 'Sydney', 'https://www.sl.nsw.gov.au', null, -33.8668, 151.213, 'Sydney'),
-  ('brett-whiteley-studio', 'Brett Whiteley Studio', 'museum', 'institution', '1', 'Whiteley''s studio kept as he left it, run by the Art Gallery of NSW.', null, 'Surry Hills', null, null, -33.8845, 151.2153, 'Sydney'),
-  ('australian-national-maritime-museum', 'Australian National Maritime Museum', 'museum', 'institution', '1', 'Wildlife Photographer of the Year among the masts.', null, 'Darling Harbour', 'https://www.sea.museum', null, -33.869, 151.1985, 'Sydney'),
-  ('customs-house', 'Customs House', 'gallery', 'institution', '1', 'Free City of Sydney exhibitions opposite Circular Quay.', null, 'Sydney', null, null, -33.8623, 151.2107, 'Sydney'),
-  ('rose-seidler-house', 'Rose Seidler House', 'museum', 'institution', '1b', 'Harry Seidler''s mid-century masterpiece; home of the Fifties Fair.', null, 'Wahroonga', 'https://mhnsw.au', null, -33.7275, 151.1092, 'Sydney'),
-  ('vaucluse-house', 'Vaucluse House', 'museum', 'institution', '1b', 'Colonial estate with intact interiors and gardens.', null, 'Vaucluse', 'https://mhnsw.au', null, -33.8554, 151.278, 'Sydney'),
-  ('elizabeth-bay-house', 'Elizabeth Bay House', 'museum', 'institution', '1b', '''The finest house in the colony'' - an architecture icon.', null, 'Elizabeth Bay', 'https://mhnsw.au', null, -33.8702, 151.2262, 'Sydney'),
-  ('old-government-house', 'Old Government House', 'museum', 'institution', '1b', 'Australia''s oldest public building, in Parramatta Park.', null, 'Parramatta', null, null, -33.811, 150.999, 'Sydney'),
-  ('nutcote-may-gibbs-house', 'Nutcote (May Gibbs'' House)', 'museum', 'institution', '1b', 'The illustrator of the gumnut babies, at home.', null, 'Neutral Bay', null, null, -33.839, 151.222, 'Sydney'),
-  ('macquarie-university-art-gallery', 'Macquarie University Art Gallery', 'gallery', 'public', '2', 'University collection and program on the north side.', null, 'Macquarie Park', null, null, -33.777, 151.113, 'Sydney'),
-  ('margaret-whitlam-galleries', 'Margaret Whitlam Galleries', 'gallery', 'public', '2', 'Western Sydney University galleries in the Female Orphan School.', null, 'Parramatta', null, null, -33.818, 151.023, 'Sydney'),
-  ('the-cross-art-projects', 'The Cross Art Projects', 'gallery', 'public', '2', 'Small curatorial non-profit with a political edge.', null, 'Kings Cross', null, null, -33.874, 151.2225, 'Sydney'),
-  ('bondi-pavilion-gallery', 'Bondi Pavilion Gallery', 'gallery', 'public', '2', 'Waverley Council''s gallery in the restored beachfront pavilion.', null, 'Bondi Beach', null, null, -33.891, 151.276, 'Sydney'),
-  ('art-space-on-the-concourse', 'Art Space on The Concourse', 'gallery', 'public', '2', 'Willoughby Council''s exhibition space on the North Shore.', null, 'Chatswood', null, null, -33.796, 151.183, 'Sydney'),
-  ('juniper-hall', 'Juniper Hall', 'gallery', 'public', '2', 'Georgian landmark, home of the Moran Prizes.', null, 'Paddington', null, null, -33.884, 151.227, 'Sydney'),
-  ('artbank', 'Artbank', 'gallery', 'public', '2', 'The government''s lending collection - occasional public program.', null, 'Waterloo', null, null, -33.9, 151.207, 'Sydney'),
-  ('blacktown-arts', 'Blacktown Arts', 'gallery', 'public', '2b', 'First Nations and Western Sydney focus in the Leo Kelly Centre.', null, 'Blacktown', null, null, -33.771, 150.906, 'Sydney'),
-  ('parramatta-artists-studios', 'Parramatta Artists'' Studios', 'ari', 'public', '2b', 'Council studios with open-studio nights.', null, 'Parramatta', null, null, -33.815, 151.005, 'Sydney'),
-  ('hawkesbury-regional-gallery', 'Hawkesbury Regional Gallery', 'gallery', 'public', '2b', 'Regional gallery on Sydney''s north-west edge.', null, 'Windsor', null, null, -33.613, 150.814, 'Sydney'),
-  ('hurstville-museum-gallery', 'Hurstville Museum & Gallery', 'museum', 'public', '2b', 'Georges River Council museum and gallery.', null, 'Hurstville', null, null, -33.967, 151.103, 'Sydney'),
-  ('peacock-gallery', 'Peacock Gallery', 'gallery', 'public', '2b', 'Small gallery in the Auburn Botanic Gardens.', null, 'Auburn', null, null, -33.853, 151.028, 'Sydney'),
-  ('museums-discovery-centre', 'Museums Discovery Centre', 'museum', 'public', '2b', 'The Powerhouse''s open store - tours through the collection.', null, 'Castle Hill', null, null, -33.732, 150.98, 'Sydney'),
-  ('sarah-cottier-gallery', 'Sarah Cottier Gallery', 'gallery', 'commercial', '3', 'Minimal and conceptual since the nineties.', null, 'Paddington', null, null, -33.884, 151.226, 'Sydney'),
-  ('the-commercial', 'The Commercial', 'gallery', 'commercial', '3', 'Sharp conceptual program with a devoted following.', null, 'Marrickville', null, null, -33.911, 151.155, 'Sydney'),
-  ('wagner-contemporary', 'Wagner Contemporary', 'gallery', 'commercial', '3', 'Approachable contemporary painting on Oxford Street.', null, 'Paddington', null, null, -33.885, 151.227, 'Sydney'),
-  ('piermarq', 'Piermarq', 'gallery', 'commercial', '3', 'International program pitched at a younger crowd.', null, 'Paddington', null, null, -33.884, 151.225, 'Sydney'),
-  ('gallery-sally-dan-cuthbert', 'Gallery Sally Dan-Cuthbert', 'gallery', 'commercial', '3', 'Art crossed with collectible design.', null, 'Rushcutters Bay', null, null, -33.875, 151.225, 'Sydney'),
-  ('annette-larkin-fine-art', 'Annette Larkin Fine Art', 'gallery', 'commercial', '3', 'Secondary-market specialist.', null, 'Darlinghurst', null, null, -33.879, 151.217, 'Sydney'),
-  ('maunsell-wickes', 'Maunsell Wickes', 'gallery', 'commercial', '3', 'Long-established rooms on Glenmore Road.', null, 'Paddington', null, null, -33.885, 151.224, 'Sydney'),
-  ('richard-martin-art', 'Richard Martin Art', 'gallery', 'commercial', '3', 'Modern and contemporary secondary market.', null, 'Woollahra', null, null, -33.888, 151.24, 'Sydney'),
-  ('harvey-galleries', 'Harvey Galleries', 'gallery', 'commercial', '3', 'Commercial stalwart with harbourside clientele.', null, 'Mosman', null, null, -33.828, 151.244, 'Sydney'),
-  ('wentworth-galleries', 'Wentworth Galleries', 'gallery', 'commercial', '3', 'CBD commercial gallery.', null, 'Sydney', null, null, -33.868, 151.211, 'Sydney'),
-  ('jerico-contemporary', 'Jerico Contemporary', 'gallery', 'commercial', '3b', 'Young and elegant, by the finger wharf.', null, 'Woolloomooloo', null, null, -33.87, 151.22, 'Sydney'),
-  ('m-contemporary', 'M Contemporary', 'gallery', 'commercial', '3b', 'Strong curation on Ocean Street.', null, 'Woollahra', null, null, -33.885, 151.24, 'Sydney'),
-  ('stanley-street-gallery', 'Stanley Street Gallery', 'gallery', 'commercial', '3b', 'Contemporary art and studio jewellery.', null, 'Darlinghurst', null, null, -33.878, 151.218, 'Sydney'),
-  ('curatorial-co', 'Curatorial+Co', 'gallery', 'commercial', '3b', 'Online-first gallery with a physical space.', null, 'Redfern', null, null, -33.892, 151.204, 'Sydney'),
-  ('flinders-street-gallery', 'Flinders Street Gallery', 'gallery', 'commercial', '3b', 'Painting-focused program.', null, 'Surry Hills', null, null, -33.886, 151.214, 'Sydney'),
-  ('black-eye-gallery', 'Black Eye Gallery', 'gallery', 'commercial', '3b', 'Photography specialist.', null, 'Darlinghurst', null, null, -33.879, 151.218, 'Sydney'),
-  ('gaffa-gallery', 'Gaffa Gallery', 'gallery', 'commercial', '3b', 'Craft and photography across two floors.', null, 'Sydney', null, null, -33.876, 151.207, 'Sydney'),
-  ('sabbia-gallery', 'Sabbia Gallery', 'gallery', 'commercial', '3b', 'Glass and ceramics at the highest level.', null, 'Redfern', null, null, -33.893, 151.205, 'Sydney'),
-  ('ambush-gallery', 'Ambush Gallery', 'gallery', 'commercial', '3b', 'Street-leaning contemporary at Central Park.', null, 'Chippendale', null, null, -33.887, 151.2, 'Sydney'),
-  ('traffic-jam-galleries', 'Traffic Jam Galleries', 'gallery', 'commercial', '3b', 'Lower North Shore contemporary.', null, 'Neutral Bay', null, null, -33.832, 151.218, 'Sydney'),
-  ('art2muse', 'Art2Muse', 'gallery', 'commercial', '3b', 'Eastern-suburbs contemporary.', null, 'Double Bay', null, null, -33.877, 151.243, 'Sydney'),
-  ('studio-gallery', 'Studio Gallery', 'gallery', 'commercial', '3b', 'Melbourne group with a Sydney room.', null, 'Waterloo', null, null, -33.9, 151.206, 'Sydney'),
-  ('badger-fox-gallery', 'Badger & Fox Gallery', 'gallery', 'commercial', '3b', 'Contemporary rooms off Crown Street.', null, 'Surry Hills', null, null, -33.886, 151.212, 'Sydney'),
-  ('goodspace', 'Goodspace', 'gallery', 'commercial', '3b', 'Young, fast-moving program.', null, 'Chippendale', null, null, -33.887, 151.199, 'Sydney'),
-  ('sno-contemporary-art-projects', 'SNO Contemporary Art Projects', 'ari', 'ari', '4', 'Non-objective art, uncompromising.', null, 'Marrickville', null, null, -33.907, 151.156, 'Sydney'),
-  ('knulp', 'Knulp', 'ari', 'ari', '4', 'Tiny, deeply insider artist-run space.', null, 'Sydney', null, null, -33.89, 151.19, 'Sydney'),
-  ('harrington-street-gallery', 'Harrington Street Gallery', 'ari', 'ari', '4', 'Sydney''s oldest artists'' co-operative.', null, 'Chippendale', null, null, -33.887, 151.198, 'Sydney'),
-  ('art-leven', 'Art Leven', 'gallery', 'first_nations', '3', 'The oldest specialist First Nations gallery, formerly Cooee Art.', null, 'Redfern', null, null, -33.893, 151.204, 'Sydney'),
-  ('kate-owen-gallery', 'Kate Owen Gallery', 'gallery', 'first_nations', '3', 'Three floors of Aboriginal art.', null, 'Rozelle', 'https://www.kateowengallery.com', null, -33.861, 151.171, 'Sydney'),
-  ('aboriginal-contemporary', 'Aboriginal Contemporary', 'gallery', 'first_nations', '3', 'Community-sourced work from the deserts and the Top End.', null, 'Bronte', null, null, -33.905, 151.264, 'Sydney'),
-  ('gannon-house-gallery', 'Gannon House Gallery', 'gallery', 'first_nations', '3', 'Aboriginal and Australian art in The Rocks.', null, 'The Rocks', null, null, -33.859, 151.209, 'Sydney'),
-  ('spirit-gallery', 'Spirit Gallery', 'gallery', 'first_nations', '3', 'Accessible First Nations art and objects.', null, 'The Rocks', null, null, -33.859, 151.209, 'Sydney'),
-  ('apy-gallery', 'APY Gallery', 'gallery', 'first_nations', '3', 'Artist-owned gallery of the APY Lands studios.', null, 'Darlinghurst', null, null, -33.879, 151.217, 'Sydney'),
-  ('d-lan-contemporary', 'D''Lan Contemporary', 'gallery', 'first_nations', '3', 'Blue-chip secondary market for First Nations masters.', null, 'Sydney', null, null, -33.87, 151.21, 'Sydney'),
-  ('wollongong-art-gallery', 'Wollongong Art Gallery', 'gallery', 'day_trip', '2', 'The largest regional gallery south of Sydney.', null, 'Wollongong', null, null, -34.424, 150.893, 'Sydney'),
-  ('ngununggula', 'Ngununggula', 'gallery', 'day_trip', '2', 'Southern Highlands regional with a sharp program.', null, 'Bowral', 'https://ngununggula.com', null, -34.478, 150.42, 'Sydney'),
-  ('bundanon', 'Bundanon', 'museum', 'day_trip', '1', 'Arthur Boyd''s gift - art museum and the Kerstin Thompson bridge in the bush.', null, 'Illaroo', 'https://www.bundanon.com.au', null, -34.85, 150.51, 'Sydney'),
-  ('blue-mountains-cultural-centre', 'Blue Mountains Cultural Centre', 'gallery', 'day_trip', '2', 'Regional gallery with an escarpment view.', null, 'Katoomba', null, null, -33.712, 150.312, 'Sydney'),
-  ('newcastle-art-gallery', 'Newcastle Art Gallery', 'gallery', 'day_trip', '2', 'Reopened after a major expansion.', null, 'Newcastle', null, null, -32.928, 151.771, 'Sydney'),
-  ('the-lock-up', 'The Lock-Up', 'gallery', 'day_trip', '2', 'Contemporary art in the old police lock-up.', null, 'Newcastle', null, null, -32.927, 151.779, 'Sydney'),
-  ('maitland-regional-art-gallery', 'Maitland Regional Art Gallery', 'gallery', 'day_trip', '2', 'Hunter Valley regional with generous programming.', null, 'Maitland', null, null, -32.733, 151.557, 'Sydney'),
-  ('gosford-regional-gallery', 'Gosford Regional Gallery', 'gallery', 'day_trip', '2', 'Central Coast gallery with the Edogawa garden.', null, 'Gosford', null, null, -33.426, 151.342, 'Sydney'),
-  ('smith-singer', 'Smith & Singer', 'gallery', 'auction', '3', 'Sotheby''s-licensed auction house.', null, 'Sydney', null, null, -33.869, 151.21, 'Sydney'),
-  ('deutscher-and-hackett', 'Deutscher and Hackett', 'gallery', 'auction', '3', 'Major Australian art auctions.', null, 'Paddington', null, null, -33.884, 151.226, 'Sydney'),
-  ('menzies', 'Menzies', 'gallery', 'auction', '3', 'Australian and international art auctions.', null, 'Kensington', null, null, -33.92, 151.222, 'Sydney'),
-  ('shapiro-auctioneers', 'Shapiro Auctioneers', 'gallery', 'auction', '3', 'Art, design and decorative arts.', null, 'Woollahra', null, null, -33.888, 151.24, 'Sydney'),
-  ('bonhams-australia', 'Bonhams Australia', 'gallery', 'auction', '3', 'International house, Australian salerooms.', null, 'Double Bay', null, null, -33.877, 151.243, 'Sydney'),
-  ('leonard-joel-sydney', 'Leonard Joel Sydney', 'gallery', 'auction', '3', 'Auctions across art and objects.', null, 'Woollahra', null, null, -33.888, 151.24, 'Sydney')
-on conflict (slug) do update set
-  name = excluded.name, type = excluded.type, category = excluded.category,
-  tier = excluded.tier, editorial_note = excluded.editorial_note,
-  suburb = excluded.suburb, website = coalesce(excluded.website, venues.website),
-  latitude = excluded.latitude, longitude = excluded.longitude, city = excluded.city;
-
--- closed per the v2 register: archive, never delete
+-- Closed before this register existed — archived, never deleted.
 update venues set status = 'archived', verification_source = 'owner register v2'
   where slug in ('may-space', 'liverpool-street-gallery');
 
 -- ---------------------------------------------------------------------------
--- Opening hours — verified against the venues' own sites on 2026-07-21.
--- (Requires migration 0009_opening_hours.sql.)
--- ---------------------------------------------------------------------------
-update venues set opening_hours = x.hours, hours_checked = date '2026-07-21'
-from (values
-  ('art-gallery-of-new-south-wales', 'Daily 10:00–17:00, Wed until 22:00'),
-  ('mca-australia',                  'Wed–Mon 10:00–17:00, closed Tue'),
-  ('white-rabbit-gallery',           'Wed–Sun 10:00–17:00'),
-  ('artspace',                       'Tue–Sun 11:00–17:00'),
-  ('chau-chak-wing-museum',          'Mon–Fri 10:00–17:00, Sat–Sun 12:00–16:00'),
-  ('sh-ervin-gallery',               'Tue–Sun 11:00–17:00'),
-  ('mosman-art-gallery',             'Daily 10:00–17:00'),
-  ('manly-art-gallery-museum',       'Tue–Sun 10:00–17:00'),
-  ('campbelltown-arts-centre',       'Daily 10:00–16:00'),
-  ('firstdraft',                     'Wed 11:00–20:00, Thu–Sat 11:00–17:00'),
-  ('king-street-gallery',            'Tue–Sat 10:00–18:00'),
-  ('olsen-gallery',                  'Tue–Fri 10:00–18:00, Sat 10:00–17:00'),
-  ('roslyn-oxley9-gallery',          'Tue–Fri 10:00–18:00, Sat 11:00–18:00')
-) as x(slug, hours)
-where venues.slug = x.slug;
-
--- These three predate the slug backfill in some databases — match by name.
-update venues set opening_hours = x.hours, hours_checked = date '2026-07-21'
-from (values
-  ('Cassandra Bird',                 'Tue–Fri 10:00–17:00, Sat 11:00–17:00'),
-  ('Ames Yavuz',                     'Tue–Sat 10:00–18:00'),
-  ('Grace Cossington Smith Gallery', 'Tue–Sat 10:00–17:00 (during exhibitions)')
-) as x(name, hours)
-where venues.name = x.name;
-
-
--- ---------------------------------------------------------------------------
--- Venue photography — freely licensed (Wikimedia Commons), verified 2026-07-21.
--- Served via Special:FilePath at 1600px. Only set where no photo exists yet,
--- so venue-uploaded photos are never overwritten.
+-- Venue photography — freely licensed (Wikimedia Commons). Only set where the
+-- venue has no photo yet, so a venue-uploaded photo is never overwritten.
 -- ---------------------------------------------------------------------------
 update venues set image_url = x.url
 from (values
+  ('art-gallery-of-new-south-wales', 'https://upload.wikimedia.org/wikipedia/commons/4/42/Art_Gallery_of_New_South_Wales.JPG'),
+  ('mca-australia', 'https://upload.wikimedia.org/wikipedia/commons/f/f5/The_Museum_of_Contemporary_Art%2C_Sydney_%28former_MSB_Building%29.jpg'),
   ('roslyn-oxley9-gallery', 'https://commons.wikimedia.org/wiki/Special:FilePath/Roslyn_Oxley9_Gallery.jpg?width=1600'),
   ('artspace', 'https://commons.wikimedia.org/wiki/Special:FilePath/Artspace%2C_The_Gunnery%2C_Woolloomooloo.jpg?width=1600'),
   ('manly-art-gallery-museum', 'https://commons.wikimedia.org/wiki/Special:FilePath/Manly_Art_Gallery_and_Museum_pano.jpg?width=1600'),
@@ -1111,99 +1322,17 @@ from (values
 ) as x(slug, url)
 where venues.slug = x.slug and venues.image_url is null;
 
+-- Controle: hoeveel venues staan er nu live?
+select count(*) as venues_live from venues where status = 'active';
 
--- ---------------------------------------------------------------------------
--- Website / Instagram completion pass, verified 2026-07-21 — fills gaps in
--- the register so nearly every venue has at least one live link.
--- ---------------------------------------------------------------------------
-update venues set
-  website = coalesce(venues.website, x.website),
-  instagram = coalesce(venues.instagram, x.instagram)
-from (values
-  ('cassandra-bird', 'https://www.cassandrabird.com/', '@cassandrabird.gallery'),
-  ('1301sw', 'https://www.1301sw.com/', '@1301sw_au'),
-  ('ames-yavuz', 'https://amesyavuz.com/', '@amesyavuz'),
-  ('olsen-annexe', 'https://www.olsengallery.com/', '@olsen_annexe'),
-  ('grace-cossington-smith-gallery', null, '@gcsgallery'),
-  ('wagner-contemporary', 'https://wagnercontemporary.com.au/', '@wagnercontemporary'),
-  ('piermarq', 'https://www.piermarq.com.au/', '@piermarqart'),
-  ('gallery-sally-dan-cuthbert', 'https://gallerysallydancuthbert.com/', '@gallerysallydancuthbert'),
-  ('annette-larkin-fine-art', 'https://annettelarkin.com/', '@annettelarkinfineart'),
-  ('maunsell-wickes', 'https://maunsellwickes.com/', '@maunsellwickesgallery'),
-  ('richard-martin-art', 'https://www.richardmartinart.com.au/', null),
-  ('harvey-galleries', 'https://harveygalleries.com.au/', '@harveygalleries'),
-  ('jerico-contemporary', 'http://www.jericocontemporary.com/', '@jerico_contemporary'),
-  ('m-contemporary', 'https://mcontemp.com/', '@mcontemporary'),
-  ('stanley-street-gallery', 'https://stanleystreetgallery.com.au/', '@stanley_street_gallery'),
-  ('roslyn-oxley9-gallery', null, '@roslynoxley9'),
-  ('curatorial-co', 'https://curatorialandco.com', '@curatorialandco'),
-  ('flinders-street-gallery', 'https://www.flindersstreetgallery.com', '@flindersstgallery'),
-  ('black-eye-gallery', 'https://blackeyegallery.com.au', '@blackeyegallery'),
-  ('gaffa-gallery', 'https://www.gaffa.com.au', '@gaffagallery'),
-  ('sabbia-gallery', 'https://sabbiagallery.com', '@sabbiagallery'),
-  ('ambush-gallery', 'https://ambushgallery.com', '@ambushgallery'),
-  ('traffic-jam-galleries', 'https://trafficjamgalleries.com', '@trafficjamgalleries'),
-  ('art2muse', 'https://art2muse.com.au', '@art2muse'),
-  ('studio-gallery', null, '@studiogallerygroup'),
-  ('badger-fox-gallery', 'https://badgerandfoxgallery.com', '@badfox201'),
-  ('goodspace', null, '@goodspacegallery'),
-  ('sno-contemporary-art-projects', 'http://www.sno.org.au', null),
-  ('knulp', 'http://www.knulps.org', '@knulpknulpknulp'),
-  ('harrington-street-gallery', 'http://www.harringtonstreetgallery.com', '@theharringtonstreetartscentre'),
-  ('art-leven', 'https://www.cooeeart.com.au', '@art.leven'),
-  ('aboriginal-contemporary', 'https://www.aboriginalcontemporary.com.au', '@aboriginal.contemporary'),
-  ('brett-whiteley-studio', 'https://www.brettwhiteley.org/', '@brettwhiteleystudio'),
-  ('customs-house', 'https://www.sydneycustomshouse.com.au/', null),
-  ('old-government-house', 'https://www.nationaltrust.org.au/places/old-government-house/', null),
-  ('macquarie-university-art-gallery', 'https://www.mq.edu.au/about/facilities/museums-collections/macquarie-university-art-gallery', null),
-  ('margaret-whitlam-galleries', 'https://www.whitlam.org/mwg', null),
-  ('the-cross-art-projects', 'https://www.crossart.com.au/', '@thecrossartprojects'),
-  ('bondi-pavilion-gallery', 'https://www.bondipavilion.com.au/discover/creative_spaces/art_gallery', '@bondipavilionofficial'),
-  ('art-space-on-the-concourse', 'https://www.willoughby.nsw.gov.au/Council/Venues/Art-Space-Gallery-The-Concourse', null),
-  ('juniper-hall', 'https://moranarts.org.au/galleries/', null),
-  ('artbank', 'https://www.artbank.gov.au/', '@artbankau'),
-  ('hawkesbury-regional-gallery', 'https://www.hawkesbury.nsw.gov.au/gallery', '@hawkesburyregional_gallery'),
-  ('hurstville-museum-gallery', 'https://www.georgesriver.nsw.gov.au/Community/Art-and-Culture/Hurstville-Museum-Gallery', '@hurstvillemuseumgallery'),
-  ('peacock-gallery', 'https://www.cumberland.nsw.gov.au/peacock-gallery', null),
-  ('museums-discovery-centre', 'https://powerhouse.com.au/visit/castle-hill', null),
-  ('delmar-gallery', 'https://www.trinity.nsw.edu.au/community/delmar-gallery/', '@delmargallery'),
-  ('gannon-house-gallery', 'https://gannonhousegallery.com/', '@gannonhouse'),
-  ('spirit-gallery', 'https://www.spiritgallery.com.au/', null),
-  ('apy-gallery', 'https://www.apygallery.com/', null),
-  ('the-commercial', 'https://www.thecommercialgallery.com/', null),
-  ('defiance-gallery', null, '@defiancegallery'),
-  ('kate-owen-gallery', null, '@kateowengallery'),
-  ('16albermarle', null, '@16albermarleprojectspace'),
-  ('woollahra-gallery', null, '@woollahragallery'),
-  ('hyde-park-barracks', null, '@museumsofhistorynsw'),
-  ('justice-police-museum', null, '@museumsofhistorynsw'),
-  ('state-library-of-nsw-galleries', null, '@statelibrarynsw'),
-  ('australian-national-maritime-museum', null, '@sea.museum'),
-  ('rose-seidler-house', null, '@museumsofhistorynsw'),
-  ('vaucluse-house', null, '@estatevauclusehouse'),
-  ('elizabeth-bay-house', null, '@museumsofhistorynsw'),
-  ('ngununggula', null, '@ngununggula'),
-  ('bundanon', null, '@bundanontrust'),
-  ('wollongong-art-gallery', 'https://wollongongartgallery.au', '@wollongongartgallery'),
-  ('blue-mountains-cultural-centre', 'https://bluemountainsculturalcentre.com.au', '@bluemountainsculturalcentre'),
-  ('newcastle-art-gallery', 'https://newcastleartgallery.nsw.gov.au', '@newcastleartgalleryaustralia'),
-  ('the-lock-up', 'https://thelockup.org.au', '@thelockupartspace'),
-  ('maitland-regional-art-gallery', 'https://www.mrag.org.au', '@maitlandregionalartgallery'),
-  ('gosford-regional-gallery', 'https://gosfordregionalgallery.com', '@gosfordregionalgallery'),
-  ('smith-singer', 'https://www.smithandsinger.com.au', '@smith_singer'),
-  ('deutscher-and-hackett', 'https://www.deutscherandhackett.com', '@deutscherandhackett'),
-  ('menzies', 'https://www.menziesartbrands.com', '@menziesauctions'),
-  ('shapiro-auctioneers', 'https://www.shapiro.com.au', '@shapirosydney'),
-  ('bonhams-australia', 'https://www.bonhams.com/location/SYD/sydney/', '@bonhams1793'),
-  ('leonard-joel-sydney', 'https://www.leonardjoel.com.au', '@leonardjoelauctions')
-) as x(slug, website, instagram)
-where venues.slug = x.slug;
-
--- ART EYE — zet de 61 geverifieerde tentoonstellingen in de LIVE database.
--- Plak dit EEN keer in de SQL Editor en druk Run. Veilig om te herhalen:
--- shows die er al staan (zelfde venue + titel) worden overgeslagen, en de
--- wachtrij van de motor blijft onaangeroerd.
--- Gegenereerd uit src/lib/seed.ts (de geverifieerde app-data).
+-- ART EYE — zet de geverifieerde tentoonstellingen in de LIVE database.
+--  GENERATED FILE — do not edit by hand.
+--  Source: art-eye/src/lib/seed.ts. Regenerate with `npm run seed:sql`.
+--
+--  61 shows.
+--  Plak dit een keer in de SQL Editor en druk Run. Veilig om te herhalen: shows
+--  die er al staan (zelfde venue + titel) worden overgeslagen, en de wachtrij
+--  van de motor blijft onaangeroerd.
 
 with seed (slug, title, artists, start_date, end_date, description, image_url, is_featured) as (
   values

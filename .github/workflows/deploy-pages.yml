@@ -34,6 +34,10 @@ jobs:
         working-directory: art-eye
         run: npm ci
 
+      - name: The venue register is consistent and the SQL matches it
+        working-directory: art-eye
+        run: npm run check:seed
+
       - name: Export the web build
         working-directory: art-eye
         env:

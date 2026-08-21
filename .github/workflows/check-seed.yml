@@ -1,0 +1,36 @@
+name: Check the venue register
+
+# src/lib/seed.ts is the single source of truth for venues and exhibitions;
+# everything under art-eye/supabase/ is generated from it. This job fails when
+# the two drift apart — which is how five venues once ended up in the app but
+# never in the live database, taking six exhibitions with them.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths: ['art-eye/**']
+  push:
+    branches: [main]
+    paths: ['art-eye/**']
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: art-eye
+        run: npm ci
+
+      - name: Type-check the app
+        working-directory: art-eye
+        run: npm run typecheck
+
+      - name: The register is consistent and the SQL matches it
+        working-directory: art-eye
+        run: npm run check:seed

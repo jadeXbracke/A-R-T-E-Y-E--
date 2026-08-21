@@ -49,6 +49,27 @@
   (git sha + export date, from `art-eye/app.config.js` → `BuildStamp` in
   `art-eye/src/components/ui.tsx`).
 
+## Venue data: one source, generated SQL
+
+- **`art-eye/src/lib/seed.ts` is the single source of truth** for the venue
+  register and the verified exhibitions. Everything under `art-eye/supabase/`
+  (`setup_1_schema.sql`, `venues_seed.sql`, `setup_2_venues.sql`,
+  `exhibitions_seed.sql`, `setup_all.sql`) is **generated** — never edit those
+  by hand. Change `seed.ts`, then run `npm run seed:sql`.
+- `npm run check:seed` validates the register (duplicate slugs, exhibitions
+  pointing at venues that do not exist, venues missing an address or a link)
+  and fails if the SQL is out of date. CI runs it on every push that touches
+  `art-eye/**`, and the Pages deploy runs it before exporting.
+- A venue that closes or leaves its space is **archived, never deleted**:
+  set `status: 'archived'` (or `'pending'` when a closure is unconfirmed) plus
+  `archived_reason` and `archived_date`. Only `status: 'active'` venues reach
+  the app, in demo and live alike. Keeping the row is what stops the discovery
+  pipeline from proposing the venue all over again.
+- Before this was set up, the two lists drifted: five venues lived only in
+  `seed.ts` and never reached Supabase (silently dropping six exhibitions),
+  migrations 0018–0020 were missing from the one-file setup, and six closed
+  venues were published as active. See `art-eye/docs/venue-audit-2026-08.md`.
+
 ## Repo layout
 
 - `art-eye/` — the Expo app (source).

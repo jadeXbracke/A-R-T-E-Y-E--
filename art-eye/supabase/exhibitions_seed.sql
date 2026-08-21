@@ -1,8 +1,11 @@
--- ART EYE — zet de 61 geverifieerde tentoonstellingen in de LIVE database.
--- Plak dit EEN keer in de SQL Editor en druk Run. Veilig om te herhalen:
--- shows die er al staan (zelfde venue + titel) worden overgeslagen, en de
--- wachtrij van de motor blijft onaangeroerd.
--- Gegenereerd uit src/lib/seed.ts (de geverifieerde app-data).
+-- ART EYE — zet de geverifieerde tentoonstellingen in de LIVE database.
+--  GENERATED FILE — do not edit by hand.
+--  Source: art-eye/src/lib/seed.ts. Regenerate with `npm run seed:sql`.
+--
+--  61 shows.
+--  Plak dit een keer in de SQL Editor en druk Run. Veilig om te herhalen: shows
+--  die er al staan (zelfde venue + titel) worden overgeslagen, en de wachtrij
+--  van de motor blijft onaangeroerd.
 
 with seed (slug, title, artists, start_date, end_date, description, image_url, is_featured) as (
   values

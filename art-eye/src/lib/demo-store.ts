@@ -96,7 +96,12 @@ const KEY = 'arteye.demo.v20';
 const SEED_PROPOSALS: VenueProposal[] = [];
 
 function seedState(): DemoState {
-  const venues = SEED_VENUES.map((v) => ({
+  // Only active venues reach the app. Archived ones (closed, or moved on from
+  // a physical space) and pending ones (closure unconfirmed) stay in
+  // src/lib/seed.ts so the register remembers them and the discovery pipeline
+  // does not re-add them — the same rule the live database applies via
+  // `status = 'active'`.
+  const venues = SEED_VENUES.filter((v) => (v.status ?? 'active') === 'active').map((v) => ({
     ...v,
     google_maps_url: v.google_maps_url ?? mapsSearchUrl(v),
   }));

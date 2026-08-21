@@ -1,6 +1,6 @@
 # Venue-controle — ART EYE vs. Art Guide Australia & Art Almanac
 
-Datum: 20 augustus 2026 · Bron in de app: `art-eye/src/lib/seed.ts` (142 venues,
+Datum: 20 augustus 2026 · bijgewerkt 21 augustus 2026 met de doorgevoerde reparaties (deel D) · Bron in de app: `art-eye/src/lib/seed.ts` (142 venues,
 demo/fallback) en `art-eye/supabase/venues_seed.sql` (137 venues, live register).
 
 ## Methode en beperking (eerst lezen)
@@ -161,7 +161,73 @@ Zes venues hebben helemaal geen coördinaten: Roslyn Oxley9, Cassandra Bird,
 
 ---
 
-## D. Voorstel voor volgorde van aanpak
+---
+
+## D. Wat er inmiddels is gerepareerd (21 augustus 2026)
+
+Alles hieronder staat op `claude/venues-art-guides-check-nxuk9g`.
+
+### De structurele oorzaak: twee lijsten die uit elkaar liepen
+
+`src/lib/seed.ts` en `supabase/*.sql` werden allebei met de hand bijgehouden.
+Dat is waarom C1 kon ontstaan. Nu:
+
+- **`seed.ts` is de enige bron.** `scripts/gen-seed-sql.js` genereert
+  `setup_1_schema.sql`, `venues_seed.sql`, `setup_2_venues.sql`,
+  `exhibitions_seed.sql` en `setup_all.sql` — `npm run seed:sql`.
+- **`scripts/check-seed.js`** (`npm run check:seed`) faalt op dubbele slugs,
+  exposities die naar een niet-bestaande venue wijzen, een venue zonder slug,
+  en op SQL die niet meer overeenkomt met `seed.ts`. Waarschuwt op ontbrekende
+  adressen, coördinaten en links.
+- CI draait het op elke push naar `art-eye/**`, en de Pages-deploy draait het
+  vóór de export — een register dat niet klopt komt niet meer live.
+
+Bij het genereren kwam meteen een **derde fout** boven die niemand had gezien:
+`setup_1_schema.sql` stopte bij migratie 0017. Wie een verse Supabase-database
+opzette met `setup_all.sql` kreeg **0018 (blocking, rapporteren, account
+verwijderen), 0019 (reacties) en 0020 (foto's in de feed) niet** — inclusief de
+tabellen die de App Store-richtlijnen 1.2 en 5.1.1(v) afdekken. De generator
+zet ze er nu automatisch bij.
+
+### Datacorrecties
+
+| Wat | Nu |
+|---|---|
+| C1 — vijf venues die nooit werden ge-insert | staan in het register; **alle 61 exposities** komen live in plaats van 55 |
+| Zes gesloten venues stonden live als `active` | Cement Fondu, Sarah Cottier, Galerie pompom en Blacktown Arts → `archived`; Incinerator Art Space en Australian Design Centre → `pending` met reden en datum |
+| A3 Curatorial+Co | Woolloomooloo, Shop G01/02, 80 William Street |
+| A4 SNO | Rosebery, Level 2, 30–40 Harcourt Parade |
+| A5 Piermarq | Surry Hills, Ground Floor, 23 Foster Street |
+| A6 Vermilion Art | Walsh Bay, 16 Hickson Road |
+| A7 aMBUSH | adres gezet op de expositieruimte (Central Park, Broadway) |
+| B — ontbrekende venues | **25 toegevoegd** met het adres uit de listings van de platforms |
+| `founded_year` / `entry_checked` | migratie `0021_venue_facts.sql` — deze twee kolommen bestonden alleen in de demo, dus het bouwjaar viel in live-modus stil weg uit het feitenblok |
+
+Nieuw in het register: PALAS, Michael Reid Northern Beaches, SOHO Galleries,
+Robin Gibson Gallery, Stella Downer Fine Art, The Renshaws, AIRspace Projects,
+Chrissie Cotter Gallery, Barometer, Ken Done Gallery, CBD Gallery, Gallery 371,
+LAILA, Syrup, UPSpace, Gallery LNL, Studio 551, Art Moment Gallery, Revolve,
+Scieppan, Freeman Gallery, Numbers, The Garden Gallery, Powerhouse Castle Hill,
+en Powerhouse Ultimo (als `pending`, dicht voor de revitalisatie).
+
+Niet toegevoegd, bewust: Becker Minty en Redfern Art & Ceramic (meer winkel dan
+galerie), Rogue Pop-up (tijdelijk), China Cultural Centre, Sydney Road Gallery
+en Sketch Collective. Redactionele keuze — makkelijk terug te draaien.
+
+### Wat een mens nog moet doen
+
+- **Migratie 0021 draaien** op de live database (of `setup_1_schema.sql`
+  opnieuw; alles is idempotent), anders bestaan `founded_year` en
+  `entry_checked` daar nog niet.
+- **66 venues hebben nog geen straatadres** en 33 geen coördinaten. Dat kan
+  niet vanuit deze omgeving worden opgelost: `artguide.com.au`,
+  `art-almanac.com.au` én de sites van de venues zelf zijn allemaal geblokkeerd
+  door de egress-policy. `npm run check:seed` noemt ze bij naam.
+- De 23 nieuwe venues zonder website/Instagram idem.
+
+---
+
+## E. Voorstel voor volgorde van aanpak
 
 1. **C1 fixen** — vijf `insert`-regels in `venues_seed.sql`; daarmee komen ook de
    zes ontbrekende exposities live. Kleinste ingreep, grootste zichtbare effect.
