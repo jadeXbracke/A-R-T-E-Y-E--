@@ -2,7 +2,7 @@
 --  GENERATED FILE — do not edit by hand.
 --  Source: art-eye/src/lib/seed.ts. Regenerate with `npm run seed:sql`.
 --
---  61 shows.
+--  68 shows.
 --  Plak dit een keer in de SQL Editor en druk Run. Veilig om te herhalen: shows
 --  die er al staan (zelfde venue + titel) worden overgeslagen, en de wachtrij
 --  van de motor blijft onaangeroerd.
@@ -69,7 +69,14 @@ with seed (slug, title, artists, start_date, end_date, description, image_url, i
   ('art-gallery-of-new-south-wales', 'Super Nature', 'Group Exhibition', '2026-03-14', '2027-02-01', 'Four thematic spaces on the ties between people and the environment — gardens as memorials, the wild nature that lives alongside us, and the cultivation of nature for survival. Free entry.', null, false),
   ('art-gallery-of-new-south-wales', 'Avatar: Forms of Vishnu', 'South and Southeast Asian art', '2026-06-20', '2026-10-05', 'Centuries of art and storytelling from South and Southeast Asia celebrating Vishnu, the Hindu deity believed to preserve order in the universe.', null, false),
   ('art-gallery-of-new-south-wales', 'Nolan: Origins', 'Sidney Nolan', '2026-10-03', '2027-02-07', 'A major survey of Sidney Nolan''s formative years in Australia — the making of one of the country''s defining modern painters.', null, false),
-  ('mca-australia', 'Tony Albert: Not a Souvenir', 'Tony Albert', '2026-05-21', '2026-10-19', 'A major survey across sculpture, photography, installation and painting — Albert turns The Rocks'' souvenir culture back on itself, confronting the commodification of Aboriginal people while celebrating survival and pride. Guest curated by Bruce Johnson McLean.', null, false)
+  ('mca-australia', 'Tony Albert: Not a Souvenir', 'Tony Albert', '2026-05-21', '2026-10-19', 'A major survey across sculpture, photography, installation and painting — Albert turns The Rocks'' souvenir culture back on itself, confronting the commodification of Aboriginal people while celebrating survival and pride. Guest curated by Bruce Johnson McLean.', null, false),
+  ('carriageworks', 'Sydney Contemporary 2026', '100+ galleries, 500+ artists', '2026-09-11', '2026-09-14', 'Four days in the Carriageworks sheds — the country’s largest art fair, with galleries from 33 countries and the whole Sydney trade in one room.', null, true),
+  ('sh-ervin-gallery', 'Portia Geach Memorial Award 2026', 'Finalists 2026', '2026-09-18', '2026-11-01', 'The country’s richest portrait prize for women painters, first awarded in 1965 — finalists on Observatory Hill.', null, false),
+  ('sh-ervin-gallery', 'Olive Cotton and her contemporaries', 'Olive Cotton, Ilse Bing, Dora Maar, Lucia Moholy', '2026-08-01', '2026-09-13', 'Cotton’s Australian modernism hung beside Bing, Maar and Moholy — four women who each made the camera argue with its own century.', null, false),
+  ('campbelltown-arts-centre', 'Make', 'Group exhibition', '2026-08-22', '2026-09-13', 'Making as the subject, not the means — process work from the Campbelltown studios and beyond.', null, false),
+  ('campbelltown-arts-centre', '2026 Fisher’s Ghost Art Award', 'Finalists 2026', '2026-09-26', '2026-12-04', 'Campbelltown’s open prize, named for the district’s own ghost story — the widest cross-section of practice in south-west Sydney.', null, false),
+  ('hazelhurst-arts-centre', 'Dreams Nursed in Darkness', 'Group exhibition', '2026-09-12', '2026-11-08', 'Work made in and about the dark — the touring exhibition arrives at Hazelhurst for spring. Free entry.', null, false),
+  ('artspace', 'Jasmine Miikika Craciun: Light of a Clear Blue Morning', 'Jasmine Miikika Craciun', '2026-07-02', '2026-09-06', 'The Barkindji and Malyangapa artist works a family archive — Wilcannia to suburban Sydney — through painting, textiles and stained glass at the Ideas Platform.', null, false)
 )
 insert into exhibitions (venue_id, title, artists, start_date, end_date, description, image_url, status, is_featured, city)
 select v.id, s.title, s.artists, s.start_date::date, s.end_date::date, s.description, s.image_url, 'approved', s.is_featured, 'Sydney'
