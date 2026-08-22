@@ -1073,6 +1073,34 @@ comment on column venues.founded_year is
 comment on column venues.entry_checked is
   'Date the type / founded / entry facts were last verified.';
 
+-- ============================================================
+-- migrations/0022_exhibitions_follow_venue_status.sql
+-- ============================================================
+-- 0022 — a show is only public while its venue is.
+--
+-- The venues policy (0005) drops archived and pending venues from the public
+-- feed, but the exhibitions policy never looked at the venue at all. So a show
+-- left over from an earlier seed run, or approved before a venue closed, stayed
+-- readable while its venue row was hidden — the card renders with no venue
+-- behind it. Archiving a venue now takes its shows with it.
+--
+-- The owner and admin branches are unchanged: an owner still sees everything at
+-- their own venue, whatever its status.
+
+drop policy if exists "exhibitions: approved read" on exhibitions;
+create policy "exhibitions: approved read" on exhibitions for select using (
+  (
+    status = 'approved'
+    and is_fixture = false
+    and exists (
+      select 1 from venues v
+      where v.id = venue_id and v.is_fixture = false and v.status = 'active'
+    )
+  )
+  or is_admin()
+  or exists (select 1 from venues v where v.id = venue_id and v.owner_user_id = auth.uid())
+);
+
 -- ART EYE — SETUP STEP 2 of 2: DE SYDNEY VENUES.
 -- Run setup_1_schema.sql FIRST, then paste this file and press Run.
 -- Safe to run repeatedly (venues are matched on slug).
