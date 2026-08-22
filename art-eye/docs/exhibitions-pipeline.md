@@ -93,16 +93,49 @@ update exhibition_review_queue set status = 'rejected', reviewed_at = now() wher
 ```
 (A small admin screen for one-tap approve/reject can be added — ask and I'll wire it.)
 
-## Keep it fresh (optional)
-Schedule a weekly run with pg_cron (the repo already uses cron in
-`0006_pipeline_cron.sql`), e.g.:
+## Keep it fresh — this is the part that makes it self-maintaining
+
+Run **`supabase/setup_3_automation.sql`** once in the SQL Editor. It schedules
+every job, including this one, and supersedes both the old `schedule.sql` and
+migration `0006_pipeline_cron.sql`.
+
+What it sets up:
+
+| Job | Wanneer (UTC) | Doet |
+|---|---|---|
+| `arteye-discover-exhibitions` | zo 20:00 | loopt met `?chain=1` het hele register langs en vult de wachtrij |
+| `arteye-autopilot` | zo 21:00 | publiceert wat letterlijk van de galerie-site kwam; gooit afgelopen voorstellen weg |
+| `arteye-digest` | ma 09:00 | mailt wat er nog op goedkeuring wacht |
+| `validate-venues-weekly` | ma 02:00 | controleert 20 venues per week op verhuizing/sluiting |
+| `discover-venues-monthly` | 1e van de maand 03:00 | zoekt nieuwe venues |
+| `art-eye-enrich-images` | di 02:30 | haalt persfoto's op |
+
+Two things had to be fixed before this worked at all: the old scheduler called
+the function as `Discover-exhibitions` (capital D — Edge Function names are
+case-sensitive, so 404) and sent no `Authorization` header (401). Both are
+handled by `call_pipeline_function()` in setup_3.
+
+### What publishes by itself, and what does not
+
+`auto_approve_exhibition_proposals(0.9)` (migration 0023) publishes **only**
+proposals read verbatim from a venue's own `schema.org` data — confidence 0.9 —
+and only when the venue is active, the dates are sane, and the show has not
+finished. Anything the Gemini fallback interpreted (0.65) still waits for you.
+
+Lower the bar at your own risk:
 ```sql
-select cron.schedule('discover-exhibitions-weekly', '0 6 * * 1', $$
-  select net.http_get('https://<ref>.functions.supabase.co/discover-exhibitions?limit=60');
-$$);
+select auto_approve_exhibition_proposals(0.6);  -- ook de AI-gelezen shows
 ```
-Because the JSON-LD path is free and the Gemini path is well within its free
-tier, you can schedule this daily.
+
+### Is it actually running?
+```sql
+select * from pipeline_health order by last_run desc nulls last;
+
+select j.jobname, d.status, d.return_message, d.start_time
+from cron.job_run_details d join cron.job j on j.jobid = d.jobid
+order by d.start_time desc limit 20;
+```
+A job that has quietly stopped shows up as a stale `last_run`, not as silence.
 
 ## Cost
 **€0 in practice.** JSON-LD costs nothing; the Gemini fallback runs on Google AI

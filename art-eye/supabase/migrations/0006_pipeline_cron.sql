@@ -1,3 +1,13 @@
+-- 0006 — SUPERSEDED by supabase/setup_3_automation.sql. Do not run this file.
+--
+-- It schedules four of the jobs but never scheduled discover-exhibitions, so
+-- the exhibition programme aged while the venue register was maintained. Its
+-- one-argument call_pipeline_function() also cannot pass query parameters, so
+-- it cannot ask a run to walk the whole register (?chain=1). setup_3 replaces
+-- both, unschedules whatever this file left behind, and is safe to re-run.
+--
+-- Kept only so an existing database that already ran it still matches history.
+--
 -- 0006 — pipeline schedules (pg_cron + pg_net calling the Edge Functions).
 --
 -- ⚠️ SETUP REQUIRED before running this file:

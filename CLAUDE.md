@@ -70,6 +70,22 @@
   migrations 0018–0020 were missing from the one-file setup, and six closed
   venues were published as active. See `art-eye/docs/venue-audit-2026-08.md`.
 
+## Keeping the programme fresh (the pipeline)
+
+- The discovery pipeline lives in `art-eye/supabase/functions/` and files
+  proposals into `exhibition_review_queue`. **`supabase/setup_3_automation.sql`
+  is the one file that schedules everything** — it supersedes the old
+  `schedule.sql` (deleted; it called the function with a capital D and no auth
+  header, so it never ran) and migration `0006_pipeline_cron.sql` (kept for
+  history, marked superseded, never run again).
+- `auto_approve_exhibition_proposals()` (migration 0023) publishes only what was
+  copied verbatim from a venue's own schema.org data (confidence 0.9). Anything
+  the Gemini fallback interpreted (0.65) still waits in the Owner Inbox.
+- `select * from pipeline_health` shows when each job last ran. A job that has
+  stopped shows as a stale `last_run` rather than as silence.
+- `setup_3_automation.sql` is hand-written, unlike the five generated files
+  below.
+
 ## Repo layout
 
 - `art-eye/` — the Expo app (source).
