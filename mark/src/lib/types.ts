@@ -42,6 +42,17 @@ export interface CyclePayload { symptoms: string[]; energy: 1 | 2 | 3 | 4 | 5 }
 
 export type KnowledgeKind = 'book' | 'course' | 'article' | 'podcast';
 
+export type InboxKind = 'book' | 'idea' | 'task' | 'watch' | 'note';
+
+/** Mind dump: anything you want out of your head, captured in seconds. */
+export interface InboxItem {
+  id: string;
+  kind: InboxKind;
+  text: string;
+  done: boolean;
+  createdAt: string; // ISO
+}
+
 export interface KnowledgeEntry {
   id: string;
   kind: KnowledgeKind;

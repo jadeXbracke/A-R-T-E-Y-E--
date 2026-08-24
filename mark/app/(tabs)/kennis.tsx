@@ -2,11 +2,12 @@
 // The point is not a library but what you took from it.
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { View } from 'react-native';
-import { Body, Button, Chip, Field, Hairline, Label, Screen } from '../../src/components/ui';
+import { Pressable, View } from 'react-native';
+import { Capture, INBOX_KINDS } from '../../src/components/capture';
+import { Body, Button, Chip, Field, Hairline, Label, Screen, Section } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useTheme } from '../../src/lib/theme-context';
-import { KnowledgeEntry, KnowledgeKind } from '../../src/lib/types';
+import { InboxItem, KnowledgeEntry, KnowledgeKind } from '../../src/lib/types';
 import { space } from '../../src/theme';
 
 const KINDS: Array<{ value: KnowledgeKind; label: string }> = [
@@ -21,12 +22,14 @@ const kindLabel = (k: KnowledgeKind) => KINDS.find(x => x.value === k)?.label ??
 export default function Knowledge() {
   const { palette } = useTheme();
   const [entries, setEntries] = useState<KnowledgeEntry[]>([]);
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [kind, setKind] = useState<KnowledgeKind>('book');
   const [title, setTitle] = useState('');
   const [insight, setInsight] = useState('');
 
   const reload = useCallback(() => {
     api.listKnowledge().then(setEntries).catch(() => {});
+    api.listInbox().then(setInbox).catch(() => {});
   }, []);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
@@ -39,8 +42,96 @@ export default function Knowledge() {
     reload();
   };
 
+  const toggleItem = async (id: string) => {
+    await api.toggleInboxDone(id);
+    reload();
+  };
+
+  const removeItem = async (id: string) => {
+    await api.deleteInbox(id);
+    reload();
+  };
+
+  const openItems = inbox.filter(i => !i.done);
+  const doneItems = inbox.filter(i => i.done);
+  const kindLabelOf = (k: InboxItem['kind']) => INBOX_KINDS.find(x => x.value === k)?.label ?? k;
+
+  const InboxRing = ({ item }: { item: InboxItem }) => (
+    <Pressable onPress={() => toggleItem(item.id)} hitSlop={10}>
+      <View
+        style={{
+          width: 22, height: 22, borderRadius: 11,
+          borderWidth: 1.25, borderColor: palette.ink,
+          alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        {item.done ? (
+          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: palette.ink }} />
+        ) : null}
+      </View>
+    </Pressable>
+  );
+
   return (
     <Screen title="Knowledge" subtitle="Not what you collected, but what you took away">
+      <Section label="mind dump">
+        <Capture onAdded={reload} />
+        {openItems.map(item => (
+          <View
+            key={item.id}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: space.m,
+              paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: palette.hairline,
+            }}
+          >
+            <InboxRing item={item} />
+            <View style={{ flex: 1 }}>
+              <Label style={{ marginBottom: 2 }}>{kindLabelOf(item.kind)}</Label>
+              <Body>{item.text}</Body>
+            </View>
+            <Pressable onPress={() => removeItem(item.id)} hitSlop={10}>
+              <View
+                style={{
+                  width: 14, height: 14, borderRadius: 7,
+                  borderWidth: 1, borderColor: palette.dim,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <View style={{ width: 6, height: 1, backgroundColor: palette.dim }} />
+              </View>
+            </Pressable>
+          </View>
+        ))}
+        {doneItems.length ? (
+          <Body dim style={{ marginTop: space.m }}>
+            {doneItems.length} done — tap a closed ring to reopen, the minus removes it.
+          </Body>
+        ) : null}
+        {doneItems.map(item => (
+          <View
+            key={item.id}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, paddingVertical: 8, opacity: 0.45 }}
+          >
+            <InboxRing item={item} />
+            <Body style={{ flex: 1 }}>{item.text}</Body>
+            <Pressable onPress={() => removeItem(item.id)} hitSlop={10}>
+              <View
+                style={{
+                  width: 14, height: 14, borderRadius: 7,
+                  borderWidth: 1, borderColor: palette.dim,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <View style={{ width: 6, height: 1, backgroundColor: palette.dim }} />
+              </View>
+            </Pressable>
+          </View>
+        ))}
+      </Section>
+
+      <Hairline spacing={space.m} />
+
+      <Label style={{ marginBottom: space.m }}>log what you took away</Label>
       <View style={{ gap: space.m, marginBottom: space.xl }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {KINDS.map(k => (

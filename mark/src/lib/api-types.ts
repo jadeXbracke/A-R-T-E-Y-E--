@@ -1,6 +1,6 @@
 import {
-  CalendarEvent, Habit, HealthKind, HealthLog, KnowledgeEntry, KnowledgeKind,
-  Mark, Pillar, Profile, Reflection,
+  CalendarEvent, Habit, HealthKind, HealthLog, InboxItem, InboxKind,
+  KnowledgeEntry, KnowledgeKind, Mark, Pillar, Profile, Reflection,
 } from './types';
 
 // One interface, two backends (demo-store / supabase-api) — same pattern as
@@ -28,6 +28,12 @@ export interface Api {
   // health
   listHealthLogs(kind: HealthKind, from: string, to: string): Promise<HealthLog[]>;
   addHealthLog(kind: HealthKind, date: string, payload: Record<string, unknown>): Promise<HealthLog>;
+
+  // mind dump
+  listInbox(): Promise<InboxItem[]>;
+  addInbox(kind: InboxKind, text: string): Promise<InboxItem>;
+  toggleInboxDone(id: string): Promise<void>;
+  deleteInbox(id: string): Promise<void>;
 
   // knowledge
   listKnowledge(): Promise<KnowledgeEntry[]>;

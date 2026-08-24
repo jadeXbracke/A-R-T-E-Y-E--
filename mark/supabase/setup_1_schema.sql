@@ -51,6 +51,15 @@ create table if not exists public.knowledge_entries (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.inbox_items (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  kind text not null check (kind in ('book', 'idea', 'task', 'watch', 'note')),
+  text text not null,
+  done boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.calendar_events (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -75,7 +84,7 @@ create table if not exists public.reflections (
 do $$
 declare t text;
 begin
-  foreach t in array array['pillars','habits','marks','health_logs','knowledge_entries','calendar_events','reflections']
+  foreach t in array array['pillars','habits','marks','health_logs','knowledge_entries','inbox_items','calendar_events','reflections']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "own rows" on public.%I', t);

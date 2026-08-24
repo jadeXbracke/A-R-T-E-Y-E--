@@ -31,6 +31,7 @@ Schema: `supabase/setup_1_schema.sql` (RLS: every row is owner-only).
 | `marks`             | one row per habit per day (`unique (habit_id, date)`)        |
 | `health_logs`       | `kind` ∈ movement / nutrition / sleep + free `payload` jsonb |
 | `knowledge_entries` | book/course/article/podcast + one short insight              |
+| `inbox_items`       | mind dump: book/idea/task/watch/note, captured in seconds    |
 | `calendar_events`   | own blocks; `source`+`external_id` ready for Google sync     |
 | `reflections`       | 3 answers per week (`unique (user_id, week_start)`)          |
 
@@ -70,7 +71,10 @@ mark/
 3. **Body** — collapsible submodules: Movement (type + minutes, soft weekly
    trend), Nutrition (meal quality / hydration / supplements, *no* calories),
    Sleep (hours + quality 1–5), Cycle (symptoms + energy, device-only).
-4. **Knowledge** — entries with kind, title and one short insight.
+4. **Knowledge** — the mind dump inbox (quick captures: a book you want to
+   read, an idea, a to-do — open ring closes when handled) above the log of
+   entries with kind, title and one short insight. Capturing also works
+   straight from Today.
 5. **Agenda** — plan blocks (workout, reading time) next to your marks; V1 is
    a reliable local agenda, the two-way Google Calendar sync follows in V1.1
    on the same data model.

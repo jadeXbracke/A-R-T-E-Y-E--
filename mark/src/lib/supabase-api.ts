@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Api } from './api-types';
 import { demoApi } from './demo-store';
 import {
-  CalendarEvent, Habit, HealthLog, KnowledgeEntry, Mark, Pillar, Reflection,
+  CalendarEvent, Habit, HealthLog, InboxItem, KnowledgeEntry, Mark, Pillar, Reflection,
 } from './types';
 
 const supabase = createClient(
@@ -33,6 +33,8 @@ const habitRow = (r: any): Habit =>
   ({ id: r.id, pillarId: r.pillar_id, name: r.name, targetPerWeek: r.target_per_week, position: r.position, archived: r.archived });
 const markRow = (r: any): Mark => ({ id: r.id, habitId: r.habit_id, date: r.date });
 const healthRow = (r: any): HealthLog => ({ id: r.id, kind: r.kind, date: r.date, payload: r.payload ?? {} });
+const inboxRow = (r: any): InboxItem =>
+  ({ id: r.id, kind: r.kind, text: r.text, done: r.done, createdAt: r.created_at });
 const knowledgeRow = (r: any): KnowledgeEntry =>
   ({ id: r.id, kind: r.kind, title: r.title, insight: r.insight, createdAt: r.created_at });
 const eventRow = (r: any): CalendarEvent =>
@@ -122,6 +124,28 @@ export const supabaseApi: Api = {
       .insert({ user_id: await userId(), kind, date, payload }).select().single();
     fail(error);
     return healthRow(data);
+  },
+
+  async listInbox() {
+    const { data, error } = await supabase.from('inbox_items')
+      .select('*').order('created_at', { ascending: false });
+    fail(error);
+    return (data ?? []).map(inboxRow);
+  },
+  async addInbox(kind, text) {
+    const { data, error } = await supabase.from('inbox_items')
+      .insert({ user_id: await userId(), kind, text }).select().single();
+    fail(error);
+    return inboxRow(data);
+  },
+  async toggleInboxDone(id) {
+    const { data, error } = await supabase.from('inbox_items')
+      .select('done').eq('id', id).single();
+    fail(error);
+    fail((await supabase.from('inbox_items').update({ done: !data!.done }).eq('id', id)).error);
+  },
+  async deleteInbox(id) {
+    fail((await supabase.from('inbox_items').delete().eq('id', id)).error);
   },
 
   async listKnowledge() {

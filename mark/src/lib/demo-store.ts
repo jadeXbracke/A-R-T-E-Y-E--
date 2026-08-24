@@ -5,8 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { Api } from './api-types';
 import {
-  CalendarEvent, Habit, HealthKind, HealthLog, KnowledgeEntry, KnowledgeKind,
-  Mark, Pillar, Profile, Reflection,
+  CalendarEvent, Habit, HealthKind, HealthLog, InboxItem, KnowledgeEntry,
+  KnowledgeKind, Mark, Pillar, Profile, Reflection,
 } from './types';
 
 const KEY = 'mark.store.v1';
@@ -18,6 +18,7 @@ interface Store {
   marks: Mark[];
   healthLogs: HealthLog[];
   knowledge: KnowledgeEntry[];
+  inbox: InboxItem[];
   events: CalendarEvent[];
   reflections: Reflection[];
 }
@@ -45,7 +46,7 @@ function seed(): Store {
   return {
     profile: { id: 'demo', email: 'demo@mark.app' },
     pillars, habits,
-    marks: [], healthLogs: [], knowledge: [], events: [], reflections: [],
+    marks: [], healthLogs: [], knowledge: [], inbox: [], events: [], reflections: [],
   };
 }
 
@@ -55,6 +56,7 @@ async function load(): Promise<Store> {
   if (cache) return cache;
   const raw = await AsyncStorage.getItem(KEY);
   cache = raw ? (JSON.parse(raw) as Store) : seed();
+  cache.inbox = cache.inbox ?? []; // stores saved before the mind dump existed
   if (!raw) await save();
   return cache;
 }
@@ -138,6 +140,29 @@ export const demoApi: Api = {
     s.healthLogs.push(log);
     await save();
     return log;
+  },
+
+  async listInbox() {
+    const s = await load();
+    return [...s.inbox].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  },
+  async addInbox(kind, text) {
+    const s = await load();
+    const item: InboxItem = { id: uid(), kind, text, done: false, createdAt: new Date().toISOString() };
+    s.inbox.push(item);
+    await save();
+    return item;
+  },
+  async toggleInboxDone(id) {
+    const s = await load();
+    const item = s.inbox.find(i => i.id === id);
+    if (item) item.done = !item.done;
+    await save();
+  },
+  async deleteInbox(id) {
+    const s = await load();
+    s.inbox = s.inbox.filter(i => i.id !== id);
+    await save();
   },
 
   async listKnowledge() {

@@ -4,6 +4,7 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { Capture } from '../../src/components/capture';
 import { MarkRing, DayCircle } from '../../src/components/rings';
 import { Body, Hairline, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
@@ -121,6 +122,11 @@ export default function Today() {
           No habits yet. Create your first pillar and habit under More.
         </Body>
       ) : null}
+
+      <Hairline />
+
+      <Label style={{ marginBottom: space.m }}>mind dump</Label>
+      <Capture />
 
       <Hairline />
 
