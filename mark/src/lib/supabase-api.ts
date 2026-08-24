@@ -7,7 +7,8 @@ import { createClient } from '@supabase/supabase-js';
 import { Api } from './api-types';
 import { demoApi } from './demo-store';
 import {
-  CalendarEvent, Checkin, Habit, HealthLog, InboxItem, KnowledgeEntry, Mark, Pillar,
+  CalendarEvent, Checkin, Habit, HealthLog, HealthSync, InboxItem,
+  KnowledgeEntry, Mark, Pillar, SleepLog,
 } from './types';
 
 const supabase = createClient(
@@ -33,6 +34,11 @@ const habitRow = (r: any): Habit =>
   ({ id: r.id, pillarId: r.pillar_id, name: r.name, targetPerWeek: r.target_per_week, position: r.position, archived: r.archived });
 const markRow = (r: any): Mark => ({ id: r.id, habitId: r.habit_id, date: r.date });
 const healthRow = (r: any): HealthLog => ({ id: r.id, kind: r.kind, date: r.date, payload: r.payload ?? {} });
+const sleepRow = (r: any): SleepLog =>
+  ({ id: r.id, date: r.date, bedTime: r.bed_time, wakeTime: r.wake_time, quality: r.quality, source: r.source });
+const healthSyncRow = (r: any): HealthSync =>
+  ({ id: r.id, date: r.date, steps: r.steps ?? undefined, restingHr: r.resting_hr ?? undefined,
+     activeEnergy: r.active_energy ?? undefined, source: r.source });
 const inboxRow = (r: any): InboxItem =>
   ({ id: r.id, kind: r.kind, text: r.text, done: r.done, createdAt: r.created_at });
 const knowledgeRow = (r: any): KnowledgeEntry =>
@@ -159,6 +165,33 @@ export const supabaseApi: Api = {
   },
   async deleteInbox(id) {
     fail((await supabase.from('inbox_items').delete().eq('id', id)).error);
+  },
+
+  async listSleep(from, to) {
+    const { data, error } = await supabase.from('sleep_logs')
+      .select('*').gte('date', from).lte('date', to).order('date');
+    fail(error);
+    return (data ?? []).map(sleepRow);
+  },
+  async upsertSleep(date, bedTime, wakeTime, quality) {
+    const { data, error } = await supabase.from('sleep_logs')
+      .upsert(
+        { user_id: await userId(), date, bed_time: bedTime, wake_time: wakeTime, quality, source: 'manual' },
+        { onConflict: 'user_id,date' },
+      ).select().single();
+    fail(error);
+    return sleepRow(data);
+  },
+
+  async listHealthSync(from, to) {
+    const { data, error } = await supabase.from('health_sync')
+      .select('*').gte('date', from).lte('date', to).order('date');
+    fail(error);
+    return (data ?? []).map(healthSyncRow);
+  },
+  async upsertSteps(date, steps, source) {
+    fail((await supabase.from('health_sync')
+      .upsert({ user_id: await userId(), date, steps, source }, { onConflict: 'user_id,date' })).error);
   },
 
   async listKnowledge() {

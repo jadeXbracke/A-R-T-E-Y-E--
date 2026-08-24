@@ -4,9 +4,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { Api } from './api-types';
+import { addDays, todayKey } from './dates';
 import {
-  CalendarEvent, Checkin, Habit, HealthKind, HealthLog, InboxItem,
-  KnowledgeEntry, KnowledgeKind, Mark, Pillar, Profile,
+  CalendarEvent, Checkin, Habit, HealthKind, HealthLog, HealthSync,
+  InboxItem, KnowledgeEntry, KnowledgeKind, Mark, Pillar, Profile, SleepLog,
 } from './types';
 
 const KEY = 'mark.store.v1';
@@ -21,6 +22,8 @@ interface Store {
   inbox: InboxItem[];
   events: CalendarEvent[];
   checkins: Checkin[];
+  sleep: SleepLog[];
+  healthSync: HealthSync[];
 }
 
 function uid(): string {
@@ -43,10 +46,31 @@ function seed(): Store {
     habit(pillars[2].id, 'Read 20 minutes', 5, 0),
     habit(pillars[3].id, 'Deep work block', 4, 0),
   ];
+  // A week of plausible nights + a few step days, so the circle visuals show
+  // something real straight away in demo mode.
+  const today = todayKey();
+  const beds = ['23:12', '23:45', '23:05', '00:20', '23:30', '23:15', '23:50'];
+  const wakes = ['07:10', '07:30', '06:55', '08:05', '07:20', '07:05', '07:45'];
+  const sleep: SleepLog[] = beds.map((bed, i) => ({
+    id: uid(),
+    date: addDays(today, i - 6),
+    bedTime: bed,
+    wakeTime: wakes[i],
+    quality: 3 + ((i * 2) % 3),
+    source: 'manual',
+  }));
+  const stepCounts = [8200, 5400, 11300, 7600, 9100];
+  const healthSync: HealthSync[] = stepCounts.map((steps, i) => ({
+    id: uid(),
+    date: addDays(today, i - 4),
+    steps,
+    source: 'manual',
+  }));
   return {
     profile: { id: 'demo', email: 'demo@mark.app' },
     pillars, habits,
     marks: [], healthLogs: [], knowledge: [], inbox: [], events: [], checkins: [],
+    sleep, healthSync,
   };
 }
 
@@ -58,6 +82,8 @@ async function load(): Promise<Store> {
   cache = raw ? (JSON.parse(raw) as Store) : seed();
   cache.inbox = cache.inbox ?? []; // stores saved before the mind dump existed
   cache.checkins = cache.checkins ?? []; // stores saved before month cycles existed
+  cache.sleep = cache.sleep ?? [];
+  cache.healthSync = cache.healthSync ?? [];
   if (!raw) await save();
   return cache;
 }
@@ -177,6 +203,46 @@ export const demoApi: Api = {
   async deleteInbox(id) {
     const s = await load();
     s.inbox = s.inbox.filter(i => i.id !== id);
+    await save();
+  },
+
+  async listSleep(from, to) {
+    const s = await load();
+    return s.sleep
+      .filter(l => l.date >= from && l.date <= to)
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+  },
+  async upsertSleep(date, bedTime, wakeTime, quality) {
+    const s = await load();
+    let log = s.sleep.find(l => l.date === date);
+    if (log) {
+      log.bedTime = bedTime;
+      log.wakeTime = wakeTime;
+      log.quality = quality;
+      log.source = 'manual';
+    } else {
+      log = { id: uid(), date, bedTime, wakeTime, quality, source: 'manual' };
+      s.sleep.push(log);
+    }
+    await save();
+    return log;
+  },
+
+  async listHealthSync(from, to) {
+    const s = await load();
+    return s.healthSync
+      .filter(l => l.date >= from && l.date <= to)
+      .sort((a, b) => (a.date < b.date ? -1 : 1));
+  },
+  async upsertSteps(date, steps, source) {
+    const s = await load();
+    const row = s.healthSync.find(l => l.date === date);
+    if (row) {
+      row.steps = steps;
+      row.source = source;
+    } else {
+      s.healthSync.push({ id: uid(), date, steps, source });
+    }
     await save();
   },
 

@@ -7,6 +7,7 @@ import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { DEMO_MODE } from '../src/lib/api';
+import { EntitlementsProvider } from '../src/lib/entitlements';
 import { AuthProvider, useAuth } from '../src/lib/auth';
 import { ThemeProvider, useTheme } from '../src/lib/theme-context';
 
@@ -47,7 +48,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <Gate />
+          <EntitlementsProvider>
+            <Gate />
+          </EntitlementsProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

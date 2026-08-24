@@ -1,6 +1,7 @@
 import {
   CalendarEvent, Checkin, CheckinKind, Habit, HealthKind, HealthLog,
-  InboxItem, InboxKind, KnowledgeEntry, KnowledgeKind, Mark, Pillar, Profile,
+  HealthSync, InboxItem, InboxKind, KnowledgeEntry, KnowledgeKind, Mark,
+  Pillar, Profile, SleepLog,
 } from './types';
 
 // One interface, two backends (demo-store / supabase-api) — same pattern as
@@ -30,6 +31,14 @@ export interface Api {
   // health
   listHealthLogs(kind: HealthKind, from: string, to: string): Promise<HealthLog[]>;
   addHealthLog(kind: HealthKind, date: string, payload: Record<string, unknown>): Promise<HealthLog>;
+
+  // sleep (one row per night; date = wake-up morning)
+  listSleep(from: string, to: string): Promise<SleepLog[]>;
+  upsertSleep(date: string, bedTime: string, wakeTime: string, quality: number): Promise<SleepLog>;
+
+  // steps & platform health numbers (manual fallback always works)
+  listHealthSync(from: string, to: string): Promise<HealthSync[]>;
+  upsertSteps(date: string, steps: number, source: 'manual' | 'health'): Promise<void>;
 
   // mind dump
   listInbox(): Promise<InboxItem[]>;

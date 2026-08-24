@@ -52,6 +52,45 @@ create table if not exists public.knowledge_entries (
   created_at timestamptz not null default now()
 );
 
+-- One row per night; date = the morning you woke up. Times as 'HH:MM'.
+create table if not exists public.sleep_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  date date not null,
+  bed_time text not null,
+  wake_time text not null,
+  quality int not null default 0 check (quality between 0 and 5),
+  source text not null default 'manual' check (source in ('manual', 'health')),
+  created_at timestamptz not null default now(),
+  unique (user_id, date)
+);
+
+-- Read-only mirror of health platform data (steps etc.), or manual entries.
+create table if not exists public.health_sync (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  date date not null,
+  steps int,
+  resting_hr int,
+  active_energy int,
+  source text not null default 'manual' check (source in ('manual', 'health')),
+  created_at timestamptz not null default now(),
+  unique (user_id, date)
+);
+
+-- RevenueCat webhook target. The app only ever reads its own row.
+create table if not exists public.subscriptions (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  status text not null default 'free' check (status in ('free', 'active', 'expired')),
+  product_id text,
+  expires_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+-- NOTE deliberately absent: cycle_periods / cycle_entries. Cycle data never
+-- reaches Supabase — it lives only on the device (src/lib/cycle-store.ts),
+-- which is the strongest privacy guarantee we can give. See PROJECTPLAN.md.
+
 create table if not exists public.inbox_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
@@ -86,7 +125,7 @@ create table if not exists public.checkins (
 do $$
 declare t text;
 begin
-  foreach t in array array['pillars','habits','marks','health_logs','knowledge_entries','inbox_items','calendar_events','checkins']
+  foreach t in array array['pillars','habits','marks','health_logs','sleep_logs','health_sync','subscriptions','knowledge_entries','inbox_items','calendar_events','checkins']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "own rows" on public.%I', t);

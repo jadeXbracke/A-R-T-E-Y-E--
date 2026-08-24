@@ -1,10 +1,12 @@
 // MEER — appearance, pillars & habits, account, privacy.
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Platform, Pressable, View } from 'react-native';
 import { BuildStamp, Body, Button, Chip, Field, Hairline, Label, Screen, Section } from '../../src/components/ui';
 import { api, DEMO_MODE } from '../../src/lib/api';
+import { cycleStore } from '../../src/lib/cycle-store';
+import { useEntitlements } from '../../src/lib/entitlements';
 import { useAuth } from '../../src/lib/auth';
 import { NavSide, ThemePref, useTheme } from '../../src/lib/theme-context';
 import { getReminderHour, setReminderHour, syncEveningReminder } from '../../src/lib/reminders';
@@ -44,11 +46,14 @@ export default function More() {
   const [questions, setQuestions] = useState<[string, string, string]>(DEFAULT_WEEK_QUESTIONS);
   const [questionsSaved, setQuestionsSaved] = useState(false);
   const [reminderHour, setReminderHourState] = useState(20);
+  const [cycleOn, setCycleOn] = useState(true);
+  const { premium } = useEntitlements();
 
   const reload = useCallback(() => {
     api.listPillars().then(setPillars).catch(() => {});
     api.listHabits().then(setHabits).catch(() => {});
     getReminderHour().then(setReminderHourState).catch(() => {});
+    cycleStore.isEnabled().then(setCycleOn).catch(() => {});
     AsyncStorage.getItem(WEEK_QUESTIONS_KEY).then(v => {
       if (!v) return;
       const own = JSON.parse(v) as string[];
@@ -249,6 +254,38 @@ export default function More() {
 
       <Hairline spacing={space.m} />
 
+      <Section label="modules">
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Body>Cycle registration</Body>
+          <Chip
+            label={cycleOn ? 'On' : 'Off'}
+            active={cycleOn}
+            onPress={() => {
+              const next = !cycleOn;
+              setCycleOn(next);
+              cycleStore.setEnabled(next);
+            }}
+          />
+        </View>
+        <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
+          Switching it off hides the module everywhere; your data stays on the
+          device until you delete it there.
+        </Body>
+      </Section>
+
+      <Hairline spacing={space.m} />
+
+      <Section label="mark premium">
+        <Body dim>
+          {premium ? 'Premium is active.' : 'Health sync, cycle registration, export and more.'}
+        </Body>
+        <View style={{ marginTop: space.m }}>
+          <Button label="About Premium" onPress={() => router.push('/paywall')} />
+        </View>
+      </Section>
+
+      <Hairline spacing={space.m} />
+
       <Section label="account">
         {DEMO_MODE ? (
           <Body dim>
@@ -267,9 +304,13 @@ export default function More() {
 
       <Section label="privacy">
         <Body dim>
-          Cycle and hormone-related data always stays on this device and is never
-          shared with anyone. The rest of your data is yours alone and only serves
-          to make your own growth visible.
+          Where your data lives: habits, marks, sleep and steps are stored in your
+          own account (or only on this device in the demo build). Cycle data is
+          different: it exists only on this device, inside this app's private
+          storage, is never synced or shared, and no analytics or tracking runs
+          on any of these screens. You can delete all cycle data with one tap
+          under Body → cycle, and deleting the app removes everything on the
+          device with it.
         </Body>
       </Section>
 

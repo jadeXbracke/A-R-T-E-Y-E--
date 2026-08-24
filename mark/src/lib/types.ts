@@ -36,6 +36,43 @@ export interface HealthLog {
 }
 
 export interface MovementPayload { type: string; minutes: number }
+
+/** One night; `date` is the morning you woke up. Times as 'HH:MM'. */
+export interface SleepLog {
+  id: string;
+  date: string;
+  bedTime: string;
+  wakeTime: string;
+  quality: number; // 0 = unrated, else 1-5
+  source: 'manual' | 'health';
+}
+
+/** Daily numbers from a health platform, or entered by hand. */
+export interface HealthSync {
+  id: string;
+  date: string;
+  steps?: number;
+  restingHr?: number;
+  activeEnergy?: number;
+  source: 'manual' | 'health';
+}
+
+// ── Cycle registration: DEVICE-ONLY, see cycle-store.ts ─────────────────────
+// Strictly registering: starts/ends and optional daily symptoms. No phase
+// advice, no fertility prediction, no assumptions about cycle length.
+
+export interface CyclePeriod {
+  start: string;      // YYYY-MM-DD
+  end?: string;       // open while menstruating
+}
+
+export type CycleSymptom = 'energy' | 'mood' | 'cramp' | 'skin' | 'sleep';
+
+export interface CycleEntry {
+  date: string;
+  /** Each symptom 1-5 when logged; absent = not logged. Never required. */
+  symptoms: Partial<Record<CycleSymptom, number>>;
+}
 export interface NutritionPayload { quality?: 1 | 2 | 3; glasses?: number; supplements?: boolean; protein?: number }
 export interface SleepPayload { hours: number; quality: 1 | 2 | 3 | 4 | 5 }
 export interface CyclePayload { symptoms?: string[]; energy?: 1 | 2 | 3 | 4 | 5; period?: boolean }

@@ -32,8 +32,15 @@ Schema: `supabase/setup_1_schema.sql` (RLS: every row is owner-only).
 | `health_logs`       | `kind` ∈ movement / nutrition / sleep + free `payload` jsonb |
 | `knowledge_entries` | book/course/article/podcast + one short insight              |
 | `inbox_items`       | mind dump: book/idea/task/watch/note, captured in seconds    |
+| `sleep_logs`        | one row per night: bed/wake times ('HH:MM'), quality 0-5     |
+| `health_sync`       | daily platform numbers (steps, resting HR, energy) or manual |
+| `subscriptions`     | RevenueCat webhook target (free/active/expired)              |
 | `calendar_events`   | reserved for Google Calendar sync (no UI in V1)              |
 | `checkins`          | cycle answers: week/month/quarter/intention per period       |
+
+Cycle registration (`cycle_periods` + `cycle_entries`) deliberately has **no
+Supabase tables**: it lives only on the device (`src/lib/cycle-store.ts`) —
+the strongest privacy guarantee available. One-tap deletion wipes it.
 
 **Privacy:** cycle data (`kind = 'cycle'`) deliberately does *not* exist in
 Supabase. The live backend routes it to local storage on the device
@@ -70,12 +77,26 @@ mark/
    the cycle: intentions in the first days of the month, a short reflection
    every Sunday, a check-in on the last day of the month and of the quarter.
    Deliberately few numbers.
-3. **Body** — collapsible submodules: Movement (type + minutes, soft weekly
-   trend), Nutrition (meal quality / hydration / protein counter /
-   supplements, *no* calories), Sleep (hours + quality 1–5), Cycle: log a
-   period start once and MARK tracks cycle day and phase (menstrual /
-   follicular / ovulatory / luteal) with gentle hormone-pattern guidance per
-   phase — all device-only, never synced.
+3. **Body** — collapsible, everything opt-in:
+   - **Sleep**: regularity over hours. Seven nights drawn as arcs on a
+     24-hour circle (midnight top, newest ring outermost) — the tighter the
+     arcs align, the steadier the rhythm. Centre shows ± minutes regularity;
+     average duration is secondary. No sleep score, no warnings. Manual
+     bed/wake entry; Apple Health fills it automatically in the phone build.
+   - **Steps**: filling circle against a self-set guideline (default 8 000,
+     explicitly a direction, not a norm) plus seven mini-rings for the week.
+     Health platforms are read-only and per-datatype opt-in; manual entry
+     always works, so a missing platform never leaves a broken state.
+   - **Movement / Nutrition**: as before (nutrition adds a protein counter;
+     still no calories).
+   - **Cycle**: STRICTLY REGISTERING. One-tap period start/end, optional
+     symptoms (energy, mood, cramps, skin, sleep — 1-5, never required).
+     Each cycle is one ring (day 1 top, normalised to its own length — never
+     an assumed 28 days), menstruation as the dark segment, cycles layered
+     so patterns show themselves. After 3+ recorded cycles: neutral
+     observations ("logged energy has tended to be lower around day 22–26"),
+     phrased as observations, never advice. No phase guidance, no fertility
+     prediction. Device-only, one-tap full deletion, module switchable off.
 4. **Knowledge** — the mind dump inbox (quick captures: a book you want to
    read, an idea, a to-do — open ring closes when handled) above the log:
    what you read or listened to, a 1–5 circle rating and an optional note.
@@ -95,6 +116,18 @@ mark/
 - **DayCircle**: the inner disc grows with √(fraction) so *area* shows
   progress; the seven outer dots tell the week.
 - Everything is built with pure Views (border-radius) — no SVG dependency.
+
+## Monetisation (structure in place)
+
+Freemium via RevenueCat. Free forever: unlimited habits, daily check-in,
+basic week progress. Premium (€4.99/month or €39.99/year): Health sync,
+calendar hand-off, cycle registration, correlation insights, data export,
+accent colours. `src/lib/entitlements.ts` holds the single feature-flag map
+(`PREMIUM_FLAGS`) so features can shift tiers in one line; the paywall
+(`app/paywall.tsx`) keeps the same quiet register — no urgency language, no
+discount timers. The store build initialises react-native-purchases and maps
+the RevenueCat entitlement into the provider; the webhook mirrors status
+into `subscriptions`. The development build unlocks everything.
 
 ## Deliberately not in V1
 
