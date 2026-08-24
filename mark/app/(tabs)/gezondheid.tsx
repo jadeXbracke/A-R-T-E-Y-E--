@@ -191,11 +191,15 @@ export default function BodyScreen() {
     </Pressable>
   );
 
-  const Scale = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => (
-    <View style={{ flexDirection: 'row', gap: 10 }}>
+  const Scale = ({ value, onChange, size = 16 }: {
+    value: number;
+    onChange: (v: number) => void;
+    size?: number;
+  }) => (
+    <View style={{ flexDirection: 'row', gap: size < 14 ? 7 : 10 }}>
       {[1, 2, 3, 4, 5].map(v => (
         <Pressable key={v} onPress={() => onChange(v === value ? 0 : v)} hitSlop={8}>
-          <IntensityDot fraction={v <= value ? 1 : 0} size={16} />
+          <IntensityDot fraction={v <= value ? 1 : 0} size={size} />
         </Pressable>
       ))}
     </View>
@@ -376,24 +380,23 @@ export default function BodyScreen() {
             ) : (
             <View style={{ paddingVertical: space.l, gap: space.m }}>
               {spans.length ? (
-                <View style={{ alignItems: 'center', gap: space.m }}>
-                  <CycleRings spans={spans} currentDay={currentDay ?? undefined}>
+                <View style={{ alignItems: 'center', gap: space.s }}>
+                  <CycleRings spans={spans} currentDay={currentDay ?? undefined} size={132}>
                     {currentDay && currentSpan ? (
                       <View style={{ alignItems: 'center' }}>
-                        <Text style={[type.numeral, { fontSize: 30, color: palette.ink }]}>{currentDay}</Text>
-                        <Label>day</Label>
+                        <Text style={[type.numeral, { fontSize: 22, color: palette.ink }]}>{currentDay}</Text>
+                        <Label style={{ fontSize: 8 }}>day</Label>
                       </View>
                     ) : null}
                   </CycleRings>
                   <Body dim style={{ fontSize: 11, textAlign: 'center' }}>
-                    Each ring is one cycle, day 1 at the top; the dark segment is recorded menstruation.
-                    Layered cycles make your own pattern visible.
+                    One ring per cycle, day 1 at the top.
                   </Body>
                 </View>
               ) : (
-                <Body dim>
+                <Body dim style={{ fontSize: 12 }}>
                   Tap “Period started” once and the circle begins. Irregular cycles, hormonal
-                  contraception or no cycle at all are all fine — this only records what you log.
+                  contraception or no cycle at all all work — this only records what you log.
                 </Body>
               )}
 
@@ -403,12 +406,19 @@ export default function BodyScreen() {
                 <Button label="Period started today" onPress={() => cycleStore.startPeriod(today).then(reload)} />
               )}
 
-              <View style={{ gap: space.s }}>
-                <Body dim style={{ fontSize: 11 }}>Today, if you feel like logging it (1 = low, 5 = high):</Body>
+              <View style={{ gap: 2 }}>
+                <Body dim style={{ fontSize: 11 }}>Today, if you feel like it (1 = low, 5 = high):</Body>
                 {SYMPTOMS.map(sym => (
-                  <View key={sym.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Body>{sym.label}</Body>
+                  <View
+                    key={sym.key}
+                    style={{
+                      flexDirection: 'row', justifyContent: 'space-between',
+                      alignItems: 'center', paddingVertical: 5,
+                    }}
+                  >
+                    <Body style={{ fontSize: 13 }}>{sym.label}</Body>
                     <Scale
+                      size={12}
                       value={todayEntry?.symptoms[sym.key] ?? 0}
                       onChange={v => cycleStore.logSymptom(today, sym.key, v).then(reload)}
                     />
@@ -425,8 +435,7 @@ export default function BodyScreen() {
 
               <Hairline spacing={space.s} />
               <Body dim style={{ fontSize: 11 }}>
-                This data exists only on this device — never synced, never shared, no analytics.
-                Delete it any time; switch the whole module off under More.
+                Only on this device — never synced or shared.
               </Body>
               <Pressable onPress={wipeCycle}>
                 <Body dim style={{ fontSize: 11, textDecorationLine: 'underline' }}>

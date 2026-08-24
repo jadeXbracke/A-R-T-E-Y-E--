@@ -48,57 +48,6 @@ export function MarkRing({ marked, onPress, size = 28 }: {
   );
 }
 
-/**
- * The day circle on Vandaag: a disc that fills as today's marks are set,
- * ringed by seven dots — one per weekday, closed once that day is complete.
- */
-export function DayCircle({ todayFraction, weekDone, todayIndex, size = 168 }: {
-  todayFraction: number;      // 0..1 of today's habits marked
-  weekDone: boolean[];        // Mon..Sun, complete days
-  todayIndex: number;         // 0..6
-  size?: number;
-}) {
-  const { palette } = useTheme();
-  const dot = 9;
-  const r = size / 2 - dot / 2;
-  const inner = size - 56;
-
-  return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      {weekDone.map((done, i) => {
-        // Monday at the top, clockwise.
-        const angle = (i / 7) * Math.PI * 2 - Math.PI / 2;
-        const style: ViewStyle = {
-          position: 'absolute',
-          left: size / 2 + r * Math.cos(angle) - dot / 2,
-          top: size / 2 + r * Math.sin(angle) - dot / 2,
-          width: dot, height: dot, borderRadius: dot / 2,
-          borderWidth: 1, borderColor: i === todayIndex ? palette.ink : palette.dim,
-          backgroundColor: done ? palette.ink : 'transparent',
-        };
-        return <View key={i} style={style} />;
-      })}
-      <View
-        style={{
-          width: inner, height: inner, borderRadius: inner / 2,
-          borderWidth: 1, borderColor: palette.hairline,
-          alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-        }}
-      >
-        <View
-          style={{
-            width: inner * Math.sqrt(Math.min(todayFraction, 1)),
-            height: inner * Math.sqrt(Math.min(todayFraction, 1)),
-            borderRadius: inner / 2,
-            backgroundColor: palette.tint,
-            position: 'absolute',
-          }}
-        />
-      </View>
-    </View>
-  );
-}
-
 /** Seven small day dots for one habit's week. */
 export function WeekDots({ days, size = 10 }: { days: boolean[]; size?: number }) {
   const { palette } = useTheme();

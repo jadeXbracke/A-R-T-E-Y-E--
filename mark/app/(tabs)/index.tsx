@@ -6,12 +6,13 @@ import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Capture } from '../../src/components/capture';
-import { MarkRing, DayCircle } from '../../src/components/rings';
+import { MiniRing } from '../../src/components/progress-ring';
+import { MarkRing } from '../../src/components/rings';
 import { Body, Hairline, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { addToOwnCalendar } from '../../src/lib/calendar-link';
-import { addDays, daysBetween, formatLong, fromKey, todayKey, weekStart } from '../../src/lib/dates';
+import { addDays, formatLong, todayKey, weekStart } from '../../src/lib/dates';
 import { syncEveningReminder } from '../../src/lib/reminders';
 import { useTheme } from '../../src/lib/theme-context';
 import { Habit, Mark, Pillar } from '../../src/lib/types';
@@ -57,16 +58,7 @@ export default function Today() {
     }
   };
 
-  // Week dots around the day circle: a weekday counts as complete when every
-  // habit got its mark that day (only days that have passed, or today).
-  const weekDone = useMemo(() => daysBetween(monday, sunday).map(day => {
-    if (habits.length === 0 || day > today) return false;
-    const set = new Set(marks.filter(m => m.date === day).map(m => m.habitId));
-    return habits.every(h => set.has(h.id));
-  }), [habits, marks, monday, sunday, today]);
-
   const todayFraction = habits.length ? markedToday.size / habits.length : 0;
-  const todayIndex = (fromKey(today).getDay() + 6) % 7;
 
   // Keep one gentle evening reminder in sync with what is still open.
   React.useEffect(() => {
@@ -79,12 +71,13 @@ export default function Today() {
 
   return (
     <Screen title="Today" subtitle={formatLong(today)} greeting={greeting}>
-      <View style={{ alignItems: 'center', marginBottom: space.xl }}>
-        <DayCircle todayFraction={todayFraction} weekDone={weekDone} todayIndex={todayIndex} />
-        <Text style={[type.numeral, { color: palette.ink, marginTop: space.l }]}>
-          {markedToday.size}<Text style={{ fontSize: 22, color: palette.dim }}> / {habits.length}</Text>
-        </Text>
-        <Label style={{ marginTop: 2 }}>marks today</Label>
+      <View style={{ alignItems: 'center', marginVertical: space.l, marginBottom: space.xl }}>
+        <MiniRing fraction={todayFraction} size={186}>
+          <Text style={[type.numeral, { color: palette.ink }]}>
+            {markedToday.size}<Text style={{ fontSize: 22, color: palette.dim }}> / {habits.length}</Text>
+          </Text>
+          <Label style={{ marginTop: 2 }}>marks today</Label>
+        </MiniRing>
       </View>
 
       {pillars.map(pillar => {
