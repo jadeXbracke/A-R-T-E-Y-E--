@@ -25,7 +25,8 @@ export default function Knowledge() {
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [kind, setKind] = useState<KnowledgeKind>('book');
   const [title, setTitle] = useState('');
-  const [insight, setInsight] = useState('');
+  const [rating, setRating] = useState(0);
+  const [note, setNote] = useState('');
 
   const reload = useCallback(() => {
     api.listKnowledge().then(setEntries).catch(() => {});
@@ -36,11 +37,37 @@ export default function Knowledge() {
 
   const add = async () => {
     if (!title.trim()) return;
-    await api.addKnowledge(kind, title.trim(), insight.trim());
+    await api.addKnowledge(kind, title.trim(), rating, note.trim());
     setTitle('');
-    setInsight('');
+    setRating(0);
+    setNote('');
     reload();
   };
+
+  const RatingDots = ({ value, size = 18, onChange }: {
+    value: number;
+    size?: number;
+    onChange?: (v: number) => void;
+  }) => (
+    <View style={{ flexDirection: 'row', gap: 8 }}>
+      {[1, 2, 3, 4, 5].map(v => {
+        const dot = (
+          <View
+            style={{
+              width: size, height: size, borderRadius: size / 2,
+              borderWidth: 1.25, borderColor: v <= value ? palette.ink : palette.hairline,
+              backgroundColor: v <= value ? palette.ink : 'transparent',
+            }}
+          />
+        );
+        return onChange ? (
+          <Pressable key={v} onPress={() => onChange(v === value ? 0 : v)} hitSlop={8}>{dot}</Pressable>
+        ) : (
+          <View key={v}>{dot}</View>
+        );
+      })}
+    </View>
+  );
 
   const toggleItem = async (id: string) => {
     await api.toggleInboxDone(id);
@@ -138,8 +165,12 @@ export default function Knowledge() {
             <Chip key={k.value} label={k.label} active={kind === k.value} onPress={() => setKind(k.value)} />
           ))}
         </View>
-        <Field placeholder="Title" value={title} onChangeText={setTitle} />
-        <Field placeholder="Your key insight (short)" multiline value={insight} onChangeText={setInsight} />
+        <Field placeholder="What did you read or listen to?" value={title} onChangeText={setTitle} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m, paddingVertical: 4 }}>
+          <Body dim>Rating</Body>
+          <RatingDots value={rating} onChange={setRating} />
+        </View>
+        <Field placeholder="A note, if you want one" multiline value={note} onChangeText={setNote} />
         <Button label="Save" onPress={add} disabled={!title.trim()} />
       </View>
 
@@ -154,8 +185,11 @@ export default function Knowledge() {
             style={{ paddingVertical: space.m, borderBottomWidth: 1, borderBottomColor: palette.hairline }}
           >
             <Label style={{ marginBottom: 4 }}>{kindLabel(e.kind)} · {e.createdAt.slice(0, 10)}</Label>
-            <Body>{e.title}</Body>
-            {e.insight ? <Body dim style={{ marginTop: 4 }}>{e.insight}</Body> : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Body style={{ flex: 1 }}>{e.title}</Body>
+              {e.rating ? <RatingDots value={e.rating} size={10} /> : null}
+            </View>
+            {e.note ? <Body dim style={{ marginTop: 4 }}>{e.note}</Body> : null}
           </View>
         ))
       )}

@@ -12,6 +12,7 @@ export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<'in' | 'up'>('in');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,7 +23,7 @@ export default function AuthScreen() {
     setError('');
     try {
       if (mode === 'in') await signIn(email.trim(), password);
-      else await signUp(email.trim(), password);
+      else await signUp(email.trim(), password, name.trim() || undefined);
       router.replace('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong.');
@@ -41,6 +42,9 @@ export default function AuthScreen() {
         Small daily actions, added up, decide who you become.
       </Body>
       <View style={{ marginTop: space.xl, gap: space.m }}>
+        {mode === 'up' ? (
+          <Field placeholder="Your first name" value={name} onChangeText={setName} />
+        ) : null}
         <Field placeholder="Email" autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
         <Field placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
         {error ? <Body dim>{error}</Body> : null}

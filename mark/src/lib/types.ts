@@ -36,9 +36,9 @@ export interface HealthLog {
 }
 
 export interface MovementPayload { type: string; minutes: number }
-export interface NutritionPayload { quality?: 1 | 2 | 3; glasses?: number; supplements?: boolean }
+export interface NutritionPayload { quality?: 1 | 2 | 3; glasses?: number; supplements?: boolean; protein?: number }
 export interface SleepPayload { hours: number; quality: 1 | 2 | 3 | 4 | 5 }
-export interface CyclePayload { symptoms: string[]; energy: 1 | 2 | 3 | 4 | 5 }
+export interface CyclePayload { symptoms?: string[]; energy?: 1 | 2 | 3 | 4 | 5; period?: boolean }
 
 export type KnowledgeKind = 'book' | 'course' | 'article' | 'podcast';
 
@@ -57,7 +57,9 @@ export interface KnowledgeEntry {
   id: string;
   kind: KnowledgeKind;
   title: string;
-  insight: string;
+  /** 1-5, shown as filled circles. */
+  rating: number;
+  note: string;
   createdAt: string; // ISO
 }
 
@@ -88,4 +90,5 @@ export interface Checkin {
 export interface Profile {
   id: string;
   email: string;
+  name?: string;
 }

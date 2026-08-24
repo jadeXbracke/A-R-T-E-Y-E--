@@ -47,7 +47,8 @@ create table if not exists public.knowledge_entries (
   user_id uuid not null references auth.users (id) on delete cascade,
   kind text not null check (kind in ('book', 'course', 'article', 'podcast')),
   title text not null,
-  insight text not null default '',
+  rating int not null default 0 check (rating between 0 and 5),
+  note text not null default '',
   created_at timestamptz not null default now()
 );
 

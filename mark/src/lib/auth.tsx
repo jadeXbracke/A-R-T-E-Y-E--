@@ -5,14 +5,16 @@ import { Profile } from './types';
 interface AuthState {
   profile: Profile | null;
   loading: boolean;
+  refresh(): Promise<void>;
   signIn(email: string, password: string): Promise<void>;
-  signUp(email: string, password: string): Promise<void>;
+  signUp(email: string, password: string, name?: string): Promise<void>;
   signOut(): Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
   profile: null,
   loading: true,
+  refresh: async () => {},
   signIn: async () => {},
   signUp: async () => {},
   signOut: async () => {},
@@ -39,8 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    await api.signUp(email, password);
+  const signUp = useCallback(async (email: string, password: string, name?: string) => {
+    await api.signUp(email, password, name);
     await refresh();
   }, [refresh]);
 
@@ -50,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   return (
-    <AuthContext.Provider value={{ profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ profile, loading, refresh, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

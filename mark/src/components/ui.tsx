@@ -23,10 +23,11 @@ export function Wordmark({ size = 15 }: { size?: number }) {
   );
 }
 
-export function Screen({ children, title, subtitle }: {
+export function Screen({ children, title, subtitle, greeting }: {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
+  greeting?: string;
 }) {
   const { palette } = useTheme();
   const insets = useSafeAreaInsets();
@@ -41,7 +42,10 @@ export function Screen({ children, title, subtitle }: {
       keyboardShouldPersistTaps="handled"
     >
       <Wordmark />
-      <Text style={[type.heading, { color: palette.ink, marginTop: space.xl }]}>{title}</Text>
+      {greeting ? (
+        <Text style={[type.label, { color: palette.dim, marginTop: space.xl }]}>{greeting}</Text>
+      ) : null}
+      <Text style={[type.heading, { color: palette.ink, marginTop: greeting ? space.s : space.xl }]}>{title}</Text>
       {subtitle ? (
         <Text style={[type.small, { color: palette.dim, marginTop: space.xs }]}>{subtitle}</Text>
       ) : null}

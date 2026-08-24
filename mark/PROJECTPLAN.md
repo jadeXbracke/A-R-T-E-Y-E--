@@ -71,17 +71,22 @@ mark/
    every Sunday, a check-in on the last day of the month and of the quarter.
    Deliberately few numbers.
 3. **Body** — collapsible submodules: Movement (type + minutes, soft weekly
-   trend), Nutrition (meal quality / hydration / supplements, *no* calories),
-   Sleep (hours + quality 1–5), Cycle (symptoms + energy, device-only).
+   trend), Nutrition (meal quality / hydration / protein counter /
+   supplements, *no* calories), Sleep (hours + quality 1–5), Cycle: log a
+   period start once and MARK tracks cycle day and phase (menstrual /
+   follicular / ovulatory / luteal) with gentle hormone-pattern guidance per
+   phase — all device-only, never synced.
 4. **Knowledge** — the mind dump inbox (quick captures: a book you want to
-   read, an idea, a to-do — open ring closes when handled) above the log of
-   entries with kind, title and one short insight. Capturing also works
-   straight from Today.
-5. **More** — appearance system/light/dark, navigation placement
-   (bottom bar or an editorial left/right side rail), managing pillars and
-   habits (archiving keeps history), account, privacy statement, build
-   stamp. The agenda tab was dropped: habits are the app; calendar sync may
-   return later via Google Calendar on the reserved data model.
+   read, an idea, a to-do — open ring closes when handled) above the log:
+   what you read or listened to, a 1–5 circle rating and an optional note.
+   Capturing also works straight from Today.
+5. **More** — your name (greeting on Today), appearance system/light/dark,
+   navigation placement (bottom bar or an editorial left/right side rail),
+   evening reminder (off/18/20/21h — one quiet notification when habits are
+   still open, native only), editable Sunday questions, managing pillars and
+   habits including per-habit weekly frequency (1–7 dots), account, privacy,
+   build stamp. There is no in-app agenda: a habit can be handed off to your
+   own calendar from Today ("Put it in your own calendar").
 
 ## The circle concept (MVP check-in)
 

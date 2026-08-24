@@ -5,7 +5,8 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
-import { MiniRing } from '../../src/components/progress-ring';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ConcentricRings } from '../../src/components/progress-ring';
 import { IntensityDot, WeekDots } from '../../src/components/rings';
 import { Body, Button, Field, Hairline, Label, Screen, Section } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
@@ -16,6 +17,8 @@ import {
 import { useTheme } from '../../src/lib/theme-context';
 import { Checkin, CheckinKind, Habit, Mark } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
+
+export const WEEK_QUESTIONS_KEY = 'mark.questions.week';
 
 const QUESTIONS: Record<CheckinKind, [string, string, string]> = {
   intention: [
@@ -50,6 +53,7 @@ const TITLES: Record<CheckinKind, string> = {
 function CheckinCard({ kind, periodStart }: { kind: CheckinKind; periodStart: string }) {
   const [answers, setAnswers] = useState<[string, string, string]>(['', '', '']);
   const [saved, setSaved] = useState(false);
+  const [questions, setQuestions] = useState<[string, string, string]>(QUESTIONS[kind]);
 
   useFocusEffect(useCallback(() => {
     api.getCheckin(kind, periodStart).then(c => {
@@ -58,6 +62,16 @@ function CheckinCard({ kind, periodStart }: { kind: CheckinKind; periodStart: st
         setSaved(true);
       }
     }).catch(() => {});
+    // The Sunday questions are the user's own, editable under More.
+    if (kind === 'week') {
+      AsyncStorage.getItem(WEEK_QUESTIONS_KEY).then(v => {
+        if (!v) return;
+        const own = JSON.parse(v) as string[];
+        if (own.length === 3 && own.every(q => q.trim())) {
+          setQuestions(own as [string, string, string]);
+        }
+      }).catch(() => {});
+    }
   }, [kind, periodStart]));
 
   const save = async () => {
@@ -72,7 +86,7 @@ function CheckinCard({ kind, periodStart }: { kind: CheckinKind; periodStart: st
       ) : (
         <Body dim style={{ marginBottom: space.m }}>Three questions, five minutes. Nothing more.</Body>
       )}
-      {QUESTIONS[kind].map((q, i) => (
+      {questions.map((q, i) => (
         <View key={i} style={{ marginBottom: space.m }}>
           <Body style={{ marginBottom: 4 }}>{q}</Body>
           <Field
@@ -128,6 +142,10 @@ export default function Growth() {
   const monthTarget = Math.round(weekTarget * (daysInMonth(today) / 7));
   const marksThisMonth = marks.filter(m => m.date >= firstOfMonth && m.date <= today).length;
   const monthFrac = monthTarget ? Math.min(marksThisMonth / monthTarget, 1) : 0;
+  // The two inner rings behind the month: today and this week, no numbers.
+  const todayFrac = habits.length ? (byDay.get(today)?.size ?? 0) / habits.length : 0;
+  const marksThisWeek = marks.filter(m => m.date >= monday && m.date <= today).length;
+  const weekFrac = weekTarget ? Math.min(marksThisWeek / weekTarget, 1) : 0;
 
   // The cycle: what is due today?
   const dayOfMonth = Number(today.slice(8, 10));
@@ -153,13 +171,13 @@ export default function Growth() {
       ) : null}
 
       <View style={{ alignItems: 'center', marginVertical: space.l }}>
-        <MiniRing fraction={monthFrac} size={180}>
+        <ConcentricRings fractions={[todayFrac, weekFrac, monthFrac]} size={216}>
           <Text style={[type.numeral, { color: palette.ink }]}>
             {Math.round(monthFrac * 100)}
             <Text style={{ fontSize: 20, color: palette.dim }}>%</Text>
           </Text>
           <Label style={{ marginTop: 2 }}>{monthLabel(today).split(' ')[0]}</Label>
-        </MiniRing>
+        </ConcentricRings>
         <Body dim style={{ marginTop: space.l }}>
           {marksThisMonth} {marksThisMonth === 1 ? 'mark' : 'marks'} this month
         </Body>

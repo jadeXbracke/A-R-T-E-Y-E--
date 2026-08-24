@@ -3,10 +3,12 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MiniRing } from '../../src/components/progress-ring';
 import { IntensityDot } from '../../src/components/rings';
 import { Body, Button, Chip, Field, Hairline, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
-import { addDays, formatShort, todayKey, weekStart } from '../../src/lib/dates';
+import { addDays, daysBetween, formatShort, fromKey, todayKey, weekStart } from '../../src/lib/dates';
 import { useTheme } from '../../src/lib/theme-context';
 import { HealthLog, MovementPayload, NutritionPayload, SleepPayload } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
@@ -16,6 +18,34 @@ const MEAL_QUALITY: Array<{ label: string; value: 1 | 2 | 3 }> = [
   { label: 'Quick', value: 1 }, { label: 'Mixed', value: 2 }, { label: 'Nourishing', value: 3 },
 ];
 const SYMPTOMS = ['Cramps', 'Headache', 'Tired', 'Bloated', 'Fine'];
+const CYCLE_LENGTH_KEY = 'mark.cycle.length';
+const CYCLE_LENGTHS = [26, 28, 30, 32];
+
+// Gentle, pattern-level guidance per phase — how hormones tend to move, and
+// what that can mean for training, food and rest. Everyone differs; this is
+// orientation, not medical advice.
+const PHASES: Array<{ name: string; until: (len: number) => number; note: string }> = [
+  {
+    name: 'menstrual',
+    until: () => 5,
+    note: 'Estrogen and progesterone are at their lowest. Energy is often low too — rest and gentle movement count as discipline here. Iron-rich food helps.',
+  },
+  {
+    name: 'follicular',
+    until: len => Math.round(len / 2) - 2,
+    note: 'Estrogen climbs. Many feel energy, focus and recovery improve — a good window for strength training, new starts and harder sessions.',
+  },
+  {
+    name: 'ovulatory',
+    until: len => Math.round(len / 2) + 2,
+    note: 'The estrogen peak. Often the strongest, most social days of the cycle — enjoy them without overreaching; warm up well.',
+  },
+  {
+    name: 'luteal',
+    until: len => len,
+    note: 'Progesterone rises, then both fall. Winding down is normal: steady habits over intensity, a little more protein and sleep, and be kind to cravings.',
+  },
+];
 
 type Module = 'beweging' | 'voeding' | 'slaap' | 'cyclus';
 
@@ -38,12 +68,50 @@ export default function BodyScreen() {
   const [sleepQuality, setSleepQuality] = useState<1 | 2 | 3 | 4 | 5>(3);
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [energy, setEnergy] = useState<1 | 2 | 3 | 4 | 5>(3);
+  const [cycleLength, setCycleLengthState] = useState(28);
+
+  React.useEffect(() => {
+    AsyncStorage.getItem(CYCLE_LENGTH_KEY).then(v => {
+      const n = v ? parseInt(v, 10) : NaN;
+      if (CYCLE_LENGTHS.includes(n)) setCycleLengthState(n);
+    }).catch(() => {});
+  }, []);
+
+  const setCycleLength = (n: number) => {
+    setCycleLengthState(n);
+    AsyncStorage.setItem(CYCLE_LENGTH_KEY, String(n)).catch(() => {});
+  };
+
+  // Cycle day and phase from the most recent logged period start.
+  const lastPeriodStart = useMemo(() => {
+    const starts = cycle
+      .filter(l => (l.payload as { period?: boolean }).period)
+      .map(l => l.date)
+      .sort();
+    return starts.length ? starts[starts.length - 1] : null;
+  }, [cycle]);
+
+  const cycleDay = useMemo(() => {
+    if (!lastPeriodStart) return null;
+    const diff = daysBetween(lastPeriodStart, today).length; // inclusive
+    return ((diff - 1) % cycleLength) + 1;
+  }, [cycleLength, lastPeriodStart, today]);
+
+  const phase = useMemo(() => {
+    if (!cycleDay) return null;
+    return PHASES.find(p => cycleDay <= p.until(cycleLength)) ?? PHASES[PHASES.length - 1];
+  }, [cycleDay, cycleLength]);
+
+  const logPeriodStart = async () => {
+    await api.addHealthLog('cycle', today, { period: true });
+    reload();
+  };
 
   const reload = useCallback(() => {
     api.listHealthLogs('movement', prevMonday, today).then(setMovement).catch(() => {});
     api.listHealthLogs('nutrition', today, today).then(setNutrition).catch(() => {});
     api.listHealthLogs('sleep', addDays(today, -6), today).then(setSleep).catch(() => {});
-    api.listHealthLogs('cycle', addDays(today, -27), today).then(setCycle).catch(() => {});
+    api.listHealthLogs('cycle', addDays(today, -59), today).then(setCycle).catch(() => {});
   }, [prevMonday, today]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
@@ -176,6 +244,13 @@ export default function BodyScreen() {
             <Chip label="+ glass" onPress={() => logNutrition({ glasses: (todayNutrition.glasses ?? 0) + 1 })} />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Body>Protein · {todayNutrition.protein ?? 0} g</Body>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Chip label="+ 10 g" onPress={() => logNutrition({ protein: (todayNutrition.protein ?? 0) + 10 })} />
+              <Chip label="+ 25 g" onPress={() => logNutrition({ protein: (todayNutrition.protein ?? 0) + 25 })} />
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <Body>Supplements taken</Body>
             <Chip
               label={todayNutrition.supplements ? 'Yes' : 'Not yet'}
@@ -222,6 +297,34 @@ export default function BodyScreen() {
           <Body dim>
             Cycle data stays on this device and is never synced or shared.
           </Body>
+
+          {cycleDay && phase ? (
+            <View style={{ alignItems: 'center', gap: space.m, marginVertical: space.s }}>
+              <MiniRing fraction={cycleDay / cycleLength} size={110}>
+                <Body style={{ fontSize: 24 }}>{cycleDay}</Body>
+                <Body dim style={{ fontSize: 11 }}>of {cycleLength}</Body>
+              </MiniRing>
+              <Label style={{ color: palette.ink }}>{phase.name} phase</Label>
+              <Body dim style={{ textAlign: 'center' }}>{phase.note}</Body>
+            </View>
+          ) : (
+            <Body dim>
+              Log the first day of your period once and MARK will quietly track
+              your cycle day and phase, with gentle guidance per phase.
+            </Body>
+          )}
+
+          <Button label="Period started today" onPress={logPeriodStart} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+            <Body dim>Cycle length</Body>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {CYCLE_LENGTHS.map(n => (
+                <Chip key={n} label={`${n}`} active={cycleLength === n} onPress={() => setCycleLength(n)} />
+              ))}
+            </View>
+          </View>
+
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {SYMPTOMS.map(s => (
               <Chip
@@ -238,7 +341,7 @@ export default function BodyScreen() {
             <Scale value={energy} onChange={setEnergy} />
           </View>
           <Button label="Log today" onPress={logCycle} />
-          {cycle.slice(0, 5).map(l => {
+          {cycle.filter(l => !(l.payload as { period?: boolean }).period).slice(0, 5).map(l => {
             const p = l.payload as { symptoms?: string[]; energy?: number };
             return (
               <View key={l.id} style={{ flexDirection: 'row', gap: space.m }}>
@@ -247,6 +350,9 @@ export default function BodyScreen() {
               </View>
             );
           })}
+          <Body dim style={{ fontSize: 11 }}>
+            Patterns differ from person to person — this is orientation, not medical advice.
+          </Body>
         </View>
       ) : null}
 

@@ -73,6 +73,11 @@ export const demoApi: Api = {
   async signIn() { /* demo is always signed in */ },
   async signUp() { /* demo is always signed in */ },
   async signOut() { /* demo is always signed in */ },
+  async updateName(name) {
+    const s = await load();
+    if (s.profile) s.profile.name = name;
+    await save();
+  },
 
   async listPillars() {
     const s = await load();
@@ -102,6 +107,15 @@ export const demoApi: Api = {
     s.habits.push(habit);
     await save();
     return habit;
+  },
+  async updateHabit(id, patch) {
+    const s = await load();
+    const h = s.habits.find(h => h.id === id);
+    if (h) {
+      if (patch.name !== undefined) h.name = patch.name;
+      if (patch.targetPerWeek !== undefined) h.targetPerWeek = patch.targetPerWeek;
+    }
+    await save();
   },
   async archiveHabit(id) {
     const s = await load();
@@ -170,9 +184,9 @@ export const demoApi: Api = {
     const s = await load();
     return [...s.knowledge].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   },
-  async addKnowledge(kind: KnowledgeKind, title: string, insight: string) {
+  async addKnowledge(kind: KnowledgeKind, title: string, rating: number, note: string) {
     const s = await load();
-    const entry: KnowledgeEntry = { id: uid(), kind, title, insight, createdAt: new Date().toISOString() };
+    const entry: KnowledgeEntry = { id: uid(), kind, title, rating, note, createdAt: new Date().toISOString() };
     s.knowledge.push(entry);
     await save();
     return entry;

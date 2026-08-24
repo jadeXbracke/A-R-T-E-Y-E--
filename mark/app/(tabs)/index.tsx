@@ -9,13 +9,17 @@ import { Capture } from '../../src/components/capture';
 import { MarkRing, DayCircle } from '../../src/components/rings';
 import { Body, Hairline, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
+import { useAuth } from '../../src/lib/auth';
+import { addToOwnCalendar } from '../../src/lib/calendar-link';
 import { addDays, daysBetween, formatLong, fromKey, todayKey, weekStart } from '../../src/lib/dates';
+import { syncEveningReminder } from '../../src/lib/reminders';
 import { useTheme } from '../../src/lib/theme-context';
 import { Habit, Mark, Pillar } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
 
 export default function Today() {
   const { palette } = useTheme();
+  const { profile } = useAuth();
   const today = todayKey();
   const monday = weekStart(today);
   const sunday = addDays(monday, 6);
@@ -24,6 +28,7 @@ export default function Today() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [marks, setMarks] = useState<Mark[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [expandedHabit, setExpandedHabit] = useState<string | null>(null);
 
   const reload = useCallback(() => {
     api.listPillars().then(setPillars).catch(() => {});
@@ -63,8 +68,17 @@ export default function Today() {
   const todayFraction = habits.length ? markedToday.size / habits.length : 0;
   const todayIndex = (fromKey(today).getDay() + 6) % 7;
 
+  // Keep one gentle evening reminder in sync with what is still open.
+  React.useEffect(() => {
+    syncEveningReminder(habits.length - markedToday.size);
+  }, [habits.length, markedToday.size]);
+
+  const hour = new Date().getHours();
+  const daypart = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+  const greeting = profile?.name ? `good ${daypart}, ${profile.name}` : undefined;
+
   return (
-    <Screen title="Today" subtitle={formatLong(today)}>
+    <Screen title="Today" subtitle={formatLong(today)} greeting={greeting}>
       <View style={{ alignItems: 'center', marginBottom: space.xl }}>
         <DayCircle todayFraction={todayFraction} weekDone={weekDone} todayIndex={todayIndex} />
         <Text style={[type.numeral, { color: palette.ink, marginTop: space.l }]}>
@@ -90,14 +104,30 @@ export default function Today() {
             {!isCollapsed && own.map(habit => (
               <View
                 key={habit.id}
-                style={{
-                  flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                  paddingVertical: 14,
-                  borderBottomWidth: 1, borderBottomColor: palette.hairline,
-                }}
+                style={{ borderBottomWidth: 1, borderBottomColor: palette.hairline }}
               >
-                <Body>{habit.name}</Body>
-                <MarkRing marked={markedToday.has(habit.id)} onPress={() => toggle(habit.id)} />
+                <View
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                    paddingVertical: 14,
+                  }}
+                >
+                  <Pressable
+                    style={{ flex: 1 }}
+                    onPress={() => setExpandedHabit(expandedHabit === habit.id ? null : habit.id)}
+                  >
+                    <Body>{habit.name}</Body>
+                  </Pressable>
+                  <MarkRing marked={markedToday.has(habit.id)} onPress={() => toggle(habit.id)} />
+                </View>
+                {expandedHabit === habit.id ? (
+                  <Pressable
+                    onPress={() => { addToOwnCalendar(habit.name); setExpandedHabit(null); }}
+                    style={{ paddingBottom: 14 }}
+                  >
+                    <Body dim>Put it in your own calendar ↗</Body>
+                  </Pressable>
+                ) : null}
               </View>
             ))}
           </View>

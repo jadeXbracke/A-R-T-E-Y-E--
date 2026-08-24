@@ -36,7 +36,7 @@ const healthRow = (r: any): HealthLog => ({ id: r.id, kind: r.kind, date: r.date
 const inboxRow = (r: any): InboxItem =>
   ({ id: r.id, kind: r.kind, text: r.text, done: r.done, createdAt: r.created_at });
 const knowledgeRow = (r: any): KnowledgeEntry =>
-  ({ id: r.id, kind: r.kind, title: r.title, insight: r.insight, createdAt: r.created_at });
+  ({ id: r.id, kind: r.kind, title: r.title, rating: r.rating ?? 0, note: r.note ?? '', createdAt: r.created_at });
 const eventRow = (r: any): CalendarEvent =>
   ({ id: r.id, title: r.title, start: r.start_at, end: r.end_at, source: r.source, externalId: r.external_id ?? undefined });
 
@@ -44,18 +44,25 @@ export const supabaseApi: Api = {
   async getSessionProfile() {
     const { data } = await supabase.auth.getUser();
     if (!data.user) return null;
-    return { id: data.user.id, email: data.user.email ?? '' };
+    const name = (data.user.user_metadata as { name?: string } | null)?.name;
+    return { id: data.user.id, email: data.user.email ?? '', name };
   },
   async signIn(email, password) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     fail(error);
   },
-  async signUp(email, password) {
-    const { error } = await supabase.auth.signUp({ email, password });
+  async signUp(email, password, name) {
+    const { error } = await supabase.auth.signUp({
+      email, password,
+      options: name ? { data: { name } } : undefined,
+    });
     fail(error);
   },
   async signOut() {
     await supabase.auth.signOut();
+  },
+  async updateName(name) {
+    fail((await supabase.auth.updateUser({ data: { name } })).error);
   },
 
   async listPillars() {
@@ -86,6 +93,12 @@ export const supabaseApi: Api = {
       .select().single();
     fail(error);
     return habitRow(data);
+  },
+  async updateHabit(id, patch) {
+    const row: Record<string, unknown> = {};
+    if (patch.name !== undefined) row.name = patch.name;
+    if (patch.targetPerWeek !== undefined) row.target_per_week = patch.targetPerWeek;
+    fail((await supabase.from('habits').update(row).eq('id', id)).error);
   },
   async archiveHabit(id) {
     fail((await supabase.from('habits').update({ archived: true }).eq('id', id)).error);
@@ -154,9 +167,9 @@ export const supabaseApi: Api = {
     fail(error);
     return (data ?? []).map(knowledgeRow);
   },
-  async addKnowledge(kind, title, insight) {
+  async addKnowledge(kind, title, rating, note) {
     const { data, error } = await supabase.from('knowledge_entries')
-      .insert({ user_id: await userId(), kind, title, insight }).select().single();
+      .insert({ user_id: await userId(), kind, title, rating, note }).select().single();
     fail(error);
     return knowledgeRow(data);
   },

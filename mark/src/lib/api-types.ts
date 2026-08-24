@@ -9,8 +9,9 @@ export interface Api {
   // auth
   getSessionProfile(): Promise<Profile | null>;
   signIn(email: string, password: string): Promise<void>;
-  signUp(email: string, password: string): Promise<void>;
+  signUp(email: string, password: string, name?: string): Promise<void>;
   signOut(): Promise<void>;
+  updateName(name: string): Promise<void>;
 
   // pillars & habits
   listPillars(): Promise<Pillar[]>;
@@ -18,6 +19,7 @@ export interface Api {
   archivePillar(id: string): Promise<void>;
   listHabits(): Promise<Habit[]>;
   createHabit(pillarId: string, name: string, targetPerWeek: number): Promise<Habit>;
+  updateHabit(id: string, patch: { name?: string; targetPerWeek?: number }): Promise<void>;
   archiveHabit(id: string): Promise<void>;
 
   // marks
@@ -37,7 +39,7 @@ export interface Api {
 
   // knowledge
   listKnowledge(): Promise<KnowledgeEntry[]>;
-  addKnowledge(kind: KnowledgeKind, title: string, insight: string): Promise<KnowledgeEntry>;
+  addKnowledge(kind: KnowledgeKind, title: string, rating: number, note: string): Promise<KnowledgeEntry>;
 
   // agenda
   listEvents(from: string, to: string): Promise<CalendarEvent[]>;
