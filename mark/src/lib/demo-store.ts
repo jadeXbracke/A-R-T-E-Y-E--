@@ -5,8 +5,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { Api } from './api-types';
 import {
-  CalendarEvent, Habit, HealthKind, HealthLog, InboxItem, KnowledgeEntry,
-  KnowledgeKind, Mark, Pillar, Profile, Reflection,
+  CalendarEvent, Checkin, Habit, HealthKind, HealthLog, InboxItem,
+  KnowledgeEntry, KnowledgeKind, Mark, Pillar, Profile,
 } from './types';
 
 const KEY = 'mark.store.v1';
@@ -20,7 +20,7 @@ interface Store {
   knowledge: KnowledgeEntry[];
   inbox: InboxItem[];
   events: CalendarEvent[];
-  reflections: Reflection[];
+  checkins: Checkin[];
 }
 
 function uid(): string {
@@ -46,7 +46,7 @@ function seed(): Store {
   return {
     profile: { id: 'demo', email: 'demo@mark.app' },
     pillars, habits,
-    marks: [], healthLogs: [], knowledge: [], inbox: [], events: [], reflections: [],
+    marks: [], healthLogs: [], knowledge: [], inbox: [], events: [], checkins: [],
   };
 }
 
@@ -57,6 +57,7 @@ async function load(): Promise<Store> {
   const raw = await AsyncStorage.getItem(KEY);
   cache = raw ? (JSON.parse(raw) as Store) : seed();
   cache.inbox = cache.inbox ?? []; // stores saved before the mind dump existed
+  cache.checkins = cache.checkins ?? []; // stores saved before month cycles existed
   if (!raw) await save();
   return cache;
 }
@@ -196,15 +197,15 @@ export const demoApi: Api = {
     await save();
   },
 
-  async getReflection(weekStart) {
+  async getCheckin(kind, periodStart) {
     const s = await load();
-    return s.reflections.find(r => r.weekStart === weekStart) ?? null;
+    return s.checkins.find(c => c.kind === kind && c.periodStart === periodStart) ?? null;
   },
-  async saveReflection(weekStart, answers) {
+  async saveCheckin(kind, periodStart, answers) {
     const s = await load();
-    const existing = s.reflections.find(r => r.weekStart === weekStart);
+    const existing = s.checkins.find(c => c.kind === kind && c.periodStart === periodStart);
     if (existing) existing.answers = answers;
-    else s.reflections.push({ weekStart, answers });
+    else s.checkins.push({ kind, periodStart, answers });
     await save();
   },
 };

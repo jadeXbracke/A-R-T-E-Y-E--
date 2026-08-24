@@ -1,6 +1,6 @@
 import {
-  CalendarEvent, Habit, HealthKind, HealthLog, InboxItem, InboxKind,
-  KnowledgeEntry, KnowledgeKind, Mark, Pillar, Profile, Reflection,
+  CalendarEvent, Checkin, CheckinKind, Habit, HealthKind, HealthLog,
+  InboxItem, InboxKind, KnowledgeEntry, KnowledgeKind, Mark, Pillar, Profile,
 } from './types';
 
 // One interface, two backends (demo-store / supabase-api) — same pattern as
@@ -44,7 +44,7 @@ export interface Api {
   addEvent(title: string, start: string, end: string): Promise<CalendarEvent>;
   deleteEvent(id: string): Promise<void>;
 
-  // reflection
-  getReflection(weekStart: string): Promise<Reflection | null>;
-  saveReflection(weekStart: string, answers: [string, string, string]): Promise<void>;
+  // cycle check-ins (weekly reflection, month/quarter check-ins, intentions)
+  getCheckin(kind: CheckinKind, periodStart: string): Promise<Checkin | null>;
+  saveCheckin(kind: CheckinKind, periodStart: string, answers: [string, string, string]): Promise<void>;
 }

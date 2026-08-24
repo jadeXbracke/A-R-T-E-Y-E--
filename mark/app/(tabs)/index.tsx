@@ -1,6 +1,7 @@
-// VANDAAG — the daily check-in. One tap on a ring sets a mark: a small piece
-// of evidence of who you are becoming. Calm by design: collapsible pillars,
-// no streaks, no guilt for yesterday.
+// TODAY — nothing but today. The circle fills as you complete your small
+// habits; one tap on a ring sets a mark. No stats, no schedule, no nudges —
+// those live on Growth. Only the mind dump keeps a single quiet line here,
+// so a passing thought never has to wait.
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -8,9 +9,9 @@ import { Capture } from '../../src/components/capture';
 import { MarkRing, DayCircle } from '../../src/components/rings';
 import { Body, Hairline, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
-import { addDays, daysBetween, formatLong, formatTime, fromKey, todayKey, weekStart } from '../../src/lib/dates';
+import { addDays, daysBetween, formatLong, fromKey, todayKey, weekStart } from '../../src/lib/dates';
 import { useTheme } from '../../src/lib/theme-context';
-import { CalendarEvent, Habit, Mark, Pillar } from '../../src/lib/types';
+import { Habit, Mark, Pillar } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
 
 export default function Today() {
@@ -22,15 +23,13 @@ export default function Today() {
   const [pillars, setPillars] = useState<Pillar[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [marks, setMarks] = useState<Mark[]>([]);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
   const reload = useCallback(() => {
     api.listPillars().then(setPillars).catch(() => {});
     api.listHabits().then(setHabits).catch(() => {});
     api.listMarks(monday, sunday).then(setMarks).catch(() => {});
-    api.listEvents(today, today).then(setEvents).catch(() => {});
-  }, [monday, sunday, today]);
+  }, [monday, sunday]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
@@ -53,8 +52,8 @@ export default function Today() {
     }
   };
 
-  // Week overview for the day circle: a weekday counts as complete when every
-  // habit got its mark that day (only for days that have passed or today).
+  // Week dots around the day circle: a weekday counts as complete when every
+  // habit got its mark that day (only days that have passed, or today).
   const weekDone = useMemo(() => daysBetween(monday, sunday).map(day => {
     if (habits.length === 0 || day > today) return false;
     const set = new Set(marks.filter(m => m.date === day).map(m => m.habitId));
@@ -63,18 +62,6 @@ export default function Today() {
 
   const todayFraction = habits.length ? markedToday.size / habits.length : 0;
   const todayIndex = (fromKey(today).getDay() + 6) % 7;
-
-  // Gentle, never pushy: one suggestion when the evening looks free.
-  const suggestion = useMemo(() => {
-    const open = habits.filter(h => !markedToday.has(h.id));
-    if (!open.length) return null;
-    const eveningBusy = events.some(e => {
-      const h = new Date(e.start).getHours();
-      return h >= 18 && h < 22;
-    });
-    if (eveningBusy) return null;
-    return open[Math.abs(today.split('-').join('').length + open.length) % open.length];
-  }, [events, habits, markedToday, today]);
 
   return (
     <Screen title="Today" subtitle={formatLong(today)}>
@@ -124,29 +111,7 @@ export default function Today() {
       ) : null}
 
       <Hairline />
-
-      <Label style={{ marginBottom: space.m }}>mind dump</Label>
       <Capture />
-
-      <Hairline />
-
-      <Label style={{ marginBottom: space.m }}>today in your calendar</Label>
-      {events.length === 0 ? (
-        <Body dim>No events today.</Body>
-      ) : (
-        events.map(e => (
-          <View key={e.id} style={{ flexDirection: 'row', gap: space.m, paddingVertical: 8 }}>
-            <Body dim>{formatTime(e.start)}</Body>
-            <Body>{e.title}</Body>
-          </View>
-        ))
-      )}
-
-      {suggestion ? (
-        <Body dim style={{ marginTop: space.l }}>
-          Your evening looks free — maybe a good moment for “{suggestion.name}”.
-        </Body>
-      ) : null}
     </Screen>
   );
 }

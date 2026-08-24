@@ -5,7 +5,7 @@ import { Alert, Platform, Pressable, View } from 'react-native';
 import { BuildStamp, Body, Button, Chip, Field, Hairline, Label, Screen, Section } from '../../src/components/ui';
 import { api, DEMO_MODE } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
-import { ThemePref, useTheme } from '../../src/lib/theme-context';
+import { NavSide, ThemePref, useTheme } from '../../src/lib/theme-context';
 import { Habit, Pillar } from '../../src/lib/types';
 import { space } from '../../src/theme';
 
@@ -15,8 +15,14 @@ const PREFS: Array<{ value: ThemePref; label: string }> = [
   { value: 'dark', label: 'Dark' },
 ];
 
+const NAV_SIDES: Array<{ value: NavSide; label: string }> = [
+  { value: 'bottom', label: 'Bottom' },
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+];
+
 export default function More() {
-  const { palette, pref, setPref } = useTheme();
+  const { palette, pref, setPref, nav, setNav } = useTheme();
   const { profile, signOut } = useAuth();
 
   const [pillars, setPillars] = useState<Pillar[]>([]);
@@ -77,6 +83,16 @@ export default function More() {
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {PREFS.map(p => (
             <Chip key={p.value} label={p.label} active={pref === p.value} onPress={() => setPref(p.value)} />
+          ))}
+        </View>
+      </Section>
+
+      <Hairline spacing={space.m} />
+
+      <Section label="navigation">
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {NAV_SIDES.map(n => (
+            <Chip key={n.value} label={n.label} active={nav === n.value} onPress={() => setNav(n.value)} />
           ))}
         </View>
       </Section>

@@ -71,20 +71,21 @@ create table if not exists public.calendar_events (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.reflections (
+create table if not exists public.checkins (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  week_start date not null,
+  kind text not null check (kind in ('week', 'month', 'quarter', 'intention')),
+  period_start date not null,
   answers jsonb not null default '[]',
   created_at timestamptz not null default now(),
-  unique (user_id, week_start)
+  unique (user_id, kind, period_start)
 );
 
 -- Row-level security: owner-only on every table.
 do $$
 declare t text;
 begin
-  foreach t in array array['pillars','habits','marks','health_logs','knowledge_entries','inbox_items','calendar_events','reflections']
+  foreach t in array array['pillars','habits','marks','health_logs','knowledge_entries','inbox_items','calendar_events','checkins']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "own rows" on public.%I', t);

@@ -7,7 +7,7 @@ import { createClient } from '@supabase/supabase-js';
 import { Api } from './api-types';
 import { demoApi } from './demo-store';
 import {
-  CalendarEvent, Habit, HealthLog, InboxItem, KnowledgeEntry, Mark, Pillar, Reflection,
+  CalendarEvent, Checkin, Habit, HealthLog, InboxItem, KnowledgeEntry, Mark, Pillar,
 } from './types';
 
 const supabase = createClient(
@@ -179,15 +179,18 @@ export const supabaseApi: Api = {
     fail((await supabase.from('calendar_events').delete().eq('id', id)).error);
   },
 
-  async getReflection(weekStart) {
-    const { data, error } = await supabase.from('reflections')
-      .select('*').eq('week_start', weekStart).maybeSingle();
+  async getCheckin(kind, periodStart) {
+    const { data, error } = await supabase.from('checkins')
+      .select('*').eq('kind', kind).eq('period_start', periodStart).maybeSingle();
     fail(error);
     if (!data) return null;
-    return { weekStart: data.week_start, answers: data.answers as Reflection['answers'] };
+    return { kind: data.kind, periodStart: data.period_start, answers: data.answers as Checkin['answers'] };
   },
-  async saveReflection(weekStart, answers) {
-    fail((await supabase.from('reflections')
-      .upsert({ user_id: await userId(), week_start: weekStart, answers }, { onConflict: 'user_id,week_start' })).error);
+  async saveCheckin(kind, periodStart, answers) {
+    fail((await supabase.from('checkins')
+      .upsert(
+        { user_id: await userId(), kind, period_start: periodStart, answers },
+        { onConflict: 'user_id,kind,period_start' },
+      )).error);
   },
 };

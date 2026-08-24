@@ -32,8 +32,8 @@ Schema: `supabase/setup_1_schema.sql` (RLS: every row is owner-only).
 | `health_logs`       | `kind` ∈ movement / nutrition / sleep + free `payload` jsonb |
 | `knowledge_entries` | book/course/article/podcast + one short insight              |
 | `inbox_items`       | mind dump: book/idea/task/watch/note, captured in seconds    |
-| `calendar_events`   | own blocks; `source`+`external_id` ready for Google sync     |
-| `reflections`       | 3 answers per week (`unique (user_id, week_start)`)          |
+| `calendar_events`   | reserved for Google Calendar sync (no UI in V1)              |
+| `checkins`          | cycle answers: week/month/quarter/intention per period       |
 
 **Privacy:** cycle data (`kind = 'cycle'`) deliberately does *not* exist in
 Supabase. The live backend routes it to local storage on the device
@@ -60,14 +60,16 @@ mark/
 
 ## Screen overview
 
-1. **Today** — the MVP screen. At the top the day circle: a disc that fills as
-   you set marks, ringed by seven day dots (Monday at the top, clockwise)
+1. **Today** — nothing but today. The day circle fills as you complete your
+   small habits, ringed by seven day dots (Monday at the top, clockwise)
    that close when a day was complete. Below it habits per pillar
-   (collapsible, stays calm with many habits), each with a tappable ring. At
-   the bottom today's agenda and — only when the evening is free — one gentle
-   suggestion.
-2. **Growth** — week view with 7 dots per habit, a month grid of intensity
-   dots, totals vs. last month, and the weekly reflection (max 3 questions).
+   (collapsible, stays calm with many habits), each with a tappable ring,
+   and one quiet mind-dump line. No stats, no schedule, no nudges.
+2. **Growth** — one month at a time. A single ring with the month's fill
+   percentage, the month grid of intensity dots, week dots per habit, and
+   the cycle: intentions in the first days of the month, a short reflection
+   every Sunday, a check-in on the last day of the month and of the quarter.
+   Deliberately few numbers.
 3. **Body** — collapsible submodules: Movement (type + minutes, soft weekly
    trend), Nutrition (meal quality / hydration / supplements, *no* calories),
    Sleep (hours + quality 1–5), Cycle (symptoms + energy, device-only).
@@ -75,11 +77,11 @@ mark/
    read, an idea, a to-do — open ring closes when handled) above the log of
    entries with kind, title and one short insight. Capturing also works
    straight from Today.
-5. **Agenda** — plan blocks (workout, reading time) next to your marks; V1 is
-   a reliable local agenda, the two-way Google Calendar sync follows in V1.1
-   on the same data model.
-6. **More** — appearance system/light/dark, managing pillars and habits
-   (archiving keeps history), account, privacy statement, build stamp.
+5. **More** — appearance system/light/dark, navigation placement
+   (bottom bar or an editorial left/right side rail), managing pillars and
+   habits (archiving keeps history), account, privacy statement, build
+   stamp. The agenda tab was dropped: habits are the app; calendar sync may
+   return later via Google Calendar on the reserved data model.
 
 ## The circle concept (MVP check-in)
 

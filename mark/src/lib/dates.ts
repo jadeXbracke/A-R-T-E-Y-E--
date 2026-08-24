@@ -68,3 +68,27 @@ export function formatTime(iso: string): string {
 }
 
 export const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+export function monthEnd(key: string): string {
+  const d = fromKey(monthStart(key));
+  d.setMonth(d.getMonth() + 1);
+  d.setDate(0);
+  return dateKey(d);
+}
+
+export function quarterStart(key: string): string {
+  const d = fromKey(key);
+  const m = Math.floor(d.getMonth() / 3) * 3;
+  return dateKey(new Date(d.getFullYear(), m, 1));
+}
+
+export function quarterEnd(key: string): string {
+  const d = fromKey(quarterStart(key));
+  d.setMonth(d.getMonth() + 3);
+  d.setDate(0);
+  return dateKey(d);
+}
+
+export function daysInMonth(key: string): number {
+  return fromKey(monthEnd(key)).getDate();
+}

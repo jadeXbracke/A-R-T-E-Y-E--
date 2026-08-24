@@ -71,8 +71,17 @@ export interface CalendarEvent {
   externalId?: string;
 }
 
-export interface Reflection {
-  weekStart: string; // Monday, YYYY-MM-DD
+export type CheckinKind = 'week' | 'month' | 'quarter' | 'intention';
+
+/**
+ * The month-cycle rhythm: intentions at the start of a month, a short
+ * reflection on Sundays, a check-in on the last day of the month and of the
+ * quarter. `periodStart` anchors the period (Monday / first of month /
+ * first of quarter).
+ */
+export interface Checkin {
+  kind: CheckinKind;
+  periodStart: string; // YYYY-MM-DD
   answers: [string, string, string];
 }
 
