@@ -1,0 +1,71 @@
+// Datamodel — mirrors the Supabase schema in supabase/setup_1_schema.sql.
+// Dates are 'YYYY-MM-DD' strings (local calendar days, never UTC-shifted).
+
+export interface Pillar {
+  id: string;
+  name: string;
+  position: number;
+  archived: boolean;
+}
+
+export interface Habit {
+  id: string;
+  pillarId: string;
+  name: string;
+  /** How many marks per week feel right — soft target, never a punishment. */
+  targetPerWeek: number;
+  position: number;
+  archived: boolean;
+}
+
+/** One check-in: a small piece of evidence of who you are becoming. */
+export interface Mark {
+  id: string;
+  habitId: string;
+  date: string;
+}
+
+export type HealthKind = 'movement' | 'nutrition' | 'sleep' | 'cycle';
+
+export interface HealthLog {
+  id: string;
+  kind: HealthKind;
+  date: string;
+  /** Shape depends on kind — see HealthPayloads. */
+  payload: Record<string, unknown>;
+}
+
+export interface MovementPayload { type: string; minutes: number }
+export interface NutritionPayload { quality?: 1 | 2 | 3; glasses?: number; supplements?: boolean }
+export interface SleepPayload { hours: number; quality: 1 | 2 | 3 | 4 | 5 }
+export interface CyclePayload { symptoms: string[]; energy: 1 | 2 | 3 | 4 | 5 }
+
+export type KnowledgeKind = 'book' | 'course' | 'article' | 'podcast';
+
+export interface KnowledgeEntry {
+  id: string;
+  kind: KnowledgeKind;
+  title: string;
+  insight: string;
+  createdAt: string; // ISO
+}
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string; // ISO datetime
+  end: string;   // ISO datetime
+  /** 'mark' = created in-app; 'google' reserved for the sync in V1.1. */
+  source: 'mark' | 'google';
+  externalId?: string;
+}
+
+export interface Reflection {
+  weekStart: string; // Monday, YYYY-MM-DD
+  answers: [string, string, string];
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+}
