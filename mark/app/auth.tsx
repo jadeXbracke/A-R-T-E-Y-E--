@@ -35,7 +35,7 @@ export default function AuthScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg, paddingTop: insets.top + space.xxl, paddingHorizontal: space.page }}>
       <Wordmark size={22} />
-      <Text style={[type.heading, { color: palette.ink, marginTop: space.xxl }]}>
+      <Text style={[type.heading, { color: palette.inkDeep, marginTop: space.xxl }]}>
         {mode === 'in' ? 'Welcome back' : 'Start with one mark'}
       </Text>
       <Body dim style={{ marginTop: space.s }}>

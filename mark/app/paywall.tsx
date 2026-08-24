@@ -27,7 +27,7 @@ export default function Paywall() {
   return (
     <View style={{ flex: 1, backgroundColor: palette.bg, paddingTop: insets.top + space.xl, paddingHorizontal: space.page }}>
       <Wordmark />
-      <Text style={[type.heading, { color: palette.ink, marginTop: space.xl }]}>Premium</Text>
+      <Text style={[type.heading, { color: palette.inkDeep, marginTop: space.xl }]}>Premium</Text>
       <Body dim style={{ marginTop: space.s }}>
         The habits, check-ins and week view stay free, always. Premium adds the
         modules around them.

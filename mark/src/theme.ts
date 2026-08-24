@@ -1,14 +1,13 @@
 // MARK design tokens — monochrome, editorial, circular.
-// Pure white ground, black ink, thin hairlines — the ART EYE house look —
-// with circles and rings as the single graphic motif: open ring = to do,
-// closed disc = a mark set. Wide-tracked caps, lots of negative space.
+// Pure white ground, black ink, thin hairlines, circles as the only motif.
 
 export type Scheme = 'light' | 'dark';
 
 export interface Palette {
   bg: string;       // page ground (white / near-black)
   surface: string;  // cards, inputs
-  ink: string;      // the single text colour
+  inkDeep: string;  // headings — the deepest step
+  ink: string;      // primary text
   dim: string;      // secondary text
   hairline: string; // thin rules
   tint: string;     // neutral fill for progress discs (graphic only)
@@ -19,8 +18,9 @@ export const palettes: Record<Scheme, Palette> = {
   light: {
     bg: '#FFFFFF',
     surface: '#FFFFFF',
-    ink: '#131211',
-    dim: '#7B766D',
+    inkDeep: '#050504',
+    ink: '#1B1A17',
+    dim: '#98938A',
     hairline: '#E4E1DB',
     tint: '#DEDCD7',
     scrim: 'rgba(19,18,17,0.28)',
@@ -28,8 +28,9 @@ export const palettes: Record<Scheme, Palette> = {
   dark: {
     bg: '#131211',
     surface: '#1B1A18',
-    ink: '#F4F3F0',
-    dim: '#8F8B84',
+    inkDeep: '#FFFFFF',
+    ink: '#E8E5DF',
+    dim: '#7C776F',
     hairline: '#2B2925',
     tint: '#3A3833',
     scrim: 'rgba(0,0,0,0.4)',
@@ -37,12 +38,17 @@ export const palettes: Record<Scheme, Palette> = {
 };
 
 // ── Typography ──────────────────────────────────────────────────────────────
-// One family across the whole app, the ART EYE way: Archivo. Light, wide,
-// UPPERCASE headings; letter-spaced caps labels; regular body. No italics.
+// ONE typeface, ONE weight: Archivo Medium. Hierarchy is carried by size,
+// letterspacing and colour depth (inkDeep → ink → dim) — never by mixing
+// weights or families, which reads as a different typeface and breaks the
+// house style.
+const FACE = 'Archivo_500Medium';
+
 export const fonts = {
-  display: 'Archivo_300Light',
-  sans: 'Archivo_400Regular',
-  sansMedium: 'Archivo_500Medium',
+  sans: FACE,
+  // Kept as aliases so every call site resolves to the single face.
+  display: FACE,
+  sansMedium: FACE,
 };
 
 export const space = {
@@ -57,11 +63,11 @@ export const space = {
 
 // Type scale without colours — screens colour from the active palette.
 export const type = {
-  wordmark: { fontFamily: fonts.sansMedium, fontSize: 15, letterSpacing: 7 },
-  heading: { fontFamily: fonts.display, fontSize: 26, letterSpacing: 3, lineHeight: 34, textTransform: 'uppercase' as const },
-  title: { fontFamily: fonts.display, fontSize: 18, letterSpacing: 2, lineHeight: 24, textTransform: 'uppercase' as const },
-  numeral: { fontFamily: fonts.display, fontSize: 40, letterSpacing: 2 },
-  body: { fontFamily: fonts.sans, fontSize: 15, lineHeight: 23 },
-  label: { fontFamily: fonts.sansMedium, fontSize: 10, letterSpacing: 2.4, textTransform: 'uppercase' as const },
-  small: { fontFamily: fonts.sans, fontSize: 12, lineHeight: 18 },
+  wordmark: { fontFamily: FACE, fontSize: 15, letterSpacing: 7 },
+  heading: { fontFamily: FACE, fontSize: 25, letterSpacing: 3.4, lineHeight: 34, textTransform: 'uppercase' as const },
+  title: { fontFamily: FACE, fontSize: 17, letterSpacing: 2, lineHeight: 24, textTransform: 'uppercase' as const },
+  numeral: { fontFamily: FACE, fontSize: 38, letterSpacing: 1.5 },
+  body: { fontFamily: FACE, fontSize: 14.5, lineHeight: 23 },
+  label: { fontFamily: FACE, fontSize: 10, letterSpacing: 2.4, textTransform: 'uppercase' as const },
+  small: { fontFamily: FACE, fontSize: 11.5, lineHeight: 18 },
 };

@@ -12,11 +12,11 @@ export function Wordmark({ size = 15 }: { size?: number }) {
   const { palette } = useTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <Text style={[type.wordmark, { fontSize: size, color: palette.ink }]}>MARK</Text>
+      <Text style={[type.wordmark, { fontSize: size, color: palette.inkDeep }]}>MARK</Text>
       <View
         style={{
           width: size * 0.36, height: size * 0.36, borderRadius: size,
-          backgroundColor: palette.ink, marginLeft: 3, marginTop: 3,
+          backgroundColor: palette.inkDeep, marginLeft: 3, marginTop: 3,
         }}
       />
     </View>
@@ -45,7 +45,7 @@ export function Screen({ children, title, subtitle, greeting }: {
       {greeting ? (
         <Text style={[type.label, { color: palette.dim, marginTop: space.xl }]}>{greeting}</Text>
       ) : null}
-      <Text style={[type.heading, { color: palette.ink, marginTop: greeting ? space.s : space.xl }]}>{title}</Text>
+      <Text style={[type.heading, { color: palette.inkDeep, marginTop: greeting ? space.s : space.xl }]}>{title}</Text>
       {subtitle ? (
         <Text style={[type.small, { color: palette.dim, marginTop: space.xs }]}>{subtitle}</Text>
       ) : null}

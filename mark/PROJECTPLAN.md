@@ -16,8 +16,11 @@ missed day is no reason to panic; you simply continue.
   progress discs fill in a neutral grey.
 - **Circles and rings as the only motif**: open ring = to do, closed disc =
   mark set. No checkmarks, no icons — even the tab bar uses text + a dot.
-- Typography: Archivo throughout, the ART EYE way — light, wide-tracked
-  UPPERCASE headings, letter-spaced caps labels, regular body. No italics.
+- Typography: **one typeface, one weight** — Archivo Medium, everywhere.
+  Hierarchy comes from size, letterspacing and colour depth
+  (`inkDeep` headings → `ink` primary → `dim` secondary), never from mixing
+  weights or families: a second weight reads as a second typeface and breaks
+  the house style. No italics.
 - Plenty of negative space; nothing feels full. Timeless over trendy.
 
 ## Data model

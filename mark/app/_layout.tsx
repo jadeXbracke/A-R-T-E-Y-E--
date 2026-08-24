@@ -1,4 +1,4 @@
-import { Archivo_300Light, Archivo_400Regular, Archivo_500Medium } from '@expo-google-fonts/archivo';
+import { Archivo_500Medium } from '@expo-google-fonts/archivo';
 import { useFonts } from 'expo-font';
 import { Redirect, Slot, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -33,8 +33,6 @@ function Gate() {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    Archivo_300Light,
-    Archivo_400Regular,
     Archivo_500Medium,
   });
 
