@@ -32,15 +32,18 @@ function Gate() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  // A font that fails to load must not strand the app on a blank screen —
+  // fall through to the system face instead of waiting forever.
+  const [fontsLoaded, fontError] = useFonts({
     Archivo_500Medium,
   });
+  const fontsSettled = fontsLoaded || !!fontError;
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsLoaded]);
+    if (fontsSettled) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsSettled]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsSettled) return null;
 
   return (
     <SafeAreaProvider>
