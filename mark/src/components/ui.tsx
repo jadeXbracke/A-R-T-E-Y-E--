@@ -68,6 +68,16 @@ export function Body({ children, dim, style }: {
   return <Text style={[type.body, { color: dim ? palette.dim : palette.ink }, style]}>{children}</Text>;
 }
 
+/** A name in a list — habits, log rows, anything that reads as an entry. */
+export function Item({ children, dim, style }: {
+  children: React.ReactNode;
+  dim?: boolean;
+  style?: StyleProp<TextStyle>;
+}) {
+  const { palette } = useTheme();
+  return <Text style={[type.item, { color: dim ? palette.dim : palette.ink }, style]}>{children}</Text>;
+}
+
 export function Hairline({ spacing = space.l }: { spacing?: number }) {
   const { palette } = useTheme();
   return <View style={{ height: 1, backgroundColor: palette.hairline, marginVertical: spacing }} />;

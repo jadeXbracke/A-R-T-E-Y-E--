@@ -20,7 +20,10 @@ missed day is no reason to panic; you simply continue.
   Hierarchy comes from size, letterspacing and colour depth
   (`inkDeep` headings → `ink` primary → `dim` secondary), never from mixing
   weights or families: a second weight reads as a second typeface and breaks
-  the house style. No italics.
+  the house style. Entity names in lists (habits, log rows, titles) wear the
+  same letter-spaced caps as the labels — sentence case beside caps also
+  reads as a second typeface. Only running prose stays sentence case. No
+  italics.
 - Plenty of negative space; nothing feels full. Timeless over trendy.
 
 ## Data model
@@ -92,13 +95,11 @@ mark/
      always works, so a missing platform never leaves a broken state.
    - **Movement / Nutrition**: as before (nutrition adds a protein counter;
      still no calories).
-   - **Cycle**: STRICTLY REGISTERING. One-tap period start/end, optional
-     symptoms (energy, mood, cramps, skin, sleep — 1-5, never required).
-     Each cycle is one ring (day 1 top, normalised to its own length — never
-     an assumed 28 days), menstruation as the dark segment, cycles layered
-     so patterns show themselves. After 3+ recorded cycles: neutral
-     observations ("logged energy has tended to be lower around day 22–26"),
-     phrased as observations, never advice. No phase guidance, no fertility
+   - **Cycle**: STRICTLY REGISTERING, and deliberately the quietest module
+     on the screen — marking that a period started (or ended) is all it
+     asks. One quiet line of context underneath (cycle day, last start) and,
+     once enough cycles are recorded, one neutral observation about their
+     length. No rings, no symptom grid, no phase guidance, no fertility
      prediction. Device-only, one-tap full deletion, module switchable off.
 4. **Knowledge** — the mind dump inbox (quick captures: a book you want to
    read, an idea, a to-do — open ring closes when handled) above the log:

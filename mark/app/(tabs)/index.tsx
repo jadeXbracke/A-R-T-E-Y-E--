@@ -8,7 +8,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Capture } from '../../src/components/capture';
 import { MiniRing } from '../../src/components/progress-ring';
 import { MarkRing } from '../../src/components/rings';
-import { Body, Hairline, Label, Screen } from '../../src/components/ui';
+import { Body, Hairline, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { addToOwnCalendar } from '../../src/lib/calendar-link';
@@ -109,7 +109,7 @@ export default function Today() {
                     style={{ flex: 1 }}
                     onPress={() => setExpandedHabit(expandedHabit === habit.id ? null : habit.id)}
                   >
-                    <Body>{habit.name}</Body>
+                    <Item>{habit.name}</Item>
                   </Pressable>
                   <MarkRing marked={markedToday.has(habit.id)} onPress={() => toggle(habit.id)} />
                 </View>

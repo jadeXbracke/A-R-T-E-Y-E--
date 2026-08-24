@@ -8,7 +8,7 @@ import { Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ConcentricRings } from '../../src/components/progress-ring';
 import { IntensityDot, WeekDots } from '../../src/components/rings';
-import { Body, Button, Field, Hairline, Label, Screen, Section } from '../../src/components/ui';
+import { Body, Button, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import {
   addDays, daysBetween, daysInMonth, formatShort, monthEnd, monthLabel,
@@ -207,7 +207,7 @@ export default function Growth() {
             key={h.id}
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}
           >
-            <Body style={{ flex: 1 }} >{h.name}</Body>
+            <Item style={{ flex: 1 }}>{h.name}</Item>
             <WeekDots days={weekDays.map(d => byDay.get(d)?.has(h.id) ?? false)} />
           </View>
         ))}

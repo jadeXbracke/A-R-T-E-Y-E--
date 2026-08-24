@@ -3,7 +3,7 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Platform, Pressable, View } from 'react-native';
-import { BuildStamp, Body, Button, Chip, Field, Hairline, Label, Screen, Section } from '../../src/components/ui';
+import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
 import { api, DEMO_MODE } from '../../src/lib/api';
 import { cycleStore } from '../../src/lib/cycle-store';
 import { useEntitlements } from '../../src/lib/entitlements';
@@ -216,7 +216,7 @@ export default function More() {
             {habits.filter(h => h.pillarId === pillar.id).map(h => (
               <View key={h.id} style={{ paddingVertical: 6 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Body>{h.name}</Body>
+                  <Item>{h.name}</Item>
                   <ArchiveDot onPress={() => confirmArchive(h.name, () => api.archiveHabit(h.id))} />
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>

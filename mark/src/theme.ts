@@ -68,6 +68,9 @@ export const type = {
   title: { fontFamily: FACE, fontSize: 17, letterSpacing: 2, lineHeight: 24, textTransform: 'uppercase' as const },
   numeral: { fontFamily: FACE, fontSize: 38, letterSpacing: 1.5 },
   body: { fontFamily: FACE, fontSize: 14.5, lineHeight: 23 },
+  // Entity names in lists (habits, log rows). Same letter-spaced caps voice
+  // as the labels — sentence case next to caps reads as a second typeface.
+  item: { fontFamily: FACE, fontSize: 13, letterSpacing: 1.6, lineHeight: 20, textTransform: 'uppercase' as const },
   label: { fontFamily: FACE, fontSize: 10, letterSpacing: 2.4, textTransform: 'uppercase' as const },
   small: { fontFamily: FACE, fontSize: 11.5, lineHeight: 18 },
 };

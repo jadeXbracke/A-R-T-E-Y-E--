@@ -12,8 +12,7 @@ import { IntensityDot } from '../../src/components/rings';
 import {
   formatDuration, SleepCircle, SleepLegend, sleepDuration, sleepRegularity,
 } from '../../src/components/sleep-circle';
-import { CycleRings } from '../../src/components/cycle-rings';
-import { Body, Button, Chip, Field, Hairline, Label, Screen } from '../../src/components/ui';
+import { Body, Button, Chip, Field, Hairline, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { cycleStore, observations, toSpans } from '../../src/lib/cycle-store';
 import { addDays, daysBetween, formatShort, todayKey, weekStart } from '../../src/lib/dates';
@@ -21,7 +20,7 @@ import { useEntitlements } from '../../src/lib/entitlements';
 import { healthProvider } from '../../src/lib/health';
 import { useTheme } from '../../src/lib/theme-context';
 import {
-  CycleEntry, CyclePeriod, CycleSymptom, HealthLog, HealthSync,
+  CycleEntry, CyclePeriod, HealthLog, HealthSync,
   MovementPayload, NutritionPayload, SleepLog,
 } from '../../src/lib/types';
 import { fonts, space, type } from '../../src/theme';
@@ -32,13 +31,6 @@ const MEAL_QUALITY: Array<{ label: string; value: 1 | 2 | 3 }> = [
 ];
 const STEP_GOAL_KEY = 'mark.steps.goal';
 const STEP_GOALS = [6000, 8000, 10000, 12000];
-const SYMPTOMS: Array<{ key: CycleSymptom; label: string }> = [
-  { key: 'energy', label: 'Energy' },
-  { key: 'mood', label: 'Mood' },
-  { key: 'cramp', label: 'Cramps' },
-  { key: 'skin', label: 'Skin' },
-  { key: 'sleep', label: 'Sleep' },
-];
 
 type Module = 'steps' | 'movement' | 'nutrition' | 'sleep' | 'cycle';
 
@@ -118,7 +110,6 @@ export default function BodyScreen() {
     ? daysBetween(currentSpan.start, today).length
     : null;
   const openPeriod = periods.some(p => !p.end);
-  const todayEntry = entries.find(e => e.date === today);
   const notes = useMemo(() => observations(spans, entries), [spans, entries]);
 
   const logMovement = async () => {
@@ -235,7 +226,7 @@ export default function BodyScreen() {
             <Field placeholder="Woke (07:15)" value={wakeTime} onChangeText={setWakeTime} style={{ flex: 1 }} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
-            <Body dim>Felt</Body>
+            <Item dim>Felt</Item>
             <Scale value={sleepQuality} onChange={setSleepQuality} />
           </View>
           <Button
@@ -322,8 +313,8 @@ export default function BodyScreen() {
             const p = l.payload as unknown as MovementPayload;
             return (
               <View key={l.id} style={{ flexDirection: 'row', gap: space.m }}>
-                <Body dim>{formatShort(l.date)}</Body>
-                <Body>{p.type} · {p.minutes} min</Body>
+                <Item dim>{formatShort(l.date)}</Item>
+                <Item>{p.type} · {p.minutes} min</Item>
               </View>
             );
           })}
@@ -347,18 +338,18 @@ export default function BodyScreen() {
             </View>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Body>Hydration · {todayNutrition.glasses ?? 0} glasses</Body>
+            <Item>Hydration · {todayNutrition.glasses ?? 0} glasses</Item>
             <Chip label="+ glass" onPress={() => logNutrition({ glasses: (todayNutrition.glasses ?? 0) + 1 })} />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Body>Protein · {todayNutrition.protein ?? 0} g</Body>
+            <Item>Protein · {todayNutrition.protein ?? 0} g</Item>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Chip label="+ 10 g" onPress={() => logNutrition({ protein: (todayNutrition.protein ?? 0) + 10 })} />
               <Chip label="+ 25 g" onPress={() => logNutrition({ protein: (todayNutrition.protein ?? 0) + 25 })} />
             </View>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Body>Supplements taken</Body>
+            <Item>Supplements taken</Item>
             <Chip
               label={todayNutrition.supplements ? 'Yes' : 'Not yet'}
               active={!!todayNutrition.supplements}
@@ -379,59 +370,18 @@ export default function BodyScreen() {
               </View>
             ) : (
             <View style={{ paddingVertical: space.l, gap: space.m }}>
-              {spans.length ? (
-                <View style={{ alignItems: 'center', gap: space.s }}>
-                  <CycleRings spans={spans} currentDay={currentDay ?? undefined} size={132}>
-                    {currentDay && currentSpan ? (
-                      <View style={{ alignItems: 'center' }}>
-                        <Text style={[type.numeral, { fontSize: 22, color: palette.ink }]}>{currentDay}</Text>
-                        <Label style={{ fontSize: 8 }}>day</Label>
-                      </View>
-                    ) : null}
-                  </CycleRings>
-                  <Body dim style={{ fontSize: 11, textAlign: 'center' }}>
-                    One ring per cycle, day 1 at the top.
-                  </Body>
-                </View>
-              ) : (
-                <Body dim style={{ fontSize: 12 }}>
-                  Tap “Period started” once and the circle begins. Irregular cycles, hormonal
-                  contraception or no cycle at all all work — this only records what you log.
-                </Body>
-              )}
-
               {openPeriod ? (
                 <Button label="Period ended today" onPress={() => cycleStore.endPeriod(today).then(reload)} />
               ) : (
                 <Button label="Period started today" onPress={() => cycleStore.startPeriod(today).then(reload)} />
               )}
 
-              <View style={{ gap: 2 }}>
-                <Body dim style={{ fontSize: 11 }}>Today, if you feel like it (1 = low, 5 = high):</Body>
-                {SYMPTOMS.map(sym => (
-                  <View
-                    key={sym.key}
-                    style={{
-                      flexDirection: 'row', justifyContent: 'space-between',
-                      alignItems: 'center', paddingVertical: 5,
-                    }}
-                  >
-                    <Body style={{ fontSize: 13 }}>{sym.label}</Body>
-                    <Scale
-                      size={12}
-                      value={todayEntry?.symptoms[sym.key] ?? 0}
-                      onChange={v => cycleStore.logSymptom(today, sym.key, v).then(reload)}
-                    />
-                  </View>
-                ))}
-              </View>
-
-              {notes.length ? (
-                <View style={{ gap: 4 }}>
-                  <Label style={{ marginTop: space.s }}>what your data shows</Label>
-                  {notes.map((n, i) => <Body key={i} dim>{n}</Body>)}
-                </View>
-              ) : null}
+              <Body dim style={{ fontSize: 12 }}>
+                {currentSpan && currentDay
+                  ? `Day ${currentDay} · last started ${formatShort(currentSpan.start)}`
+                  : 'Nothing recorded yet — one tap is all this module asks.'}
+              </Body>
+              {notes.length ? <Body dim style={{ fontSize: 12 }}>{notes[0]}</Body> : null}
 
               <Hairline spacing={space.s} />
               <Body dim style={{ fontSize: 11 }}>

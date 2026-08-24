@@ -4,7 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Capture, INBOX_KINDS } from '../../src/components/capture';
-import { Body, Button, Chip, Field, Hairline, Label, Screen, Section } from '../../src/components/ui';
+import { Body, Button, Chip, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useTheme } from '../../src/lib/theme-context';
 import { InboxItem, KnowledgeEntry, KnowledgeKind } from '../../src/lib/types';
@@ -186,7 +186,7 @@ export default function Knowledge() {
           >
             <Label style={{ marginBottom: 4 }}>{kindLabel(e.kind)} · {e.createdAt.slice(0, 10)}</Label>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Body style={{ flex: 1 }}>{e.title}</Body>
+              <Item style={{ flex: 1 }}>{e.title}</Item>
               {e.rating ? <RatingDots value={e.rating} size={10} /> : null}
             </View>
             {e.note ? <Body dim style={{ marginTop: 4 }}>{e.note}</Body> : null}
