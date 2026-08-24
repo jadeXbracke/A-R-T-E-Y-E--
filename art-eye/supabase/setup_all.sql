@@ -4,7 +4,7 @@
 -- work that's already been done, so re-running after a partial failure
 -- (or just to double-check) is fine.
 -- Contains: the full schema (every migration), 160 published Sydney venues,
--- and the 68 verified exhibitions.
+-- and the 67 verified exhibitions.
 -- Afterwards: sign up in the app with jadebrack@gmail.com, then run
 -- make_owner.sql to promote that one account to admin.
 
@@ -1456,7 +1456,7 @@ select count(*) as venues_live from venues where status = 'active';
 --  GENERATED FILE — do not edit by hand.
 --  Source: art-eye/src/lib/seed.ts. Regenerate with `npm run seed:sql`.
 --
---  68 shows.
+--  67 shows.
 --  Plak dit een keer in de SQL Editor en druk Run. Veilig om te herhalen: shows
 --  die er al staan (zelfde venue + titel) worden overgeslagen, en de wachtrij
 --  van de motor blijft onaangeroerd.
@@ -1524,7 +1524,6 @@ with seed (slug, title, artists, start_date, end_date, description, image_url, i
   ('art-gallery-of-new-south-wales', 'Avatar: Forms of Vishnu', 'South and Southeast Asian art', '2026-06-20', '2026-10-05', 'Centuries of art and storytelling from South and Southeast Asia celebrating Vishnu, the Hindu deity believed to preserve order in the universe.', null, false),
   ('art-gallery-of-new-south-wales', 'Nolan: Origins', 'Sidney Nolan', '2026-10-03', '2027-02-07', 'A major survey of Sidney Nolan''s formative years in Australia — the making of one of the country''s defining modern painters.', null, false),
   ('mca-australia', 'Tony Albert: Not a Souvenir', 'Tony Albert', '2026-05-21', '2026-10-19', 'A major survey across sculpture, photography, installation and painting — Albert turns The Rocks'' souvenir culture back on itself, confronting the commodification of Aboriginal people while celebrating survival and pride. Guest curated by Bruce Johnson McLean.', null, false),
-  ('carriageworks', 'Sydney Contemporary 2026', '100+ galleries, 500+ artists', '2026-09-11', '2026-09-14', 'Four days in the Carriageworks sheds — the country’s largest art fair, with galleries from 33 countries and the whole Sydney trade in one room.', null, true),
   ('sh-ervin-gallery', 'Portia Geach Memorial Award 2026', 'Finalists 2026', '2026-09-18', '2026-11-01', 'The country’s richest portrait prize for women painters, first awarded in 1965 — finalists on Observatory Hill.', null, false),
   ('sh-ervin-gallery', 'Olive Cotton and her contemporaries', 'Olive Cotton, Ilse Bing, Dora Maar, Lucia Moholy', '2026-08-01', '2026-09-13', 'Cotton’s Australian modernism hung beside Bing, Maar and Moholy — four women who each made the camera argue with its own century.', null, false),
   ('campbelltown-arts-centre', 'Make', 'Group exhibition', '2026-08-22', '2026-09-13', 'Making as the subject, not the means — process work from the Campbelltown studios and beyond.', null, false),

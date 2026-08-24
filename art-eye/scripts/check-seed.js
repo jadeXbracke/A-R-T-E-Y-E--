@@ -40,6 +40,20 @@ for (const dup of seen(venues, 'id')) errors.push(`duplicate venue id: ${dup}`);
 for (const dup of seen(venues, 'slug')) errors.push(`duplicate venue slug: ${dup}`);
 for (const dup of seen(shows, 'id')) errors.push(`duplicate exhibition id: ${dup}`);
 
+// The SQL dedupes on (venue, lower(title)), so two seed rows that collide there
+// are one row silently lost on the way to the database — and two cards in demo.
+// This is exactly how a second Sydney Contemporary 2026 slipped in.
+{
+  const byKey = new Map();
+  for (const e of shows) {
+    const key = `${e.venue_id}|${(e.title ?? '').toLowerCase()}`;
+    byKey.set(key, (byKey.get(key) ?? 0) + 1);
+  }
+  for (const [key, count] of byKey) {
+    if (count > 1) errors.push(`two exhibitions share a venue and title: ${key.split('|')[1]}`);
+  }
+}
+
 for (const v of venues) {
   // Every SQL statement addresses a venue by slug. No slug, no row.
   if (!v.slug) errors.push(`${v.name}: no slug — it can never reach the database`);

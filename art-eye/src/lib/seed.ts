@@ -1178,22 +1178,6 @@ export const SEED_EXHIBITIONS: Exhibition[] = [
 
   // --- added 21 August 2026: the programme had aged out from under the seed ---
   {
-    id: 'e-sydney-contemporary-2026',
-    venue_id: 'v-carriageworks',
-    title: 'Sydney Contemporary 2026',
-    artists: '100+ galleries, 500+ artists',
-    start_date: '2026-09-11',
-    end_date: '2026-09-14',
-    opening_datetime: null,
-    description:
-      'Four days in the Carriageworks sheds — the country’s largest art fair, with galleries from 33 countries and the whole Sydney trade in one room.',
-    image_url: null,
-    status: 'approved',
-    rejection_reason: null,
-    is_featured: true,
-    city: 'Sydney',
-  },
-  {
     id: 'e-portia-geach-2026',
     venue_id: 'v-sh-ervin-gallery',
     title: 'Portia Geach Memorial Award 2026',
