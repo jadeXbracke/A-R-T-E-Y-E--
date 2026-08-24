@@ -9,7 +9,7 @@
     "newArchEnabled": true,
     "splash": {
       "resizeMode": "contain",
-      "backgroundColor": "#FAF7F2"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": { "supportsTablet": false, "bundleIdentifier": "com.mark.app" },
     "android": { "package": "com.mark.app" },

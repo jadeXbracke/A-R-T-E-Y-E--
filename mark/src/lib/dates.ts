@@ -44,8 +44,8 @@ export function daysBetween(from: string, to: string): string[] {
   return out;
 }
 
-const WEEKDAYS = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
-const MONTHS = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export function formatLong(key: string): string {
   const d = fromKey(key);
@@ -67,4 +67,4 @@ export function formatTime(iso: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export const DAY_LETTERS = ['M', 'D', 'W', 'D', 'V', 'Z', 'Z'];
+export const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];

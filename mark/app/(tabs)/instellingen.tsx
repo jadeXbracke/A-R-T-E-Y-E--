@@ -10,12 +10,12 @@ import { Habit, Pillar } from '../../src/lib/types';
 import { space } from '../../src/theme';
 
 const PREFS: Array<{ value: ThemePref; label: string }> = [
-  { value: 'system', label: 'Systeem' },
-  { value: 'light', label: 'Licht' },
-  { value: 'dark', label: 'Donker' },
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
 ];
 
-export default function Instellingen() {
+export default function More() {
   const { palette, pref, setPref } = useTheme();
   const { profile, signOut } = useAuth();
 
@@ -51,9 +51,9 @@ export default function Instellingen() {
       run().then(reload);
       return;
     }
-    Alert.alert(`${what} archiveren?`, 'De geschiedenis blijft bewaard.', [
-      { text: 'Annuleer', style: 'cancel' },
-      { text: 'Archiveer', style: 'destructive', onPress: () => run().then(reload) },
+    Alert.alert(`Archive ${what}?`, 'Its history stays saved.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Archive', style: 'destructive', onPress: () => run().then(reload) },
     ]);
   };
 
@@ -72,8 +72,8 @@ export default function Instellingen() {
   );
 
   return (
-    <Screen title="Meer" subtitle="Instellingen, pijlers en account">
-      <Section label="weergave">
+    <Screen title="More" subtitle="Settings, pillars and account">
+      <Section label="appearance">
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {PREFS.map(p => (
             <Chip key={p.value} label={p.label} active={pref === p.value} onPress={() => setPref(p.value)} />
@@ -83,7 +83,7 @@ export default function Instellingen() {
 
       <Hairline spacing={space.m} />
 
-      <Section label="pijlers & gewoontes">
+      <Section label="pillars & habits">
         {pillars.map(pillar => (
           <View key={pillar.id} style={{ marginBottom: space.l }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.s }}>
@@ -98,18 +98,18 @@ export default function Instellingen() {
             ))}
             <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
               <Field
-                placeholder="Nieuwe gewoonte…"
+                placeholder="New habit…"
                 value={newHabit[pillar.id] ?? ''}
                 onChangeText={t => setNewHabit(h => ({ ...h, [pillar.id]: t }))}
                 style={{ flex: 1 }}
               />
-              <Chip label="Voeg toe" onPress={() => addHabit(pillar.id)} />
+              <Chip label="Add" onPress={() => addHabit(pillar.id)} />
             </View>
           </View>
         ))}
         <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end', marginTop: space.s }}>
-          <Field placeholder="Nieuwe pijler…" value={newPillar} onChangeText={setNewPillar} style={{ flex: 1 }} />
-          <Chip label="Voeg toe" onPress={addPillar} />
+          <Field placeholder="New pillar…" value={newPillar} onChangeText={setNewPillar} style={{ flex: 1 }} />
+          <Chip label="Add" onPress={addPillar} />
         </View>
       </Section>
 
@@ -118,13 +118,13 @@ export default function Instellingen() {
       <Section label="account">
         {DEMO_MODE ? (
           <Body dim>
-            Demo-build: alles wordt alleen op dit toestel bewaard. Koppel Supabase
-            (zie README) om je marks overal mee te nemen.
+            Demo build: everything is stored on this device only. Connect Supabase
+            (see README) to take your marks anywhere.
           </Body>
         ) : (
           <View style={{ gap: space.m }}>
-            <Body dim>Ingelogd als {profile?.email}</Body>
-            <Button label="Log uit" onPress={signOut} />
+            <Body dim>Signed in as {profile?.email}</Body>
+            <Button label="Sign out" onPress={signOut} />
           </View>
         )}
       </Section>
@@ -133,9 +133,9 @@ export default function Instellingen() {
 
       <Section label="privacy">
         <Body dim>
-          Cyclus- en hormoongerelateerde data blijft altijd op dit toestel en wordt
-          nooit met derden gedeeld. De rest van je data is van jou en dient alleen
-          om je eigen groei zichtbaar te maken.
+          Cycle and hormone-related data always stays on this device and is never
+          shared with anyone. The rest of your data is yours alone and only serves
+          to make your own growth visible.
         </Body>
       </Section>
 

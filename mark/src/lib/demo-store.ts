@@ -28,19 +28,19 @@ function uid(): string {
 
 function seed(): Store {
   const pillars: Pillar[] = [
-    { id: uid(), name: 'Gezondheid', position: 0, archived: false },
+    { id: uid(), name: 'Health', position: 0, archived: false },
     { id: uid(), name: 'Mind', position: 1, archived: false },
-    { id: uid(), name: 'Lezen & leren', position: 2, archived: false },
-    { id: uid(), name: 'Werk & skill', position: 3, archived: false },
+    { id: uid(), name: 'Reading & learning', position: 2, archived: false },
+    { id: uid(), name: 'Work & skill', position: 3, archived: false },
   ];
   const habit = (pillarId: string, name: string, targetPerWeek: number, position: number): Habit =>
     ({ id: uid(), pillarId, name, targetPerWeek, position, archived: false });
   const habits: Habit[] = [
-    habit(pillars[0].id, 'Wandelen', 5, 0),
+    habit(pillars[0].id, 'Walk', 5, 0),
     habit(pillars[0].id, 'Training', 3, 1),
-    habit(pillars[1].id, 'Mediteren', 4, 0),
-    habit(pillars[2].id, '20 minuten lezen', 5, 0),
-    habit(pillars[3].id, 'Deep work-blok', 4, 0),
+    habit(pillars[1].id, 'Meditate', 4, 0),
+    habit(pillars[2].id, 'Read 20 minutes', 5, 0),
+    habit(pillars[3].id, 'Deep work block', 4, 0),
   ];
   return {
     profile: { id: 'demo', email: 'demo@mark.app' },

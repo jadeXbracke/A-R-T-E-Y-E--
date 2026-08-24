@@ -1,55 +1,55 @@
-# MARK — projectplan
+# MARK — project plan
 
 *"Make decisions from the perspective of who you want to become."*
 
-MARK is een consistentie- en identiteitstracker. Elke dagelijkse check-in is
-een **mark**: een klein bewijs van wie je aan het worden bent. Motivatie komt
-van zichtbare groei over weken en maanden — niet van dwingende streaks. Een
-gemiste dag is geen paniek, gewoon doorgaan.
+MARK is a consistency and identity tracker. Every daily check-in is a
+**mark**: a small piece of evidence of who you are becoming. Motivation comes
+from visible growth over weeks and months — not from coercive streaks. A
+missed day is no reason to panic; you simply continue.
 
-## Visuele identiteit
+## Visual identity
 
-- Wordmark **M A R K** met wijde letterspacing; een klein gevuld cirkeltje
-  fungeert als punt in het logo.
-- Monochroom: ink `#141311` op ecru `#FAF7F1` (licht) / `#F1EDE5` op
-  `#161512` (donker). Eén zachte warme tint `#A79B89`, alleen grafisch.
-- **Cirkels en ringen als enig motief**: open ring = te doen, gesloten
-  schijf = mark gezet. Geen vinkjes, geen iconen — ook de tabbalk gebruikt
-  tekst + een punt.
-- Typografie: Cormorant Garamond (fijne serif) voor koppen en cijfers,
-  Archivo voor gespatieerde caps-labels en bodytekst.
-- Veel negative space; niets voelt vol. Tijdloos boven trendy.
+- Wordmark **M A R K** with wide letterspacing; a small filled circle acts as
+  the full stop of the logo.
+- Monochrome, the ART EYE house look: ink `#131211` on pure white `#FFFFFF`
+  (light) / `#F4F3F0` on `#131211` (dark). Thin hairlines, no accent colours;
+  progress discs fill in a neutral grey.
+- **Circles and rings as the only motif**: open ring = to do, closed disc =
+  mark set. No checkmarks, no icons — even the tab bar uses text + a dot.
+- Typography: Archivo throughout, the ART EYE way — light, wide-tracked
+  UPPERCASE headings, letter-spaced caps labels, regular body. No italics.
+- Plenty of negative space; nothing feels full. Timeless over trendy.
 
-## Datamodel
+## Data model
 
-Schema: `supabase/setup_1_schema.sql` (RLS: iedere rij is owner-only).
+Schema: `supabase/setup_1_schema.sql` (RLS: every row is owner-only).
 
-| Tabel               | Kern                                                        |
-|---------------------|-------------------------------------------------------------|
-| `pillars`           | zelfgekozen pijlers (naam, positie, archived)               |
-| `habits`            | gewoontes per pijler; `target_per_week` is een zácht doel   |
-| `marks`             | één rij per habit per dag (`unique (habit_id, date)`)       |
-| `health_logs`       | `kind` ∈ movement / nutrition / sleep + vrij `payload` jsonb |
-| `knowledge_entries` | boek/cursus/artikel/podcast + één kort inzicht              |
-| `calendar_events`   | eigen blokken; `source`+`external_id` klaar voor Google-sync |
-| `reflections`       | 3 antwoorden per week (`unique (user_id, week_start)`)      |
+| Table               | Essence                                                      |
+|---------------------|--------------------------------------------------------------|
+| `pillars`           | self-chosen pillars (name, position, archived)               |
+| `habits`            | habits per pillar; `target_per_week` is a *soft* target      |
+| `marks`             | one row per habit per day (`unique (habit_id, date)`)        |
+| `health_logs`       | `kind` ∈ movement / nutrition / sleep + free `payload` jsonb |
+| `knowledge_entries` | book/course/article/podcast + one short insight              |
+| `calendar_events`   | own blocks; `source`+`external_id` ready for Google sync     |
+| `reflections`       | 3 answers per week (`unique (user_id, week_start)`)          |
 
-**Privacy:** cyclusdata (`kind = 'cycle'`) bestaat bewust *niet* in Supabase.
-De live-backend routeert die naar lokale opslag op het toestel
-(`supabase-api.ts` → `demo-store.ts`); het schema weigert de kind-waarde.
+**Privacy:** cycle data (`kind = 'cycle'`) deliberately does *not* exist in
+Supabase. The live backend routes it to local storage on the device
+(`supabase-api.ts` → `demo-store.ts`); the schema refuses the kind value.
 
-## Architectuur
+## Architecture
 
-Zelfde snit als ART EYE: Expo + expo-router, één `Api`-interface met twee
-backends. `DEMO_MODE = !EXPO_PUBLIC_SUPABASE_URL` — zonder credentials draait
-alles op AsyncStorage (device-only), met credentials op Supabase.
+Same cut as ART EYE: Expo + expo-router, one `Api` interface with two
+backends. `DEMO_MODE = !EXPO_PUBLIC_SUPABASE_URL` — without credentials
+everything runs on AsyncStorage (device-only), with credentials on Supabase.
 
 ```
 mark/
   app/            expo-router: _layout, auth, (tabs)/{index,voortgang,
                   gezondheid,kennis,agenda,instellingen}
-  src/theme.ts    tokens: paletten (licht/donker), typografie, spacing
-  src/lib/        api.ts (mode-switch) · api-types.ts (interface) ·
+  src/theme.ts    tokens: palettes (light/dark), typography, spacing
+  src/lib/        api.ts (mode switch) · api-types.ts (interface) ·
                   demo-store.ts · supabase-api.ts · auth.tsx ·
                   theme-context.tsx · dates.ts · types.ts
   src/components/ rings.tsx (MarkRing, DayCircle, WeekDots, IntensityDot) ·
@@ -57,45 +57,42 @@ mark/
   supabase/       setup_1_schema.sql
 ```
 
-## Schermenoverzicht
+## Screen overview
 
-1. **Vandaag** — het MVP-scherm. Bovenaan de dagcirkel: een schijf die zich
-   vult naarmate je marks zet, omringd door zeven dag-stippen (ma bovenaan,
-   met de klok mee) die sluiten wanneer een dag compleet was. Daaronder
-   gewoontes per pijler (inklapbaar, blijft rustig bij veel habits), elk met
-   een tikbare ring. Onderaan de agenda van vandaag en — alleen als de avond
-   vrij is — één zachte suggestie.
-2. **Groei** (Voortgang) — weekbeeld met 7 stippen per habit, maandraster van
-   intensiteitsstippen, totaal t.o.v. vorige maand, en de wekelijkse
-   reflectie (max 3 vragen).
-3. **Lichaam** (Gezondheid) — inklapbare submodules: Beweging (type + minuten,
-   zachte weektrend), Voeding (maaltijdkwaliteit / hydratatie / supplementen,
-   géén calorieën), Slaap (uren + kwaliteit 1–5), Cyclus (symptomen + energie,
-   device-only).
-4. **Kennis** — items met soort, titel en één kort inzicht.
-5. **Agenda** — blokken plannen (workout, leestijd) naast je marks; V1 is een
-   betrouwbare lokale agenda, de Google Calendar-sync (tweerichting) volgt in
-   V1.1 op hetzelfde datamodel.
-6. **Meer** (Instellingen) — weergave systeem/licht/donker, beheer van pijlers
-   en gewoontes (archiveren, geschiedenis blijft), account, privacyverklaring,
-   build-stamp.
+1. **Today** — the MVP screen. At the top the day circle: a disc that fills as
+   you set marks, ringed by seven day dots (Monday at the top, clockwise)
+   that close when a day was complete. Below it habits per pillar
+   (collapsible, stays calm with many habits), each with a tappable ring. At
+   the bottom today's agenda and — only when the evening is free — one gentle
+   suggestion.
+2. **Growth** — week view with 7 dots per habit, a month grid of intensity
+   dots, totals vs. last month, and the weekly reflection (max 3 questions).
+3. **Body** — collapsible submodules: Movement (type + minutes, soft weekly
+   trend), Nutrition (meal quality / hydration / supplements, *no* calories),
+   Sleep (hours + quality 1–5), Cycle (symptoms + energy, device-only).
+4. **Knowledge** — entries with kind, title and one short insight.
+5. **Agenda** — plan blocks (workout, reading time) next to your marks; V1 is
+   a reliable local agenda, the two-way Google Calendar sync follows in V1.1
+   on the same data model.
+6. **More** — appearance system/light/dark, managing pillars and habits
+   (archiving keeps history), account, privacy statement, build stamp.
 
-## Het circle-concept (MVP check-in)
+## The circle concept (MVP check-in)
 
-- **MarkRing**: open ring (hairline, 1.25pt) → tik → een schijf veert dicht
-  (spring-animatie). Nogmaals tikken opent hem weer. Geen vinkje, geen kleur.
-- **DayCircle**: binnenschijf groeit met √(fractie) zodat *oppervlakte* de
-  voortgang toont; de zeven buitenstippen vertellen de week.
-- Alles is met pure Views (border-radius) gebouwd — geen SVG-dependency.
+- **MarkRing**: open ring (hairline, 1.25pt) → tap → a disc springs closed
+  (spring animation). Tapping again opens it. No checkmark, no colour.
+- **DayCircle**: the inner disc grows with √(fraction) so *area* shows
+  progress; the seven outer dots tell the week.
+- Everything is built with pure Views (border-radius) — no SVG dependency.
 
-## Bewust niet in V1
+## Deliberately not in V1
 
-Geen social, leaderboards, punten of badges; geen straffen of verplichte
-check-ins; geen calorie-tellen; geen felle kleuren of speelse iconen.
+No social features, leaderboards, points or badges; no punishments or forced
+check-ins; no calorie counting; no bright colours or playful icons.
 
-## Roadmap na V1
+## Roadmap after V1
 
-- **V1.1** Google Calendar-sync (tweerichting), vrije-tijd-detectie op echte
-  agenda-data; subtiele reminders (opt-in).
-- **V1.2** Apple Health / Google Fit voor slaap; kwartaaloverzicht.
-- **V1.3** Versleuteling-at-rest voor lokale cyclusdata; export van je data.
+- **V1.1** Google Calendar sync (two-way), free-time detection on real
+  calendar data; subtle reminders (opt-in).
+- **V1.2** Apple Health / Google Fit for sleep; quarterly overview.
+- **V1.3** Encryption-at-rest for local cycle data; data export.

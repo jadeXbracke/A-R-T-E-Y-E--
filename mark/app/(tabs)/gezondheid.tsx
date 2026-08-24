@@ -11,15 +11,15 @@ import { useTheme } from '../../src/lib/theme-context';
 import { HealthLog, MovementPayload, NutritionPayload, SleepPayload } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
 
-const MOVEMENT_TYPES = ['Kracht', 'Cardio', 'Yoga', 'Wandeling', 'Anders'];
+const MOVEMENT_TYPES = ['Strength', 'Cardio', 'Yoga', 'Walk', 'Other'];
 const MEAL_QUALITY: Array<{ label: string; value: 1 | 2 | 3 }> = [
-  { label: 'Snel', value: 1 }, { label: 'Gemengd', value: 2 }, { label: 'Voedzaam', value: 3 },
+  { label: 'Quick', value: 1 }, { label: 'Mixed', value: 2 }, { label: 'Nourishing', value: 3 },
 ];
-const SYMPTOMS = ['Kramp', 'Hoofdpijn', 'Moe', 'Opgeblazen', 'Prima'];
+const SYMPTOMS = ['Cramps', 'Headache', 'Tired', 'Bloated', 'Fine'];
 
 type Module = 'beweging' | 'voeding' | 'slaap' | 'cyclus';
 
-export default function Gezondheid() {
+export default function BodyScreen() {
   const { palette } = useTheme();
   const today = todayKey();
   const monday = weekStart(today);
@@ -32,7 +32,7 @@ export default function Gezondheid() {
   const [cycle, setCycle] = useState<HealthLog[]>([]);
 
   // form state
-  const [moveType, setMoveType] = useState('Kracht');
+  const [moveType, setMoveType] = useState('Strength');
   const [moveMinutes, setMoveMinutes] = useState('');
   const [sleepHours, setSleepHours] = useState('');
   const [sleepQuality, setSleepQuality] = useState<1 | 2 | 3 | 4 | 5>(3);
@@ -121,8 +121,8 @@ export default function Gezondheid() {
   );
 
   return (
-    <Screen title="Lichaam" subtitle="Licht bijhouden, geen obsessie">
-      <Header id="beweging" label="beweging" />
+    <Screen title="Body" subtitle="Track lightly, no obsession">
+      <Header id="beweging" label="movement" />
       {open === 'beweging' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -132,7 +132,7 @@ export default function Gezondheid() {
           </View>
           <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
             <Field
-              placeholder="Minuten"
+              placeholder="Minutes"
               keyboardType="number-pad"
               value={moveMinutes}
               onChangeText={setMoveMinutes}
@@ -141,7 +141,7 @@ export default function Gezondheid() {
             <Button label="Log" onPress={logMovement} disabled={!moveMinutes} />
           </View>
           <Body dim>
-            Deze week {thisWeekMin} min{prevWeekMin ? ` · vorige week ${prevWeekMin} min` : ''}.
+            This week {thisWeekMin} min{prevWeekMin ? ` · last week ${prevWeekMin} min` : ''}.
           </Body>
           {movement.filter(l => l.date >= monday).map(l => {
             const p = l.payload as unknown as MovementPayload;
@@ -155,11 +155,11 @@ export default function Gezondheid() {
         </View>
       ) : null}
 
-      <Header id="voeding" label="voeding" />
+      <Header id="voeding" label="nutrition" />
       {open === 'voeding' ? (
         <View style={{ paddingVertical: space.l, gap: space.l }}>
           <View>
-            <Body style={{ marginBottom: space.s }}>Hoe at je vandaag overwegend?</Body>
+            <Body style={{ marginBottom: space.s }}>How did you mostly eat today?</Body>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {MEAL_QUALITY.map(q => (
                 <Chip
@@ -172,13 +172,13 @@ export default function Gezondheid() {
             </View>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Body>Hydratatie · {todayNutrition.glasses ?? 0} glazen</Body>
-            <Chip label="+ glas" onPress={() => logNutrition({ glasses: (todayNutrition.glasses ?? 0) + 1 })} />
+            <Body>Hydration · {todayNutrition.glasses ?? 0} glasses</Body>
+            <Chip label="+ glass" onPress={() => logNutrition({ glasses: (todayNutrition.glasses ?? 0) + 1 })} />
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Body>Supplementen genomen</Body>
+            <Body>Supplements taken</Body>
             <Chip
-              label={todayNutrition.supplements ? 'Ja' : 'Nog niet'}
+              label={todayNutrition.supplements ? 'Yes' : 'Not yet'}
               active={!!todayNutrition.supplements}
               onPress={() => logNutrition({ supplements: !todayNutrition.supplements })}
             />
@@ -186,12 +186,12 @@ export default function Gezondheid() {
         </View>
       ) : null}
 
-      <Header id="slaap" label="slaap" />
+      <Header id="slaap" label="sleep" />
       {open === 'slaap' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
             <Field
-              placeholder="Uren (bv. 7,5)"
+              placeholder="Hours (e.g. 7.5)"
               keyboardType="decimal-pad"
               value={sleepHours}
               onChangeText={setSleepHours}
@@ -200,7 +200,7 @@ export default function Gezondheid() {
             <Button label="Log" onPress={logSleep} disabled={!sleepHours} />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
-            <Body dim>Kwaliteit</Body>
+            <Body dim>Quality</Body>
             <Scale value={sleepQuality} onChange={setSleepQuality} />
           </View>
           {sleep.slice(0, 7).map(l => {
@@ -208,19 +208,19 @@ export default function Gezondheid() {
             return (
               <View key={l.id} style={{ flexDirection: 'row', gap: space.m }}>
                 <Body dim>{formatShort(l.date)}</Body>
-                <Body>{p.hours} u · kwaliteit {p.quality}/5</Body>
+                <Body>{p.hours} h · quality {p.quality}/5</Body>
               </View>
             );
           })}
-          <Body dim>Koppeling met Apple Health / Google Fit volgt in een latere versie.</Body>
+          <Body dim>Apple Health / Google Fit sync will follow in a later version.</Body>
         </View>
       ) : null}
 
-      <Header id="cyclus" label="cyclus" />
+      <Header id="cyclus" label="cycle" />
       {open === 'cyclus' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           <Body dim>
-            Cyclusdata blijft op dit toestel en wordt nooit gesynchroniseerd of gedeeld.
+            Cycle data stays on this device and is never synced or shared.
           </Body>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {SYMPTOMS.map(s => (
@@ -234,16 +234,16 @@ export default function Gezondheid() {
             ))}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
-            <Body dim>Energie</Body>
+            <Body dim>Energy</Body>
             <Scale value={energy} onChange={setEnergy} />
           </View>
-          <Button label="Log vandaag" onPress={logCycle} />
+          <Button label="Log today" onPress={logCycle} />
           {cycle.slice(0, 5).map(l => {
             const p = l.payload as { symptoms?: string[]; energy?: number };
             return (
               <View key={l.id} style={{ flexDirection: 'row', gap: space.m }}>
                 <Body dim>{formatShort(l.date)}</Body>
-                <Body>{(p.symptoms ?? []).join(', ') || '—'} · energie {p.energy}/5</Body>
+                <Body>{(p.symptoms ?? []).join(', ') || '—'} · energy {p.energy}/5</Body>
               </View>
             );
           })}
@@ -252,7 +252,7 @@ export default function Gezondheid() {
 
       <Hairline />
       <Text style={[type.small, { color: palette.dim }]}>
-        Kennis over gezondheid (boeken, artikelen, podcasts) log je onder het tabblad Kennis.
+        Health knowledge (books, articles, podcasts) lives under the Knowledge tab.
       </Text>
     </Screen>
   );

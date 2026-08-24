@@ -18,7 +18,7 @@ const supabase = createClient(
 
 async function userId(): Promise<string> {
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error('Niet ingelogd.');
+  if (error || !data.user) throw new Error('Not signed in.');
   return data.user.id;
 }
 

@@ -12,12 +12,12 @@ import { Habit, Mark } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
 
 const QUESTIONS: [string, string, string] = [
-  'Waar ben je deze week trots op?',
-  'Wat gaf energie, wat kostte energie?',
-  'Welke ene aanpassing maakt volgende week beter?',
+  'What are you proud of this week?',
+  'What gave you energy, what drained it?',
+  'Which single adjustment makes next week better?',
 ];
 
-export default function Voortgang() {
+export default function Growth() {
   const { palette } = useTheme();
   const today = todayKey();
   const monday = weekStart(today);
@@ -65,8 +65,8 @@ export default function Voortgang() {
   };
 
   return (
-    <Screen title="Groei" subtitle="Zichtbaar over weken, niet afgedwongen per dag">
-      <Section label="deze week">
+    <Screen title="Growth" subtitle="Visible over weeks, never enforced per day">
+      <Section label="this week">
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 6, marginBottom: space.s }}>
           {DAY_LETTERS.map((l, i) => (
             <Text key={i} style={[type.small, { color: palette.dim, width: 10, textAlign: 'center' }]}>{l}</Text>
@@ -81,7 +81,7 @@ export default function Voortgang() {
             <WeekDots days={weekDays.map(d => byDay.get(d)?.has(h.id) ?? false)} />
           </View>
         ))}
-        {habits.length === 0 ? <Body dim>Nog geen gewoontes om te volgen.</Body> : null}
+        {habits.length === 0 ? <Body dim>No habits to follow yet.</Body> : null}
       </Section>
 
       <Hairline spacing={space.m} />
@@ -98,18 +98,18 @@ export default function Voortgang() {
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.s, marginTop: space.l }}>
           <Text style={[type.numeral, { color: palette.ink }]}>{thisMonthCount}</Text>
           <Body dim>
-            marks deze maand{prevMonthCount ? ` · vorige maand ${prevMonthCount}` : ''}
+            marks this month{prevMonthCount ? ` · last month ${prevMonthCount}` : ''}
           </Body>
         </View>
       </Section>
 
       <Hairline spacing={space.m} />
 
-      <Section label="wekelijkse reflectie">
+      <Section label="weekly reflection">
         {savedReflection ? (
-          <Body dim style={{ marginBottom: space.m }}>Bewaard voor deze week — je kunt altijd bijwerken.</Body>
+          <Body dim style={{ marginBottom: space.m }}>Saved for this week — you can always update it.</Body>
         ) : (
-          <Body dim style={{ marginBottom: space.m }}>Drie vragen, vijf minuten. Meer hoeft niet.</Body>
+          <Body dim style={{ marginBottom: space.m }}>Three questions, five minutes. Nothing more.</Body>
         )}
         {QUESTIONS.map((q, i) => (
           <View key={i} style={{ marginBottom: space.m }}>
@@ -126,7 +126,7 @@ export default function Voortgang() {
             />
           </View>
         ))}
-        <Button label="Bewaar reflectie" onPress={saveReflection} disabled={answers.every(a => !a.trim())} />
+        <Button label="Save reflection" onPress={saveReflection} disabled={answers.every(a => !a.trim())} />
       </Section>
     </Screen>
   );

@@ -16,7 +16,7 @@ export function Wordmark({ size = 15 }: { size?: number }) {
       <View
         style={{
           width: size * 0.36, height: size * 0.36, borderRadius: size,
-          backgroundColor: palette.tint, marginLeft: 2, marginTop: 2,
+          backgroundColor: palette.ink, marginLeft: 3, marginTop: 3,
         }}
       />
     </View>

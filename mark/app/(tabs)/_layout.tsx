@@ -7,12 +7,12 @@ import { useTheme } from '../../src/lib/theme-context';
 import { fonts } from '../../src/theme';
 
 const TABS: Array<{ name: string; label: string }> = [
-  { name: 'index', label: 'VANDAAG' },
-  { name: 'voortgang', label: 'GROEI' },
-  { name: 'gezondheid', label: 'LICHAAM' },
-  { name: 'kennis', label: 'KENNIS' },
+  { name: 'index', label: 'TODAY' },
+  { name: 'voortgang', label: 'GROWTH' },
+  { name: 'gezondheid', label: 'BODY' },
+  { name: 'kennis', label: 'KNOWLEDGE' },
   { name: 'agenda', label: 'AGENDA' },
-  { name: 'instellingen', label: 'MEER' },
+  { name: 'instellingen', label: 'MORE' },
 ];
 
 // Text-only tab bar: letter-spaced caps, a single closed dot under the

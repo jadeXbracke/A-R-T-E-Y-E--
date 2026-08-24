@@ -47,11 +47,11 @@ export default function Agenda() {
   };
 
   return (
-    <Screen title="Agenda" subtitle="Je week, naast je marks">
+    <Screen title="Agenda" subtitle="Your week, next to your marks">
       <View style={{ gap: space.m, marginBottom: space.xl }}>
-        <Field placeholder="Blok (bv. workout, leestijd)" value={title} onChangeText={setTitle} />
+        <Field placeholder="Block (e.g. workout, reading time)" value={title} onChangeText={setTitle} />
         <View style={{ flexDirection: 'row', gap: space.m }}>
-          <Field placeholder="Start (bv. 18:30)" value={time} onChangeText={setTime} style={{ flex: 1 }} />
+          <Field placeholder="Start (e.g. 18:30)" value={time} onChangeText={setTime} style={{ flex: 1 }} />
           <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
             {DURATIONS.map(d => (
               <Chip key={d} label={`${d}m`} active={duration === d} onPress={() => setDuration(d)} />
@@ -62,13 +62,13 @@ export default function Agenda() {
           {daysBetween(today, addDays(today, 4)).map(d => (
             <Chip
               key={d}
-              label={d === today ? 'Vandaag' : formatLong(d).split(' ')[0]}
+              label={d === today ? 'Today' : formatLong(d).split(' ')[0]}
               active={day === d}
               onPress={() => setDay(d)}
             />
           ))}
         </View>
-        <Button label="Plan blok" onPress={add} disabled={!title.trim() || !time.trim()} />
+        <Button label="Plan block" onPress={add} disabled={!title.trim() || !time.trim()} />
       </View>
 
       <Hairline spacing={space.s} />
@@ -78,8 +78,8 @@ export default function Agenda() {
         if (!own.length && d !== today) return null;
         return (
           <View key={d} style={{ marginTop: space.l }}>
-            <Label style={{ marginBottom: space.s }}>{d === today ? 'vandaag' : formatLong(d)}</Label>
-            {own.length === 0 ? <Body dim>Vrij.</Body> : own.map(e => (
+            <Label style={{ marginBottom: space.s }}>{d === today ? 'today' : formatLong(d)}</Label>
+            {own.length === 0 ? <Body dim>Free.</Body> : own.map(e => (
               <View
                 key={e.id}
                 style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: space.m }}
@@ -105,7 +105,7 @@ export default function Agenda() {
 
       <Hairline />
       <Text style={[type.small, { color: palette.dim }]}>
-        Google Calendar-sync (tweerichtingsverkeer) komt in V1.1 — het datamodel is er klaar voor.
+        Two-way Google Calendar sync arrives in V1.1 — the data model is ready for it.
       </Text>
     </Screen>
   );

@@ -1,36 +1,36 @@
 # MARK
 
-Consistentie- en identiteitstracker. Elke check-in is een *mark*: een klein
-bewijs van wie je aan het worden bent. Zie `PROJECTPLAN.md` voor het volledige
-plan (datamodel, schermen, circle-concept).
+Consistency and identity tracker. Every check-in is a *mark*: a small piece
+of evidence of who you are becoming. See `PROJECTPLAN.md` for the full plan
+(data model, screens, circle concept).
 
-## Draaien
+## Run
 
 ```bash
 cd mark
 npm install
-npm run web      # of: npm start (Expo Go)
+npm run web      # or: npm start (Expo Go)
 ```
 
-Zonder configuratie draait de app in **demo mode**: alle data blijft in lokale
-opslag op het toestel/de browser.
+Without configuration the app runs in **demo mode**: all data stays in local
+storage on the device/browser.
 
 ## Live mode (Supabase)
 
-1. Maak een Supabase-project en draai `supabase/setup_1_schema.sql` in de SQL
+1. Create a Supabase project and run `supabase/setup_1_schema.sql` in the SQL
    editor.
-2. Zet in `mark/.env` (gitignored):
+2. Put in `mark/.env` (gitignored):
 
    ```
    EXPO_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
    EXPO_PUBLIC_SUPABASE_ANON_KEY=<publishable key>
    ```
 
-3. Herstart Expo. De mode wordt tijdens de build gekozen
-   (`DEMO_MODE = !EXPO_PUBLIC_SUPABASE_URL`), net als bij ART EYE.
+3. Restart Expo. The mode is chosen at build time
+   (`DEMO_MODE = !EXPO_PUBLIC_SUPABASE_URL`), just like ART EYE.
 
-Cyclusdata wordt óók in live mode nooit naar Supabase geschreven — die blijft
-op het toestel (zie PROJECTPLAN.md, Privacy).
+Cycle data is never written to Supabase, even in live mode — it stays on the
+device (see PROJECTPLAN.md, Privacy).
 
 ## Typecheck
 

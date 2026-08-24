@@ -12,7 +12,7 @@ import { useTheme } from '../../src/lib/theme-context';
 import { CalendarEvent, Habit, Mark, Pillar } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
 
-export default function Vandaag() {
+export default function Today() {
   const { palette } = useTheme();
   const today = todayKey();
   const monday = weekStart(today);
@@ -76,13 +76,13 @@ export default function Vandaag() {
   }, [events, habits, markedToday, today]);
 
   return (
-    <Screen title="Vandaag" subtitle={formatLong(today)}>
+    <Screen title="Today" subtitle={formatLong(today)}>
       <View style={{ alignItems: 'center', marginBottom: space.xl }}>
         <DayCircle todayFraction={todayFraction} weekDone={weekDone} todayIndex={todayIndex} />
         <Text style={[type.numeral, { color: palette.ink, marginTop: space.l }]}>
           {markedToday.size}<Text style={{ fontSize: 22, color: palette.dim }}> / {habits.length}</Text>
         </Text>
-        <Label style={{ marginTop: 2 }}>marks vandaag</Label>
+        <Label style={{ marginTop: 2 }}>marks today</Label>
       </View>
 
       {pillars.map(pillar => {
@@ -118,15 +118,15 @@ export default function Vandaag() {
 
       {habits.length === 0 ? (
         <Body dim>
-          Nog geen gewoontes. Maak je eerste pijler en gewoonte aan onder Meer.
+          No habits yet. Create your first pillar and habit under More.
         </Body>
       ) : null}
 
       <Hairline />
 
-      <Label style={{ marginBottom: space.m }}>vandaag in je agenda</Label>
+      <Label style={{ marginBottom: space.m }}>today in your calendar</Label>
       {events.length === 0 ? (
-        <Body dim>Geen afspraken vandaag.</Body>
+        <Body dim>No events today.</Body>
       ) : (
         events.map(e => (
           <View key={e.id} style={{ flexDirection: 'row', gap: space.m, paddingVertical: 8 }}>
@@ -138,7 +138,7 @@ export default function Vandaag() {
 
       {suggestion ? (
         <Body dim style={{ marginTop: space.l }}>
-          Je avond lijkt vrij — misschien een goed moment voor “{suggestion.name}”.
+          Your evening looks free — maybe a good moment for “{suggestion.name}”.
         </Body>
       ) : null}
     </Screen>
