@@ -10,7 +10,7 @@ import { Alert, Platform, Pressable, Text, View } from 'react-native';
 import { MiniRing } from '../../src/components/progress-ring';
 import { IntensityDot } from '../../src/components/rings';
 import { formatDuration, sleepDuration } from '../../src/lib/sleep';
-import { Body, Button, Chip, Field, Hairline, Item, Label, Screen } from '../../src/components/ui';
+import { Body, Button, Chip, Field, Hairline, Item, Label, SceneBlock, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { cycleStore, observations, toSpans } from '../../src/lib/cycle-store';
 import { addDays, daysBetween, formatShort, todayKey, weekStart } from '../../src/lib/dates';
@@ -252,6 +252,7 @@ export default function BodyScreen() {
 
       <Header id="movement" label="movement" />
       {open === 'movement' ? (
+        <SceneBlock source={require('../../assets/scenes/movement.jpg')}>
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           <View style={{ alignItems: 'center', gap: space.s }}>
             <MiniRing fraction={stepGoal ? Math.min(todaySteps / stepGoal, 1) : 0} size={120}>
@@ -315,6 +316,7 @@ export default function BodyScreen() {
             );
           })}
         </View>
+        </SceneBlock>
       ) : null}
 
       <Header id="sleep" label="sleep" />

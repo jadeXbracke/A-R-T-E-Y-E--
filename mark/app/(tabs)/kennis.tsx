@@ -100,7 +100,7 @@ export default function Knowledge() {
   );
 
   return (
-    <Screen title="Mind">
+    <Screen title="Mind" scene={require('../../assets/scenes/mind.jpg')}>
       <Section label="mind dump">
         <Capture onAdded={reload} />
         {openItems.map(item => (

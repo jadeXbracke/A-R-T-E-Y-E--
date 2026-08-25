@@ -3,7 +3,8 @@ import Constants from 'expo-constants';
 import React from 'react';
 import { router } from 'expo-router';
 import {
-  Image, Pressable, ScrollView, StyleProp, Text, TextInput, TextInputProps, TextStyle, View,
+  Image, ImageSourcePropType, Pressable, ScrollView, StyleProp, Text, TextInput, TextInputProps,
+  TextStyle, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBackdrop } from '../lib/backdrop';
@@ -65,7 +66,9 @@ function ScreenHeader({ title, subtitle, greeting, moreLink }: {
   );
 }
 
-export function Screen({ children, title, subtitle, greeting, moreLink = true, backdrop = false }: {
+export function Screen({
+  children, title, subtitle, greeting, moreLink = true, backdrop = false, scene,
+}: {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
@@ -75,25 +78,30 @@ export function Screen({ children, title, subtitle, greeting, moreLink = true, b
   moreLink?: boolean;
   /** Show the user's own picture behind this screen, if they set one. */
   backdrop?: boolean;
+  /** A picture that belongs to the screen itself rather than to the user. */
+  scene?: ImageSourcePropType;
 }) {
   const { palette } = useTheme();
   const insets = useSafeAreaInsets();
   const { uri, scrim } = useBackdrop();
-  const showBackdrop = backdrop && !!uri;
+  const own = backdrop && uri ? { uri } : null;
+  const source = own ?? scene ?? null;
 
-  if (showBackdrop) {
+  if (source) {
     return (
       <View style={{ flex: 1, backgroundColor: palette.bg }}>
+        {/* Contained, not cropped: the whole picture stays whole, sitting
+          * behind the page rather than filling it. */}
         <Image
-          source={{ uri: uri as string }}
-          resizeMode="cover"
+          source={source}
+          resizeMode="contain"
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
         {/* the ground, laid back over the picture so type stays readable */}
         <View
           style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: palette.bg, opacity: scrim,
+            backgroundColor: palette.bg, opacity: own ? scrim : 0.6,
           }}
         />
         <ScrollView
@@ -127,6 +135,39 @@ export function Screen({ children, title, subtitle, greeting, moreLink = true, b
       <ScreenHeader title={title} subtitle={subtitle} greeting={greeting} moreLink={moreLink} />
       <View style={{ marginTop: space.xl }}>{children}</View>
     </ScrollView>
+  );
+}
+
+/** A picture that opens a section, as a band rather than wallpaper.
+ *
+ * Behind a block of controls a photo has nowhere to go: a bright one turns
+ * to mud under the scrim, a dark one disappears into the ground, and either
+ * way the chips and fields sit in a haze. Given its own band it stays a
+ * picture, and the controls keep the clean ground they need. */
+export function SceneBlock({ source, children, height = 300 }: {
+  source: ImageSourcePropType;
+  children: React.ReactNode;
+  height?: number;
+}) {
+  const { palette } = useTheme();
+  return (
+    <View>
+      <View style={{ position: 'relative', marginTop: space.m, overflow: 'hidden' }}>
+        {/* Whole, not cropped: these are portrait frames whose subject sits
+          * low, so a centre crop lands on empty wall. The image is given a
+          * real size rather than absolute insets, which measured out at the
+          * size of the whole scroll content instead of the band. */}
+        <Image source={source} resizeMode="contain" style={{ width: '100%', height }} />
+        {/* just enough ground to settle the picture into the page */}
+        <View
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: palette.bg, opacity: 0.18,
+          }}
+        />
+      </View>
+      {children}
+    </View>
   );
 }
 
