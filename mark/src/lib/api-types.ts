@@ -18,6 +18,8 @@ export interface Api {
   listPillars(): Promise<Pillar[]>;
   createPillar(name: string): Promise<Pillar>;
   updatePillar(id: string, patch: { name?: string; identity?: string }): Promise<void>;
+  /** Persist a new pillar order — ids in the order they should appear. */
+  reorderPillars(ids: string[]): Promise<void>;
   archivePillar(id: string): Promise<void>;
   listHabits(): Promise<Habit[]>;
   createHabit(pillarId: string, name: string, days: number[]): Promise<Habit>;

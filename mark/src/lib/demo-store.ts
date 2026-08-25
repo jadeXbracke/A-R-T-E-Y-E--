@@ -130,6 +130,14 @@ export const demoApi: Api = {
     }
     await save();
   },
+  async reorderPillars(ids) {
+    const s = await load();
+    ids.forEach((id, i) => {
+      const p = s.pillars.find(p => p.id === id);
+      if (p) p.position = i;
+    });
+    await save();
+  },
   async archivePillar(id) {
     const s = await load();
     const p = s.pillars.find(p => p.id === id);

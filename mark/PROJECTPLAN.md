@@ -110,8 +110,10 @@ mark/
    navigation placement (bottom bar or an editorial left/right side rail),
    evening reminder (off/18/20/21h — one quiet notification when habits are
    still open, native only), editable Sunday questions, managing pillars and
-   habits including the weekdays each habit is due and an optional identity
-   line per pillar, account, privacy, build stamp. There is no in-app agenda: a habit can be handed off to your
+   habits — pillars are named in the user's own words, renamed in place at
+   any time and reordered with the up/down controls, each habit carries the
+   weekdays it is due, and each pillar an optional identity line — account,
+   privacy, build stamp. There is no in-app agenda: a habit can be handed off to your
    own calendar from Today ("Put it in your own calendar").
 
 ## The circle concept (MVP check-in)

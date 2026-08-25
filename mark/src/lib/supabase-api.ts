@@ -90,6 +90,11 @@ export const supabaseApi: Api = {
     if (patch.identity !== undefined) row.identity = patch.identity;
     fail((await supabase.from('pillars').update(row).eq('id', id)).error);
   },
+  async reorderPillars(ids) {
+    for (let i = 0; i < ids.length; i++) {
+      fail((await supabase.from('pillars').update({ position: i }).eq('id', ids[i])).error);
+    }
+  },
   async archivePillar(id) {
     fail((await supabase.from('pillars').update({ archived: true }).eq('id', id)).error);
     fail((await supabase.from('habits').update({ archived: true }).eq('pillar_id', id)).error);

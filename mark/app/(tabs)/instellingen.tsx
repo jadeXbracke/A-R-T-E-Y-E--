@@ -2,7 +2,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert, Platform, Pressable, View } from 'react-native';
+import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
 import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
 import { api, DEMO_MODE } from '../../src/lib/api';
 import { cycleStore } from '../../src/lib/cycle-store';
@@ -12,7 +12,7 @@ import { useAuth } from '../../src/lib/auth';
 import { NavSide, ThemePref, useTheme } from '../../src/lib/theme-context';
 import { getReminderHour, setReminderHour, syncEveningReminder } from '../../src/lib/reminders';
 import { Habit, Pillar } from '../../src/lib/types';
-import { space } from '../../src/theme';
+import { space, type } from '../../src/theme';
 
 const WEEK_QUESTIONS_KEY = 'mark.questions.week';
 const DEFAULT_WEEK_QUESTIONS: [string, string, string] = [
@@ -43,6 +43,7 @@ export default function More() {
   const [newPillar, setNewPillar] = useState('');
   const [newHabit, setNewHabit] = useState<Record<string, string>>({});
   const [identityDraft, setIdentityDraft] = useState<Record<string, string>>({});
+  const [nameDraft, setNameDraft] = useState<Record<string, string>>({});
   const [name, setName] = useState('');
   const [nameSaved, setNameSaved] = useState(false);
   const [questions, setQuestions] = useState<[string, string, string]>(DEFAULT_WEEK_QUESTIONS);
@@ -106,6 +107,25 @@ export default function More() {
     reload();
   };
 
+  // Pillars are the user's own words, so the name is editable in place and
+  // saved as soon as the field is left.
+  const savePillarName = async (pillar: Pillar) => {
+    const next = (nameDraft[pillar.id] ?? pillar.name).trim();
+    if (!next || next === pillar.name) return;
+    await api.updatePillar(pillar.id, { name: next });
+    reload();
+  };
+
+  const movePillar = async (index: number, delta: number) => {
+    const next = [...pillars];
+    const target = index + delta;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    setPillars(next); // reorder under the finger, persist behind it
+    await api.reorderPillars(next.map(p => p.id));
+    reload();
+  };
+
   const saveIdentity = async (pillarId: string) => {
     await api.updatePillar(pillarId, { identity: (identityDraft[pillarId] ?? '').trim() });
     reload();
@@ -131,6 +151,28 @@ export default function More() {
       { text: 'Archive', style: 'destructive', onPress: () => run().then(reload) },
     ]);
   };
+
+  const MoveDot = ({ direction, disabled, onPress, label }: {
+    direction: 'up' | 'down';
+    disabled: boolean;
+    onPress: () => void;
+    label: string;
+  }) => (
+    <Pressable onPress={disabled ? undefined : onPress} hitSlop={8} accessibilityLabel={label}>
+      <View
+        style={{
+          width: 18, height: 18, borderRadius: 9,
+          borderWidth: 1, borderColor: palette.hairline,
+          alignItems: 'center', justifyContent: 'center',
+          opacity: disabled ? 0.3 : 1,
+        }}
+      >
+        <Body style={{ fontSize: 9, color: palette.dim, lineHeight: 12 }}>
+          {direction === 'up' ? '↑' : '↓'}
+        </Body>
+      </View>
+    </Pressable>
+  );
 
   const ArchiveDot = ({ onPress }: { onPress: () => void }) => (
     <Pressable onPress={onPress} hitSlop={10}>
@@ -219,10 +261,30 @@ export default function More() {
       <Hairline spacing={space.m} />
 
       <Section label="pillars & habits">
-        {pillars.map(pillar => (
+        {pillars.map((pillar, index) => (
           <View key={pillar.id} style={{ marginBottom: space.l }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.s }}>
-              <Label style={{ color: palette.ink }}>{pillar.name}</Label>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.s, marginBottom: space.s }}>
+              <TextInput
+                value={nameDraft[pillar.id] ?? pillar.name}
+                onChangeText={t => setNameDraft(d => ({ ...d, [pillar.id]: t }))}
+                onBlur={() => savePillarName(pillar)}
+                onSubmitEditing={() => savePillarName(pillar)}
+                returnKeyType="done"
+                accessibilityLabel={`Rename ${pillar.name}`}
+                style={[type.label, { color: palette.ink, flex: 1, paddingVertical: 4 }]}
+              />
+              <MoveDot
+                direction="up"
+                disabled={index === 0}
+                onPress={() => movePillar(index, -1)}
+                label={`Move ${pillar.name} up`}
+              />
+              <MoveDot
+                direction="down"
+                disabled={index === pillars.length - 1}
+                onPress={() => movePillar(index, 1)}
+                label={`Move ${pillar.name} down`}
+              />
               <ArchiveDot onPress={() => confirmArchive(pillar.name, () => api.archivePillar(pillar.id))} />
             </View>
             {habits.filter(h => h.pillarId === pillar.id).map(h => (
