@@ -1,6 +1,7 @@
 // Shared building blocks — the calm, monochrome shell every screen uses.
 import Constants from 'expo-constants';
 import React from 'react';
+import { router } from 'expo-router';
 import {
   Pressable, ScrollView, StyleProp, Text, TextInput, TextInputProps, TextStyle, View,
 } from 'react-native';
@@ -23,11 +24,14 @@ export function Wordmark({ size = 15 }: { size?: number }) {
   );
 }
 
-export function Screen({ children, title, subtitle, greeting }: {
+export function Screen({ children, title, subtitle, greeting, moreLink = true }: {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
   greeting?: string;
+  /** The small entry point to More, top-right beside the wordmark. Off on
+   * the More screen itself, since it would otherwise open onto itself. */
+  moreLink?: boolean;
 }) {
   const { palette } = useTheme();
   const insets = useSafeAreaInsets();
@@ -41,7 +45,24 @@ export function Screen({ children, title, subtitle, greeting }: {
       }}
       keyboardShouldPersistTaps="handled"
     >
-      <Wordmark />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Wordmark />
+        {moreLink ? (
+          <Pressable
+            onPress={() => router.push('/instellingen')}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="More"
+          >
+            <View
+              style={{
+                width: 18, height: 18, borderRadius: 9,
+                borderWidth: 1.25, borderColor: palette.ink,
+              }}
+            />
+          </Pressable>
+        ) : null}
+      </View>
       {greeting ? (
         <Text style={[type.label, { color: palette.dim, marginTop: space.xl }]}>{greeting}</Text>
       ) : null}

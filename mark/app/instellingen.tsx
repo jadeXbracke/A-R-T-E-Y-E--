@@ -3,19 +3,19 @@ import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
-import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
-import { api, DEMO_MODE } from '../../src/lib/api';
-import { cycleStore } from '../../src/lib/cycle-store';
-import { hasAnalyticsConsent, setAnalyticsConsent } from '../../src/lib/analytics';
-import { DAY_START_HOURS, getDayStartHour, saveDayStart } from '../../src/lib/day-start';
-import { deleteEverything, exportToFile, importFromFile } from '../../src/lib/data-portability';
-import { DAY_INITIALS, habitDays, rhythmLabel } from '../../src/lib/habits';
-import { useEntitlements } from '../../src/lib/entitlements';
-import { useAuth } from '../../src/lib/auth';
-import { NavSide, ThemePref, useTheme } from '../../src/lib/theme-context';
-import { getReminderHour, setReminderHour, syncEveningReminder } from '../../src/lib/reminders';
-import { Habit, Pillar, RhythmKind } from '../../src/lib/types';
-import { space, type } from '../../src/theme';
+import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, Section } from '../src/components/ui';
+import { api, DEMO_MODE } from '../src/lib/api';
+import { cycleStore } from '../src/lib/cycle-store';
+import { hasAnalyticsConsent, setAnalyticsConsent } from '../src/lib/analytics';
+import { DAY_START_HOURS, getDayStartHour, saveDayStart } from '../src/lib/day-start';
+import { deleteEverything, exportToFile, importFromFile } from '../src/lib/data-portability';
+import { DAY_INITIALS, habitDays, rhythmLabel } from '../src/lib/habits';
+import { useEntitlements } from '../src/lib/entitlements';
+import { useAuth } from '../src/lib/auth';
+import { NavSide, ThemePref, useTheme } from '../src/lib/theme-context';
+import { getReminderHour, setReminderHour, syncEveningReminder } from '../src/lib/reminders';
+import { Habit, Pillar, RhythmKind } from '../src/lib/types';
+import { space, type } from '../src/theme';
 
 const WEEK_QUESTIONS_KEY = 'mark.questions.week';
 const DEFAULT_WEEK_QUESTIONS: [string, string, string] = [
@@ -276,7 +276,11 @@ export default function More() {
   );
 
   return (
-    <Screen title="More">
+    <Screen title="More" moreLink={false}>
+      <Pressable onPress={() => router.back()} hitSlop={10} style={{ marginBottom: space.l }}>
+        <Label>back</Label>
+      </Pressable>
+
       <Section label="personal">
         <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
           <Field placeholder="Your first name" value={name} onChangeText={setName} style={{ flex: 1 }} />

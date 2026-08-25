@@ -11,8 +11,9 @@ const TABS: Array<{ name: string; label: string }> = [
   { name: 'voortgang', label: 'GROWTH' },
   { name: 'gezondheid', label: 'BODY' },
   { name: 'kennis', label: 'MIND' },
-  { name: 'instellingen', label: 'MORE' },
 ];
+// More lives outside the tab bar (app/instellingen.tsx) — reached from the
+// small entry point next to the wordmark on every screen, not a 5th tab.
 
 export const RAIL_WIDTH = 60;
 

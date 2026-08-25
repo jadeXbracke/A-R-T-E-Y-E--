@@ -119,14 +119,18 @@ mark/
    read, an idea, a to-do — open ring closes when handled) above the log:
    what you read or listened to, a 1–5 circle rating and an optional note.
    Capturing also works straight from Today.
-5. **More** — your name (greeting on Today), appearance system/light/dark,
+5. **More** — not a tab. Reached from a small open ring beside the wordmark
+   on every other screen (off on More itself, so it never points at itself),
+   keeping the tab bar at four: Today, Growth, Body, Mind. Holds your name
+   (greeting on Today), appearance system/light/dark,
    navigation placement (bottom bar or an editorial left/right side rail),
    evening reminder (off/18/20/21h — one quiet notification when habits are
    still open, native only), editable Sunday questions, managing pillars and
    habits — pillars are named in the user's own words, renamed in place at
    any time and reordered with the up/down controls, each habit carries the
    weekdays it is due, and each pillar an optional identity line — account,
-   privacy, build stamp. There is no in-app agenda: a habit can be handed off to your
+   privacy, build stamp. `app/instellingen.tsx` lives at the app root, next
+   to `auth.tsx` and `paywall.tsx`, outside the `(tabs)` group. There is no in-app agenda: a habit can be handed off to your
    own calendar from Today ("Put it in your own calendar").
 
 ## The circle concept (MVP check-in)
