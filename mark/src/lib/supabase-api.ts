@@ -31,7 +31,9 @@ function fail(error: { message: string } | null): void {
 const pillarRow = (r: any): Pillar =>
   ({ id: r.id, name: r.name, identity: r.identity ?? '', position: r.position, archived: r.archived });
 const habitRow = (r: any): Habit =>
-  ({ id: r.id, pillarId: r.pillar_id, name: r.name, days: r.days ?? [0, 1, 2, 3, 4, 5, 6],
+  ({ id: r.id, pillarId: r.pillar_id, name: r.name,
+     rhythm: r.rhythm ?? 'days', days: r.days ?? [0, 1, 2, 3, 4, 5, 6], times: r.times ?? 3,
+     startDate: r.start_date ?? '2000-01-01', paused: r.paused ?? false,
      position: r.position, archived: r.archived });
 const markRow = (r: any): Mark => ({ id: r.id, habitId: r.habit_id, date: r.date });
 const healthRow = (r: any): HealthLog => ({ id: r.id, kind: r.kind, date: r.date, payload: r.payload ?? {} });
@@ -105,9 +107,9 @@ export const supabaseApi: Api = {
     fail(error);
     return (data ?? []).map(habitRow);
   },
-  async createHabit(pillarId, name, days) {
+  async createHabit(pillarId, name) {
     const { data, error } = await supabase.from('habits')
-      .insert({ user_id: await userId(), pillar_id: pillarId, name, days })
+      .insert({ user_id: await userId(), pillar_id: pillarId, name })
       .select().single();
     fail(error);
     return habitRow(data);
@@ -115,7 +117,10 @@ export const supabaseApi: Api = {
   async updateHabit(id, patch) {
     const row: Record<string, unknown> = {};
     if (patch.name !== undefined) row.name = patch.name;
+    if (patch.rhythm !== undefined) row.rhythm = patch.rhythm;
     if (patch.days !== undefined) row.days = patch.days;
+    if (patch.times !== undefined) row.times = patch.times;
+    if (patch.paused !== undefined) row.paused = patch.paused;
     fail((await supabase.from('habits').update(row).eq('id', id)).error);
   },
   async archiveHabit(id) {

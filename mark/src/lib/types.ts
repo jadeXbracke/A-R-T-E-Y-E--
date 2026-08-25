@@ -10,16 +10,27 @@ export interface Pillar {
   archived: boolean;
 }
 
+/**
+ * Not every habit keeps the same kind of time.
+ * - `days`    — fixed weekdays (yoga on Tuesday and Thursday)
+ * - `weekly`  — a number of times a week, you pick the days (train 3×)
+ * - `monthly` — a number of times a month (deep clean twice)
+ */
+export type RhythmKind = 'days' | 'weekly' | 'monthly';
+
 export interface Habit {
   id: string;
   pillarId: string;
   name: string;
-  /**
-   * Weekdays this habit is due: 0 = Monday … 6 = Sunday. An empty list means
-   * every day. The weekly target is simply how many days are selected, so a
-   * rest day is never counted as a miss.
-   */
+  rhythm: RhythmKind;
+  /** Weekdays for the `days` rhythm: 0 = Monday … 6 = Sunday. */
   days: number[];
+  /** How many times per week or month, for the flexible rhythms. */
+  times: number;
+  /** Nothing before this counts as missed — the habit simply did not exist. */
+  startDate: string;
+  /** A pause hides the habit and stops it counting, keeping all history. */
+  paused: boolean;
   position: number;
   archived: boolean;
 }

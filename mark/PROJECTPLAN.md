@@ -33,7 +33,7 @@ Schema: `supabase/setup_1_schema.sql` (RLS: every row is owner-only).
 | Table               | Essence                                                      |
 |---------------------|--------------------------------------------------------------|
 | `pillars`           | self-chosen pillars + an optional identity line              |
-| `habits`            | habits per pillar + `days`: the weekdays each one is due     |
+| `habits`            | habits per pillar + their rhythm, start date and pause state |
 | `marks`             | one row per habit per day (`unique (habit_id, date)`)        |
 | `health_logs`       | `kind` ∈ movement / nutrition / sleep + free `payload` jsonb |
 | `knowledge_entries` | book/course/article/podcast + one short insight              |
@@ -73,9 +73,10 @@ mark/
 
 ## Screen overview
 
-1. **Today** — nothing but today, and only what today asks for: a habit due
-   three days a week is simply absent on the other four, so the circle can
-   always close and a rest day never reads as a miss. Habits per pillar
+1. **Today** — nothing but today, and only what today asks for. A habit on
+   set days is absent on its other days; a flexible one steps aside once its
+   week or month is satisfied; a paused one asks nothing at all. So the
+   circle can always close and a rest day never reads as a miss. Habits per pillar
    (collapsible), each with a tappable ring, an optional identity line per
    pillar, and one quiet mind-dump line. No stats, no schedule, no nudges.
 2. **Growth** — one month at a time. A single ring with the month's fill
@@ -140,6 +141,24 @@ into `subscriptions`. The development build unlocks everything.
 
 No social features, leaderboards, points or badges; no punishments or forced
 check-ins; no calorie counting; no bright colours or playful icons.
+
+## Rhythm
+
+Not every habit keeps the same kind of time, so each one carries a rhythm
+(`src/lib/habits.ts`):
+
+- **Set days** — fixed weekdays (yoga on Tuesday and Thursday).
+- **Per week** — a number of times a week, you pick the days. It stays on
+  Today until the week's quota is met, then steps aside; the day it was
+  marked on always keeps showing it, so a mark can be undone.
+- **Per month** — the same, counted over the month.
+
+Two rules keep the numbers honest either way: a habit only counts from its
+`start_date`, so adding one today never makes last week look empty; and a
+paused habit disappears from Today and out of every target, keeping all its
+history. Targets are computed structurally — what was asked for, not what
+happened — so a target never shifts underneath the number being compared to
+it.
 
 ## Home-screen widget
 

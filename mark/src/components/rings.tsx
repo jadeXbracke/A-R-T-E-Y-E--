@@ -5,9 +5,11 @@ import { Animated, Pressable, View, ViewStyle } from 'react-native';
 import { useTheme } from '../lib/theme-context';
 
 /** The daily check-in control: tap to set (or unset) a mark. */
-export function MarkRing({ marked, onPress, size = 28 }: {
+export function MarkRing({ marked, onPress, label, size = 28 }: {
   marked: boolean;
   onPress: () => void;
+  /** The habit's name, so the ring is not just "checkbox" to a screen reader. */
+  label?: string;
   size?: number;
 }) {
   const { palette } = useTheme();
@@ -27,6 +29,7 @@ export function MarkRing({ marked, onPress, size = 28 }: {
       onPress={onPress}
       hitSlop={12}
       accessibilityRole="checkbox"
+      accessibilityLabel={label}
       accessibilityState={{ checked: marked }}
     >
       <View

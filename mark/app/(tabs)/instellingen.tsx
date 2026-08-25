@@ -6,12 +6,12 @@ import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
 import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
 import { api, DEMO_MODE } from '../../src/lib/api';
 import { cycleStore } from '../../src/lib/cycle-store';
-import { ALL_DAYS, DAY_INITIALS, habitDays } from '../../src/lib/habits';
+import { DAY_INITIALS, habitDays, rhythmLabel } from '../../src/lib/habits';
 import { useEntitlements } from '../../src/lib/entitlements';
 import { useAuth } from '../../src/lib/auth';
 import { NavSide, ThemePref, useTheme } from '../../src/lib/theme-context';
 import { getReminderHour, setReminderHour, syncEveningReminder } from '../../src/lib/reminders';
-import { Habit, Pillar } from '../../src/lib/types';
+import { Habit, Pillar, RhythmKind } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
 
 const WEEK_QUESTIONS_KEY = 'mark.questions.week';
@@ -21,6 +21,12 @@ const DEFAULT_WEEK_QUESTIONS: [string, string, string] = [
   'Which single adjustment makes next week better?',
 ];
 const REMINDER_HOURS = [0, 18, 20, 21]; // 0 = off
+
+const RHYTHMS: Array<{ value: RhythmKind; label: string }> = [
+  { value: 'days', label: 'Set days' },
+  { value: 'weekly', label: 'Per week' },
+  { value: 'monthly', label: 'Per month' },
+];
 
 const PREFS: Array<{ value: ThemePref; label: string }> = [
   { value: 'system', label: 'System' },
@@ -102,7 +108,7 @@ export default function More() {
   const addHabit = async (pillarId: string) => {
     const name = (newHabit[pillarId] ?? '').trim();
     if (!name) return;
-    await api.createHabit(pillarId, name, ALL_DAYS);
+    await api.createHabit(pillarId, name);
     setNewHabit(h => ({ ...h, [pillarId]: '' }));
     reload();
   };
@@ -131,6 +137,22 @@ export default function More() {
     reload();
   };
 
+  const setRhythm = async (habit: Habit, rhythm: RhythmKind) => {
+    await api.updateHabit(habit.id, { rhythm });
+    reload();
+  };
+
+  const setTimes = async (habit: Habit, times: number) => {
+    if (times < 1 || times > 31) return;
+    await api.updateHabit(habit.id, { times });
+    reload();
+  };
+
+  const setPaused = async (habit: Habit, paused: boolean) => {
+    await api.updateHabit(habit.id, { paused });
+    reload();
+  };
+
   // Tapping a weekday adds or removes it; the last one can't be removed,
   // since a habit due on no day at all has nothing to track.
   const toggleDay = async (habit: Habit, day: number) => {
@@ -151,6 +173,24 @@ export default function More() {
       { text: 'Archive', style: 'destructive', onPress: () => run().then(reload) },
     ]);
   };
+
+  const StepDot = ({ symbol, onPress, label }: {
+    symbol: string;
+    onPress: () => void;
+    label: string;
+  }) => (
+    <Pressable onPress={onPress} hitSlop={8} accessibilityLabel={label} accessibilityRole="button">
+      <View
+        style={{
+          width: 22, height: 22, borderRadius: 11,
+          borderWidth: 1, borderColor: palette.hairline,
+          alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <Body style={{ fontSize: 12, color: palette.ink, lineHeight: 15 }}>{symbol}</Body>
+      </View>
+    </Pressable>
+  );
 
   const MoveDot = ({ direction, disabled, onPress, label }: {
     direction: 'up' | 'down';
@@ -290,29 +330,59 @@ export default function More() {
             {habits.filter(h => h.pillarId === pillar.id).map(h => (
               <View key={h.id} style={{ paddingVertical: 6 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Item>{h.name}</Item>
+                  <Item dim={h.paused}>{h.name}</Item>
                   <ArchiveDot onPress={() => confirmArchive(h.name, () => api.archiveHabit(h.id))} />
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                  {DAY_INITIALS.map((letter, day) => {
-                    const on = habitDays(h).includes(day);
-                    return (
-                      <Pressable key={day} onPress={() => toggleDay(h, day)} hitSlop={6}>
-                        <View
-                          style={{
-                            width: 22, height: 22, borderRadius: 11,
-                            borderWidth: 1, borderColor: on ? palette.ink : palette.hairline,
-                            backgroundColor: on ? palette.ink : 'transparent',
-                            alignItems: 'center', justifyContent: 'center',
-                          }}
-                        >
-                          <Body style={{ fontSize: 9, color: on ? palette.bg : palette.dim }}>{letter}</Body>
-                        </View>
-                      </Pressable>
-                    );
-                  })}
-                  <Body dim style={{ fontSize: 11, marginLeft: 2 }}>{habitDays(h).length}× / week</Body>
+                <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                  {RHYTHMS.map(r => (
+                    <Chip
+                      key={r.value}
+                      label={r.label}
+                      active={h.rhythm === r.value}
+                      onPress={() => setRhythm(h, r.value)}
+                    />
+                  ))}
+                  <Chip
+                    label={h.paused ? 'Paused' : 'Pause'}
+                    active={h.paused}
+                    onPress={() => setPaused(h, !h.paused)}
+                  />
                 </View>
+
+                {h.rhythm === 'days' ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    {DAY_INITIALS.map((letter, day) => {
+                      const on = habitDays(h).includes(day);
+                      return (
+                        <Pressable
+                          key={day}
+                          onPress={() => toggleDay(h, day)}
+                          hitSlop={6}
+                          accessibilityLabel={`${h.name} on day ${day + 1}`}
+                        >
+                          <View
+                            style={{
+                              width: 22, height: 22, borderRadius: 11,
+                              borderWidth: 1, borderColor: on ? palette.ink : palette.hairline,
+                              backgroundColor: on ? palette.ink : 'transparent',
+                              alignItems: 'center', justifyContent: 'center',
+                            }}
+                          >
+                            <Body style={{ fontSize: 9, color: on ? palette.bg : palette.dim }}>{letter}</Body>
+                          </View>
+                        </Pressable>
+                      );
+                    })}
+                    <Body dim style={{ fontSize: 11, marginLeft: 2 }}>{rhythmLabel(h)}</Body>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                    <StepDot label={`Fewer ${h.name}`} symbol="−" onPress={() => setTimes(h, h.times - 1)} />
+                    <Body style={{ fontSize: 13 }}>{rhythmLabel(h)}</Body>
+                    <StepDot label={`More ${h.name}`} symbol="+" onPress={() => setTimes(h, h.times + 1)} />
+                    <Body dim style={{ fontSize: 11 }}>you choose the days</Body>
+                  </View>
+                )}
               </View>
             ))}
             <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>

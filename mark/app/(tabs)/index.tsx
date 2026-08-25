@@ -12,8 +12,8 @@ import { Body, Hairline, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { addToOwnCalendar } from '../../src/lib/calendar-link';
-import { addDays, formatLong, todayKey, weekStart } from '../../src/lib/dates';
-import { dueOn } from '../../src/lib/habits';
+import { formatLong, todayKey } from '../../src/lib/dates';
+import { dueOn, marksWindow } from '../../src/lib/habits';
 import { syncEveningReminder } from '../../src/lib/reminders';
 import { buildSnapshot, publishSnapshot } from '../../src/lib/widget';
 import { useTheme } from '../../src/lib/theme-context';
@@ -24,8 +24,8 @@ export default function Today() {
   const { palette } = useTheme();
   const { profile } = useAuth();
   const today = todayKey();
-  const monday = weekStart(today);
-  const sunday = addDays(monday, 6);
+  // Flexible rhythms count over the whole week or month, so load that much.
+  const [windowFrom, windowTo] = marksWindow(today);
 
   const [pillars, setPillars] = useState<Pillar[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -36,14 +36,14 @@ export default function Today() {
   const reload = useCallback(() => {
     api.listPillars().then(setPillars).catch(() => {});
     api.listHabits().then(setHabits).catch(() => {});
-    api.listMarks(monday, sunday).then(setMarks).catch(() => {});
-  }, [monday, sunday]);
+    api.listMarks(windowFrom, windowTo).then(setMarks).catch(() => {});
+  }, [windowFrom, windowTo]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
   // Only what today actually asks for: a habit that runs three times a week
   // is simply absent on its other days, so the circle can always close.
-  const dueToday = useMemo(() => dueOn(habits, today), [habits, today]);
+  const dueToday = useMemo(() => dueOn(habits, today, marks), [habits, today, marks]);
   const markedToday = useMemo(
     () => new Set(marks.filter(m => m.date === today).map(m => m.habitId)),
     [marks, today],
@@ -122,7 +122,11 @@ export default function Today() {
                   >
                     <Item>{habit.name}</Item>
                   </Pressable>
-                  <MarkRing marked={markedToday.has(habit.id)} onPress={() => toggle(habit.id)} />
+                  <MarkRing
+                    marked={markedToday.has(habit.id)}
+                    onPress={() => toggle(habit.id)}
+                    label={habit.name}
+                  />
                 </View>
                 {expandedHabit === habit.id ? (
                   <Pressable

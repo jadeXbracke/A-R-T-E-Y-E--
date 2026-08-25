@@ -14,7 +14,7 @@ import {
   addDays, daysBetween, formatShort, monthEnd, monthLabel,
   monthStart, quarterEnd, quarterStart, todayKey, weekStart, DAY_LETTERS,
 } from '../../src/lib/dates';
-import { dueOn, isDue, targetOver } from '../../src/lib/habits';
+import { dueOn, isActive, isDue, targetOver } from '../../src/lib/habits';
 import { useTheme } from '../../src/lib/theme-context';
 import { Checkin, CheckinKind, Habit, Mark } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
@@ -144,7 +144,7 @@ export default function Growth() {
   const marksThisMonth = marks.filter(m => m.date >= firstOfMonth && m.date <= today).length;
   const monthFrac = monthTarget ? Math.min(marksThisMonth / monthTarget, 1) : 0;
   // The two inner rings behind the month: today and this week, no numbers.
-  const dueToday = dueOn(habits, today).length;
+  const dueToday = dueOn(habits, today, marks).length;
   const todayFrac = dueToday ? (byDay.get(today)?.size ?? 0) / dueToday : 0;
   const weekTarget = targetOver(habits, weekDays);
   const marksThisWeek = marks.filter(m => m.date >= monday && m.date <= today).length;
@@ -189,7 +189,7 @@ export default function Growth() {
       <View style={{ marginBottom: space.l }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
           {monthDays.map(d => {
-            const due = dueOn(habits, d).length;
+            const due = dueOn(habits, d, marks).length;
             return (
               <Pressable
                 key={d}
@@ -216,7 +216,7 @@ export default function Growth() {
             <Text key={i} style={[type.small, { color: palette.dim, width: 10, textAlign: 'center' }]}>{l}</Text>
           ))}
         </View>
-        {habits.map(h => (
+        {habits.filter(h => isActive(h, today)).map(h => (
           <View
             key={h.id}
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}
@@ -224,7 +224,7 @@ export default function Growth() {
             <Item style={{ flex: 1 }}>{h.name}</Item>
             <WeekDots
               days={weekDays.map(d => byDay.get(d)?.has(h.id) ?? false)}
-              scheduled={weekDays.map(d => isDue(h, d))}
+              scheduled={weekDays.map(d => isDue(h, d, marks) || (byDay.get(d)?.has(h.id) ?? false))}
             />
           </View>
         ))}

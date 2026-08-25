@@ -24,7 +24,7 @@ export const WIDGET_GROUP = 'group.com.mark.app.widget';
 export const WIDGET_KEY = 'today';
 
 export function buildSnapshot(habits: Habit[], marks: Mark[], date: string): WidgetSnapshot {
-  const due = dueOn(habits, date);
+  const due = dueOn(habits, date, marks);
   const marked = new Set(marks.filter(m => m.date === date).map(m => m.habitId));
   return {
     date,

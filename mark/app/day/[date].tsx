@@ -8,7 +8,7 @@ import { MarkRing } from '../../src/components/rings';
 import { Body, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { formatLong, todayKey } from '../../src/lib/dates';
-import { dueOn } from '../../src/lib/habits';
+import { dueOn, marksWindow } from '../../src/lib/habits';
 import { useTheme } from '../../src/lib/theme-context';
 import { Habit, Mark, Pillar } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
@@ -22,20 +22,27 @@ export default function DayEditor() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [marks, setMarks] = useState<Mark[]>([]);
 
+  // The flexible rhythms are judged over their whole period, so this day
+  // needs the week and month around it, not just itself.
+  const [windowFrom, windowTo] = marksWindow(date);
+
   const reload = useCallback(() => {
     api.listPillars().then(setPillars).catch(() => {});
     api.listHabits().then(setHabits).catch(() => {});
-    api.listMarks(date, date).then(setMarks).catch(() => {});
-  }, [date]);
+    api.listMarks(windowFrom, windowTo).then(setMarks).catch(() => {});
+  }, [windowFrom, windowTo]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
-  const due = useMemo(() => dueOn(habits, date), [habits, date]);
-  const marked = useMemo(() => new Set(marks.map(m => m.habitId)), [marks]);
+  const due = useMemo(() => dueOn(habits, date, marks), [habits, date, marks]);
+  const marked = useMemo(
+    () => new Set(marks.filter(m => m.date === date).map(m => m.habitId)),
+    [marks, date],
+  );
 
   const toggle = async (habitId: string) => {
     setMarks(prev => {
-      const i = prev.findIndex(m => m.habitId === habitId);
+      const i = prev.findIndex(m => m.habitId === habitId && m.date === date);
       if (i >= 0) return prev.filter((_, j) => j !== i);
       return [...prev, { id: `tmp-${habitId}`, habitId, date }];
     });
@@ -81,7 +88,7 @@ export default function DayEditor() {
                 }}
               >
                 <Item>{habit.name}</Item>
-                <MarkRing marked={marked.has(habit.id)} onPress={() => toggle(habit.id)} />
+                <MarkRing marked={marked.has(habit.id)} onPress={() => toggle(habit.id)} label={habit.name} />
               </View>
             ))}
           </View>

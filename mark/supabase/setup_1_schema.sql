@@ -19,8 +19,15 @@ create table if not exists public.habits (
   user_id uuid not null references auth.users (id) on delete cascade,
   pillar_id uuid not null references public.pillars (id) on delete cascade,
   name text not null,
-  -- Weekdays the habit is due: 0 = Monday … 6 = Sunday.
+  -- How this habit keeps time: fixed weekdays, x per week, or x per month.
+  rhythm text not null default 'days' check (rhythm in ('days', 'weekly', 'monthly')),
+  -- Weekdays for the 'days' rhythm: 0 = Monday … 6 = Sunday.
   days int[] not null default '{0,1,2,3,4,5,6}',
+  -- Times per period for the flexible rhythms.
+  times int not null default 3 check (times > 0),
+  -- Nothing before this counts as missed.
+  start_date date not null default current_date,
+  paused boolean not null default false,
   position int not null default 0,
   archived boolean not null default false,
   created_at timestamptz not null default now()

@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { Api } from './api-types';
 import { addDays, todayKey } from './dates';
+import { ALL_DAYS } from './habits';
 import {
   CalendarEvent, Checkin, Habit, HealthKind, HealthLog, HealthSync,
   InboxItem, KnowledgeEntry, KnowledgeKind, Mark, Pillar, Profile, SleepLog,
@@ -37,16 +38,16 @@ function seed(): Store {
     { id: uid(), name: 'Reading & learning', identity: '', position: 2, archived: false },
     { id: uid(), name: 'Work & skill', identity: '', position: 3, archived: false },
   ];
-  const habit = (pillarId: string, name: string, days: number[], position: number): Habit =>
-    ({ id: uid(), pillarId, name, days, position, archived: false });
-  const every = [0, 1, 2, 3, 4, 5, 6];
-  const weekdays = [0, 1, 2, 3, 4];
+  const start = addDays(todayKey(), -60); // demo history reaches back
+  const habit = (pillarId: string, name: string, position: number, patch: Partial<Habit>): Habit =>
+    ({ id: uid(), pillarId, name, rhythm: 'days', days: ALL_DAYS, times: 3,
+       startDate: start, paused: false, position, archived: false, ...patch });
   const habits: Habit[] = [
-    habit(pillars[0].id, 'Walk', every, 0),
-    habit(pillars[0].id, 'Training', [0, 2, 4], 1),
-    habit(pillars[1].id, 'Meditate', every, 0),
-    habit(pillars[2].id, 'Read 20 minutes', every, 0),
-    habit(pillars[3].id, 'Deep work block', weekdays, 0),
+    habit(pillars[0].id, 'Walk', 0, {}),
+    habit(pillars[0].id, 'Training', 1, { rhythm: 'weekly', times: 3 }),
+    habit(pillars[1].id, 'Meditate', 0, {}),
+    habit(pillars[2].id, 'Read 20 minutes', 0, {}),
+    habit(pillars[3].id, 'Deep work block', 0, { days: [0, 1, 2, 3, 4] }),
   ];
   // A week of plausible nights + a few step days, so the circle visuals show
   // something real straight away in demo mode.
@@ -85,7 +86,15 @@ async function load(): Promise<Store> {
   cache.inbox = cache.inbox ?? []; // stores saved before the mind dump existed
   cache.checkins = cache.checkins ?? []; // stores saved before month cycles existed
   // Stores saved before habits had weekdays / pillars an identity line.
-  for (const h of cache.habits) h.days = h.days ?? [0, 1, 2, 3, 4, 5, 6];
+  // Stores saved before rhythms existed: a plain weekday habit, live since
+  // the beginning, never paused.
+  for (const h of cache.habits) {
+    h.days = h.days ?? [0, 1, 2, 3, 4, 5, 6];
+    h.rhythm = h.rhythm ?? 'days';
+    h.times = h.times ?? 3;
+    h.startDate = h.startDate ?? '2000-01-01';
+    h.paused = h.paused ?? false;
+  }
   for (const p of cache.pillars) p.identity = p.identity ?? '';
   cache.sleep = cache.sleep ?? [];
   cache.healthSync = cache.healthSync ?? [];
@@ -149,9 +158,14 @@ export const demoApi: Api = {
     const s = await load();
     return s.habits.filter(h => !h.archived).sort((a, b) => a.position - b.position);
   },
-  async createHabit(pillarId, name, days) {
+  async createHabit(pillarId, name) {
     const s = await load();
-    const habit: Habit = { id: uid(), pillarId, name, days, position: s.habits.length, archived: false };
+    const habit: Habit = {
+      id: uid(), pillarId, name,
+      rhythm: 'days', days: ALL_DAYS, times: 3,
+      startDate: todayKey(), paused: false,
+      position: s.habits.length, archived: false,
+    };
     s.habits.push(habit);
     await save();
     return habit;
@@ -161,7 +175,10 @@ export const demoApi: Api = {
     const h = s.habits.find(h => h.id === id);
     if (h) {
       if (patch.name !== undefined) h.name = patch.name;
+      if (patch.rhythm !== undefined) h.rhythm = patch.rhythm;
       if (patch.days !== undefined) h.days = patch.days;
+      if (patch.times !== undefined) h.times = patch.times;
+      if (patch.paused !== undefined) h.paused = patch.paused;
     }
     await save();
   },

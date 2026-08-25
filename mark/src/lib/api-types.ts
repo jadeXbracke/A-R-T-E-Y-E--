@@ -1,7 +1,7 @@
 import {
   CalendarEvent, Checkin, CheckinKind, Habit, HealthKind, HealthLog,
   HealthSync, InboxItem, InboxKind, KnowledgeEntry, KnowledgeKind, Mark,
-  Pillar, Profile, SleepLog,
+  Pillar, Profile, RhythmKind, SleepLog,
 } from './types';
 
 // One interface, two backends (demo-store / supabase-api) — same pattern as
@@ -22,8 +22,14 @@ export interface Api {
   reorderPillars(ids: string[]): Promise<void>;
   archivePillar(id: string): Promise<void>;
   listHabits(): Promise<Habit[]>;
-  createHabit(pillarId: string, name: string, days: number[]): Promise<Habit>;
-  updateHabit(id: string, patch: { name?: string; days?: number[] }): Promise<void>;
+  createHabit(pillarId: string, name: string): Promise<Habit>;
+  updateHabit(id: string, patch: {
+    name?: string;
+    rhythm?: RhythmKind;
+    days?: number[];
+    times?: number;
+    paused?: boolean;
+  }): Promise<void>;
   archiveHabit(id: string): Promise<void>;
 
   // marks
