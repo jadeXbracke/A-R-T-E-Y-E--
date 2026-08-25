@@ -1,118 +1,85 @@
-// TEMPORARY — design exploration inspired by Maryse Ceha's resin paintings:
-// a luminous field glowing out of a dark, glossy, layered surface. Four
-// treatments of the Today screen for comparison only. Not wired into the
-// app; delete once a direction is chosen.
+// TEMPORARY — design exploration after Maryse Ceha. Not wired into the app;
+// delete once a direction is chosen.
 //
-// The field is alive: two or three soft lobes drift and breathe on their own
-// slow, mismatched cycles, so the light never settles into a pattern the eye
-// can catch. Motion is ambient, never signal — it says nothing about your
-// habits, and it stops entirely when the system asks for reduced motion.
+// The first attempt got this wrong: it read her paintings as *light* and
+// produced soft floating gradients, which is the house style of every AI
+// mockup on earth. Her work is not light, it is MATERIAL — poured resin with
+// real grit in it, a hard edge, a slab thick enough to throw a shadow, and
+// the gallery ceiling reflected in the gloss. The white wall around it is
+// half the picture.
+//
+// So: no gradients as the subject. A vessel of deep pigment with a hard pour
+// line for the day's progress, actual grain over it, a crisp reflection band,
+// and a real shadow against generous white.
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  AccessibilityInfo, Animated, Easing, StyleSheet, Text, View,
-} from 'react-native';
-import Svg, {
-  Circle, Defs, LinearGradient, RadialGradient, Rect, Stop,
-} from 'react-native-svg';
+import React from 'react';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GRAIN_URI } from '../src/components/grain';
 import { space, type } from '../src/theme';
-
-interface Lobe {
-  colour: string;
-  opacity: number;
-  /** Diameter as a share of screen width. */
-  size: number;
-  /** Drift range in points, as [from, to] on each axis. */
-  x: [number, number];
-  y: [number, number];
-  /** A full breath, in ms. Deliberately prime-ish so lobes never sync up. */
-  duration: number;
-}
 
 interface Look {
   name: string;
-  bg: string;
+  /** The gallery wall. */
+  ground: string;
   inkDeep: string;
   ink: string;
   dim: string;
   hairline: string;
-  arc: string;
-  aura: Lobe[];
-  /** A resin-like sheen across the upper edge. */
-  gloss: boolean;
-  /** A glow blooming inside the ring as the day fills. */
-  bloom: [string, number] | null;
+  /** Unpoured resin: the dark the pigment sits in. */
+  vessel: string;
+  /** The poured colour itself. */
+  pigment: string;
+  /** The ceiling caught in the gloss. */
+  reflection: string;
+  /** Ink for anything sitting on the object. */
+  onObject: string;
+  shape: 'disc' | 'panel';
+  grain: number;
 }
 
 const LOOKS: Look[] = [
   {
-    // Cold light rising out of blue-black — the top edge of the crimson
-    // painting, where the resin goes almost to ink.
-    name: 'DEEP FIELD',
-    bg: '#08090C',
-    inkDeep: '#FFFFFF',
-    ink: '#E4E8EE',
-    dim: '#666E7A',
-    hairline: '#1E2229',
-    arc: '#FFFFFF',
-    aura: [
-      { colour: '#8FA8D8', opacity: 0.20, size: 1.5, x: [-70, 60], y: [-40, 70], duration: 17000 },
-      { colour: '#6E5AA8', opacity: 0.16, size: 1.2, x: [80, -50], y: [120, 10], duration: 23000 },
-      { colour: '#DCE6F5', opacity: 0.08, size: 0.9, x: [-30, 90], y: [220, 150], duration: 29000 },
-    ],
-    gloss: true,
-    bloom: null,
+    name: 'POUR',
+    ground: '#FFFFFF',
+    inkDeep: '#050504',
+    ink: '#1B1A17',
+    dim: '#98938A',
+    hairline: '#E4E1DB',
+    vessel: '#1A1024',
+    pigment: '#A2114E',
+    reflection: '#3B2A55',
+    onObject: '#F6EEF2',
+    shape: 'disc',
+    grain: 0.16,
   },
   {
-    // One deep hue, the way each painting commits to one: magenta at the
-    // core cooling to violet at the rim.
-    name: 'CRIMSON',
-    bg: '#FBFAFC',
-    inkDeep: '#050508',
-    ink: '#1A1820',
-    dim: '#918D9C',
-    hairline: '#E4E1E8',
-    arc: '#A30F52',
-    aura: [
-      { colour: '#C4185A', opacity: 0.13, size: 1.3, x: [-60, 70], y: [-30, 60], duration: 19000 },
-      { colour: '#5B2A8C', opacity: 0.10, size: 1.1, x: [90, -40], y: [140, 40], duration: 26000 },
-    ],
-    gloss: false,
-    bloom: ['#C4185A', 0.5],
+    name: 'PANEL',
+    ground: '#FFFFFF',
+    inkDeep: '#050504',
+    ink: '#1B1A17',
+    dim: '#98938A',
+    hairline: '#E4E1DB',
+    vessel: '#08211E',
+    pigment: '#11564A',
+    reflection: '#2E6B60',
+    onObject: '#E6F0ED',
+    shape: 'panel',
+    grain: 0.2,
   },
   {
-    // The green diptych: cold teal light through a dark, mineral ground.
-    name: 'EMERALD',
-    bg: '#050D0E',
-    inkDeep: '#EFF6F5',
-    ink: '#D3E3E0',
-    dim: '#54706C',
-    hairline: '#12292B',
-    arc: '#3FD9C0',
-    aura: [
-      { colour: '#0C6E67', opacity: 0.55, size: 1.5, x: [-70, 50], y: [-40, 60], duration: 18000 },
-      { colour: '#1FA894', opacity: 0.22, size: 1.1, x: [70, -60], y: [130, 30], duration: 25000 },
-      { colour: '#8FE8DC', opacity: 0.07, size: 0.8, x: [-20, 80], y: [230, 160], duration: 31000 },
-    ],
-    gloss: true,
-    bloom: null,
-  },
-  {
-    // Cool paper under lacquer: barely there, felt more than seen.
-    name: 'LACQUER',
-    bg: '#EEF0F3',
-    inkDeep: '#050608',
-    ink: '#1A1C20',
-    dim: '#8E939B',
-    hairline: '#D6D9DE',
-    arc: '#1A1C20',
-    aura: [
-      { colour: '#3C4658', opacity: 0.10, size: 1.4, x: [-60, 60], y: [-30, 70], duration: 21000 },
-      { colour: '#7E8CA8', opacity: 0.09, size: 1.0, x: [80, -50], y: [150, 50], duration: 28000 },
-    ],
-    gloss: true,
-    bloom: ['#1A1C20', 0.07],
+    name: 'INK',
+    ground: '#FFFFFF',
+    inkDeep: '#050504',
+    ink: '#1B1A17',
+    dim: '#98938A',
+    hairline: '#E4E1DB',
+    vessel: '#131211',
+    pigment: '#2E2C29',
+    reflection: '#4A4744',
+    onObject: '#F2F0EC',
+    shape: 'disc',
+    grain: 0.18,
   },
 ];
 
@@ -125,164 +92,76 @@ const PILLARS: Array<{ name: string; habits: Array<[string, boolean]> }> = [
 
 const DONE = 3;
 const TOTAL = 5;
-const RING = 186;
-const SCREEN_W = 390;
+const FRACTION = DONE / TOTAL;
 
-/** One drifting, breathing lobe of the aura. */
-function AuraLobe({ lobe, id, still }: { lobe: Lobe; id: string; still: boolean }) {
-  const drift = useRef(new Animated.Value(0)).current;
-  const diameter = SCREEN_W * lobe.size;
-
-  useEffect(() => {
-    if (still) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(drift, {
-          toValue: 1,
-          duration: lobe.duration,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(drift, {
-          toValue: 0,
-          duration: lobe.duration,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [drift, lobe.duration, still]);
-
-  const translateX = drift.interpolate({ inputRange: [0, 1], outputRange: lobe.x });
-  const translateY = drift.interpolate({ inputRange: [0, 1], outputRange: lobe.y });
-  // A shallow swell, so the field feels like it is breathing rather than
-  // sliding around the screen.
-  const scale = drift.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.12, 1] });
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={{
-        position: 'absolute',
-        left: (SCREEN_W - diameter) / 2,
-        top: -diameter * 0.15,
-        width: diameter,
-        height: diameter,
-        transform: [{ translateX }, { translateY }, { scale }],
-      }}
-    >
-      <Svg width={diameter} height={diameter}>
-        <Defs>
-          <RadialGradient id={id} cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={lobe.colour} stopOpacity={lobe.opacity} />
-            <Stop offset="0.45" stopColor={lobe.colour} stopOpacity={lobe.opacity * 0.42} />
-            <Stop offset="1" stopColor={lobe.colour} stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Circle cx={diameter / 2} cy={diameter / 2} r={diameter / 2} fill={`url(#${id})`} />
-      </Svg>
-    </Animated.View>
-  );
-}
-
-function DayRing({ look, index }: { look: Look; index: number }) {
-  const r = RING / 2 - 2;
-  const circumference = 2 * Math.PI * r;
-  const fraction = DONE / TOTAL;
-
-  return (
-    <View style={{ width: RING, height: RING, alignItems: 'center', justifyContent: 'center' }}>
-      <Svg width={RING} height={RING} style={{ position: 'absolute' }}>
-        <Defs>
-          {look.bloom ? (
-            <RadialGradient id={`bloom-${index}`} cx="50%" cy="50%" r="50%">
-              <Stop offset="0" stopColor={look.bloom[0]} stopOpacity={look.bloom[1]} />
-              <Stop offset="0.55" stopColor={look.bloom[0]} stopOpacity={look.bloom[1] * 0.35} />
-              <Stop offset="1" stopColor={look.bloom[0]} stopOpacity="0" />
-            </RadialGradient>
-          ) : null}
-        </Defs>
-        {/* the day's fill blooms outward from the centre, not as a bar */}
-        {look.bloom ? (
-          <Circle
-            cx={RING / 2} cy={RING / 2} r={r * Math.sqrt(fraction)}
-            fill={`url(#bloom-${index})`}
-          />
-        ) : null}
-        <Circle
-          cx={RING / 2} cy={RING / 2} r={r}
-          stroke={look.hairline} strokeWidth={1.5} fill="none"
-        />
-        <Circle
-          cx={RING / 2} cy={RING / 2} r={r}
-          stroke={look.arc} strokeWidth={1.75} fill="none" strokeLinecap="round"
-          strokeDasharray={`${circumference * fraction} ${circumference}`}
-          transform={`rotate(-90 ${RING / 2} ${RING / 2})`}
-        />
-      </Svg>
-      <View style={{ alignItems: 'center' }}>
-        <Text style={[type.numeral, { color: look.inkDeep }]}>
-          {DONE}<Text style={{ fontSize: 22, color: look.dim }}> / {TOTAL}</Text>
-        </Text>
-        <Text style={[type.label, { color: look.dim, marginTop: 2 }]}>marks today</Text>
-      </View>
-    </View>
-  );
-}
-
-function MarkDot({ on, look }: { on: boolean; look: Look }) {
+/**
+ * The object on the wall: deep resin filled to today's level, with a hard
+ * pour line, real grit, the ceiling in its gloss, and a shadow proving it
+ * stands off the surface.
+ */
+function Vessel({ look, size }: { look: Look; size: { width: number; height: number } }) {
+  const disc = look.shape === 'disc';
   return (
     <View
       style={{
-        width: 28, height: 28, borderRadius: 14,
-        borderWidth: 1.25, borderColor: on ? look.arc : look.ink,
-        alignItems: 'center', justifyContent: 'center',
+        ...size,
+        borderRadius: disc ? size.width / 2 : 0,
+        backgroundColor: look.vessel,
+        overflow: 'hidden',
+        // the slab stands off the wall
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.22,
+        shadowRadius: 22,
+        elevation: 10,
       }}
     >
-      {on ? (
-        <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: look.arc }} />
-      ) : null}
+      {/* the pour: a hard, level line, not a fade */}
+      <View
+        style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0,
+          height: `${FRACTION * 100}%`,
+          backgroundColor: look.pigment,
+        }}
+      />
+      {/* the ceiling caught in the gloss, with its own crisp lower edge */}
+      <View
+        style={{
+          position: 'absolute', left: 0, right: 0, top: 0,
+          height: '13%',
+          backgroundColor: look.reflection,
+          opacity: 0.3,
+        }}
+      />
+      {/* grit in the resin */}
+      <Image
+        source={{ uri: GRAIN_URI }}
+        resizeMode="repeat"
+        style={[StyleSheet.absoluteFill, { opacity: look.grain }]}
+      />
     </View>
   );
 }
 
 export default function CehaPreview() {
-  const params = useLocalSearchParams<{ v?: string; still?: string }>();
+  const params = useLocalSearchParams<{ v?: string }>();
   const index = Math.max(0, Math.min(parseInt(params.v ?? '0', 10) || 0, LOOKS.length - 1));
   const look = LOOKS[index];
   const insets = useSafeAreaInsets();
-
-  // Ambient motion is the first thing to drop when someone asks for less of
-  // it. `?still=1` freezes it for screenshots.
-  const [reduceMotion, setReduceMotion] = useState(params.still === '1');
-  useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then(on => { if (on) setReduceMotion(true); })
-      .catch(() => {});
-  }, []);
+  const size = look.shape === 'disc'
+    ? { width: 206, height: 206 }
+    : { width: 250, height: 190 };
 
   return (
-    <View style={{ flex: 1, backgroundColor: look.bg, overflow: 'hidden' }}>
-      {look.aura.map((lobe, i) => (
-        <AuraLobe key={i} lobe={lobe} id={`aura-${index}-${i}`} still={reduceMotion} />
-      ))}
-
-      {look.gloss ? (
-        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Defs>
-            <LinearGradient id={`gloss-${index}`} x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0.09" />
-              <Stop offset="0.14" stopColor="#FFFFFF" stopOpacity="0.025" />
-              <Stop offset="0.26" stopColor="#FFFFFF" stopOpacity="0" />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill={`url(#gloss-${index})`} />
-        </Svg>
-      ) : null}
-
-      <View style={{ flex: 1, paddingTop: insets.top + space.l, paddingHorizontal: space.page }}>
+    <View style={{ flex: 1, backgroundColor: look.ground }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingTop: insets.top + space.l,
+          paddingHorizontal: space.page,
+          paddingBottom: space.xl,
+        }}
+      >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text style={[type.wordmark, { color: look.inkDeep }]}>MARK</Text>
@@ -307,8 +186,13 @@ export default function CehaPreview() {
         <Text style={[type.heading, { color: look.inkDeep, marginTop: space.xl }]}>Today</Text>
         <Text style={[type.small, { color: look.dim, marginTop: space.xs }]}>Tuesday 25 August</Text>
 
-        <View style={{ alignItems: 'center', marginVertical: space.xl }}>
-          <DayRing look={look} index={index} />
+        {/* generous wall around the object */}
+        <View style={{ alignItems: 'center', marginTop: space.xxl, marginBottom: space.xl }}>
+          <Vessel look={look} size={size} />
+          <Text style={[type.numeral, { color: look.inkDeep, marginTop: space.l }]}>
+            {DONE}<Text style={{ fontSize: 22, color: look.dim }}> / {TOTAL}</Text>
+          </Text>
+          <Text style={[type.label, { color: look.dim, marginTop: 2 }]}>marks today</Text>
         </View>
 
         {PILLARS.map(pillar => (
@@ -329,12 +213,35 @@ export default function CehaPreview() {
                 }}
               >
                 <Text style={[type.item, { color: look.ink }]}>{name}</Text>
-                <MarkDot on={on} look={look} />
+                {/* the mark itself: a small poured disc, same material logic */}
+                <View
+                  style={{
+                    width: 28, height: 28, borderRadius: 14,
+                    borderWidth: 1.25, borderColor: look.ink,
+                    alignItems: 'center', justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {on ? (
+                    <View
+                      style={{
+                        width: 20, height: 20, borderRadius: 10,
+                        backgroundColor: look.pigment, overflow: 'hidden',
+                      }}
+                    >
+                      <Image
+                        source={{ uri: GRAIN_URI }}
+                        resizeMode="repeat"
+                        style={[StyleSheet.absoluteFill, { opacity: look.grain * 0.7 }]}
+                      />
+                    </View>
+                  ) : null}
+                </View>
               </View>
             ))}
           </View>
         ))}
-      </View>
+      </ScrollView>
 
       <View
         style={{
