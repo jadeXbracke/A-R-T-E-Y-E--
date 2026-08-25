@@ -53,7 +53,9 @@ export function Screen({ children, title, subtitle, greeting, moreLink = true }:
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel="More"
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
           >
+            <Text style={[type.label, { color: palette.dim }]}>More</Text>
             <View
               style={{
                 width: 18, height: 18, borderRadius: 9,
