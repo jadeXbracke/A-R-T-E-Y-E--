@@ -62,7 +62,7 @@ export default function Paywall() {
       )}
 
       <Pressable onPress={() => router.back()} style={{ marginTop: space.xl }}>
-        <Label>← back</Label>
+        <Label>back</Label>
       </Pressable>
     </View>
   );

@@ -211,7 +211,7 @@ export default function More() {
   };
 
   const StepDot = ({ symbol, onPress, label }: {
-    symbol: string;
+    symbol: 'plus' | 'minus';
     onPress: () => void;
     label: string;
   }) => (
@@ -223,7 +223,10 @@ export default function More() {
           alignItems: 'center', justifyContent: 'center',
         }}
       >
-        <Body style={{ fontSize: 12, color: palette.ink, lineHeight: 15 }}>{symbol}</Body>
+        <View style={{ width: 8, height: 1, backgroundColor: palette.ink }} />
+        {symbol === 'plus' ? (
+          <View style={{ position: 'absolute', width: 1, height: 8, backgroundColor: palette.ink }} />
+        ) : null}
       </View>
     </Pressable>
   );
@@ -243,9 +246,17 @@ export default function More() {
           opacity: disabled ? 0.3 : 1,
         }}
       >
-        <Body style={{ fontSize: 9, color: palette.dim, lineHeight: 12 }}>
-          {direction === 'up' ? '↑' : '↓'}
-        </Body>
+        {/* A drawn triangle rather than an arrow glyph. */}
+        <View
+          style={{
+            width: 0, height: 0,
+            borderLeftWidth: 4, borderRightWidth: 4,
+            borderLeftColor: 'transparent', borderRightColor: 'transparent',
+            ...(direction === 'up'
+              ? { borderBottomWidth: 5, borderBottomColor: palette.dim }
+              : { borderTopWidth: 5, borderTopColor: palette.dim }),
+          }}
+        />
       </View>
     </Pressable>
   );
@@ -433,9 +444,9 @@ export default function More() {
                   </View>
                 ) : (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 }}>
-                    <StepDot label={`Fewer ${h.name}`} symbol="−" onPress={() => setTimes(h, h.times - 1)} />
+                    <StepDot label={`Fewer ${h.name}`} symbol="minus" onPress={() => setTimes(h, h.times - 1)} />
                     <Body style={{ fontSize: 13 }}>{rhythmLabel(h)}</Body>
-                    <StepDot label={`More ${h.name}`} symbol="+" onPress={() => setTimes(h, h.times + 1)} />
+                    <StepDot label={`More ${h.name}`} symbol="plus" onPress={() => setTimes(h, h.times + 1)} />
                     <Body dim style={{ fontSize: 11 }}>you choose the days</Body>
                   </View>
                 )}
@@ -568,7 +579,7 @@ export default function More() {
           different: it exists only on this device, inside this app's private
           storage, is never synced or shared, and no analytics or tracking runs
           on any of these screens. You can delete all cycle data with one tap
-          under Body → cycle, and deleting the app removes everything on the
+          under Body, in the cycle module, and deleting the app removes everything on the
           device with it.
         </Body>
       </Section>

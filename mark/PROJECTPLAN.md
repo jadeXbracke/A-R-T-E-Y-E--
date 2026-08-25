@@ -23,6 +23,10 @@ missed day is no reason to panic; you simply continue.
   cases: each of those reads as a second typeface and breaks the house
   style. No italics, and no dashes in the copy: sentences are split or
   joined with commas instead, so nothing interrupts the line.
+- **No glyphs anywhere**: no emoji, no arrows, no symbol characters. Every
+  control draws its own mark from the same circles and hairlines as the rest
+  (a triangle for reordering, a line for remove, a line and a cross for the
+  steppers), and anything else is written out in words.
 - Plenty of negative space; nothing feels full. Timeless over trendy.
 
 ## Data model
@@ -85,11 +89,12 @@ mark/
    days of the month, a short reflection every Sunday, a check-in on the
    last day of the month and of the quarter. Deliberately few numbers.
 3. **Body** — collapsible, everything opt-in:
-   - **Sleep**: regularity over hours. Seven nights drawn as arcs on a
-     24-hour circle (midnight top, newest ring outermost) — the tighter the
-     arcs align, the steadier the rhythm. Centre shows ± minutes regularity;
-     average duration is secondary. No sleep score, no warnings. Manual
-     bed/wake entry; Apple Health fills it automatically in the phone build.
+   - **Sleep**: regularity over hours. Seven nights as seven bars on one
+     timeline, each running bed to wake, with faint verticals at the usual
+     bed and wake times. A steady week stacks into a straight-edged block, a
+     ragged one staggers, so the reading needs no explaining. Beneath it, the
+     average drift in minutes; duration is secondary. No sleep score, no
+     warnings. Manual entry; Apple Health fills it in the phone build.
    - **Steps**: filling circle against a self-set guideline (default 8 000,
      explicitly a direction, not a norm) plus seven mini-rings for the week.
      Health platforms are read-only and per-datatype opt-in; manual entry

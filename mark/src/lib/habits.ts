@@ -51,9 +51,10 @@ export function dueOn(habits: Habit[], date: string, marks: Mark[]): Habit[] {
 
 /** What a full week of this habit asks for — used for the label in settings. */
 export function rhythmLabel(habit: Habit): string {
-  if (habit.rhythm === 'days') return `${habitDays(habit).length}× / week`;
-  if (habit.rhythm === 'weekly') return `${habit.times}× / week`;
-  return `${habit.times}× / month`;
+  const n = habit.rhythm === 'days' ? habitDays(habit).length : Math.max(habit.times, 1);
+  const unit = habit.rhythm === 'monthly' ? 'month' : 'week';
+  if (habit.rhythm === 'days') return `${n} ${n === 1 ? 'day' : 'days'} a week`;
+  return `${n} ${n === 1 ? 'time' : 'times'} a ${unit}`;
 }
 
 /**

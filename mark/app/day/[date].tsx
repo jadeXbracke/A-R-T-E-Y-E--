@@ -60,7 +60,7 @@ export default function DayEditor() {
   return (
     <Screen title={isToday ? 'Today' : formatLong(date).split(' ').slice(1).join(' ')} subtitle={formatLong(date)}>
       <Pressable onPress={() => router.back()} hitSlop={10} style={{ marginBottom: space.l }}>
-        <Label>← back</Label>
+        <Label>back</Label>
       </Pressable>
 
       <View style={{ alignItems: 'center', marginBottom: space.xl }}>

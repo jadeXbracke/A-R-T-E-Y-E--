@@ -133,7 +133,7 @@ export default function Today() {
                     onPress={() => { addToOwnCalendar(habit.name); setExpandedHabit(null); }}
                     style={{ paddingBottom: 14 }}
                   >
-                    <Body dim>Put it in your own calendar ↗</Body>
+                    <Body dim>Put it in your own calendar</Body>
                   </Pressable>
                 ) : null}
               </View>

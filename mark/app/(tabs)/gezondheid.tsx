@@ -10,8 +10,8 @@ import { Alert, Platform, Pressable, Text, View } from 'react-native';
 import { MiniRing } from '../../src/components/progress-ring';
 import { IntensityDot } from '../../src/components/rings';
 import {
-  formatDuration, SleepCircle, SleepLegend, sleepDuration, sleepRegularity,
-} from '../../src/components/sleep-circle';
+  formatDuration, SleepRhythm, sleepDuration, sleepRegularity,
+} from '../../src/components/sleep-rhythm';
 import { Body, Button, Chip, Field, Hairline, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { cycleStore, observations, toSpans } from '../../src/lib/cycle-store';
@@ -204,22 +204,26 @@ export default function BodyScreen() {
       {open === 'sleep' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           {sleep.length >= 2 ? (
-            <View style={{ alignItems: 'center', gap: space.m }}>
-              <SleepCircle nights={sleep}>
+            <View style={{ gap: space.m }}>
+              <SleepRhythm nights={sleep} />
+              <Body dim style={{ fontSize: 11 }}>
+                Each bar is one night. The straighter the edges, the steadier
+                your rhythm. The faint lines are your usual bed and wake times.
+              </Body>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.m }}>
                 {regularity !== null ? (
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={[type.numeral, { fontSize: 30, color: palette.ink }]}>± {regularity}</Text>
-                    <Label>min · regularity</Label>
-                  </View>
+                  <>
+                    <Text style={[type.numeral, { fontSize: 30, color: palette.ink }]}>{regularity}</Text>
+                    <Body dim style={{ flex: 1 }}>min from your usual times</Body>
+                  </>
                 ) : null}
-              </SleepCircle>
-              <SleepLegend />
+              </View>
               {avgDuration ? <Body dim>{avgDuration} average this week</Body> : null}
             </View>
           ) : (
             <Body dim>
-              Log a few nights and they appear here as arcs on a 24 hour circle.
-              Regularity matters more than totals.
+              Log a few nights and each one appears here as a bar on a shared
+              timeline. Regularity matters more than totals.
             </Body>
           )}
 
