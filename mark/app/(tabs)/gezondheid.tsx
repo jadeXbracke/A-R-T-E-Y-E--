@@ -199,7 +199,7 @@ export default function BodyScreen() {
   );
 
   return (
-    <Screen title="Body" subtitle="Track lightly, no obsession">
+    <Screen title="Body">
       <Header id="sleep" label="sleep" />
       {open === 'sleep' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>

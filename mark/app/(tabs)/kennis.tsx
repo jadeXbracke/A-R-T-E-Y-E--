@@ -100,7 +100,7 @@ export default function Knowledge() {
   );
 
   return (
-    <Screen title="Knowledge" subtitle="Not what you collected, but what you took away">
+    <Screen title="Knowledge">
       <Section label="mind dump">
         <Capture onAdded={reload} />
         {openItems.map(item => (
@@ -158,7 +158,7 @@ export default function Knowledge() {
 
       <Hairline spacing={space.m} />
 
-      <Label style={{ marginBottom: space.m }}>log what you took away</Label>
+      <Label style={{ marginBottom: space.m }}>log</Label>
       <View style={{ gap: space.m, marginBottom: space.xl }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {KINDS.map(k => (
