@@ -17,10 +17,11 @@ export interface Api {
   // pillars & habits
   listPillars(): Promise<Pillar[]>;
   createPillar(name: string): Promise<Pillar>;
+  updatePillar(id: string, patch: { name?: string; identity?: string }): Promise<void>;
   archivePillar(id: string): Promise<void>;
   listHabits(): Promise<Habit[]>;
-  createHabit(pillarId: string, name: string, targetPerWeek: number): Promise<Habit>;
-  updateHabit(id: string, patch: { name?: string; targetPerWeek?: number }): Promise<void>;
+  createHabit(pillarId: string, name: string, days: number[]): Promise<Habit>;
+  updateHabit(id: string, patch: { name?: string; days?: number[] }): Promise<void>;
   archiveHabit(id: string): Promise<void>;
 
   // marks

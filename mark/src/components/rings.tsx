@@ -48,21 +48,32 @@ export function MarkRing({ marked, onPress, size = 28 }: {
   );
 }
 
-/** Seven small day dots for one habit's week. */
-export function WeekDots({ days, size = 10 }: { days: boolean[]; size?: number }) {
+/**
+ * Seven small day dots for one habit's week. Days the habit was never due
+ * stay blank — a rest day should not read as an open circle.
+ */
+export function WeekDots({ days, scheduled, size = 10 }: {
+  days: boolean[];
+  scheduled?: boolean[];
+  size?: number;
+}) {
   const { palette } = useTheme();
   return (
     <View style={{ flexDirection: 'row', gap: 6 }}>
-      {days.map((on, i) => (
-        <View
-          key={i}
-          style={{
-            width: size, height: size, borderRadius: size / 2,
-            borderWidth: 1, borderColor: on ? palette.ink : palette.hairline,
-            backgroundColor: on ? palette.ink : 'transparent',
-          }}
-        />
-      ))}
+      {days.map((on, i) => {
+        const due = scheduled ? scheduled[i] : true;
+        return (
+          <View
+            key={i}
+            style={{
+              width: size, height: size, borderRadius: size / 2,
+              borderWidth: due ? 1 : 0,
+              borderColor: on ? palette.ink : palette.hairline,
+              backgroundColor: on ? palette.ink : 'transparent',
+            }}
+          />
+        );
+      })}
     </View>
   );
 }

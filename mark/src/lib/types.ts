@@ -4,6 +4,8 @@
 export interface Pillar {
   id: string;
   name: string;
+  /** Optional "I am someone who…" line. Empty when unused — never required. */
+  identity: string;
   position: number;
   archived: boolean;
 }
@@ -12,8 +14,12 @@ export interface Habit {
   id: string;
   pillarId: string;
   name: string;
-  /** How many marks per week feel right — soft target, never a punishment. */
-  targetPerWeek: number;
+  /**
+   * Weekdays this habit is due: 0 = Monday … 6 = Sunday. An empty list means
+   * every day. The weekly target is simply how many days are selected, so a
+   * rest day is never counted as a miss.
+   */
+  days: number[];
   position: number;
   archived: boolean;
 }

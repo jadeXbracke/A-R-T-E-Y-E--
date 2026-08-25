@@ -8,6 +8,7 @@ create table if not exists public.pillars (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   name text not null,
+  identity text not null default '',
   position int not null default 0,
   archived boolean not null default false,
   created_at timestamptz not null default now()
@@ -18,7 +19,8 @@ create table if not exists public.habits (
   user_id uuid not null references auth.users (id) on delete cascade,
   pillar_id uuid not null references public.pillars (id) on delete cascade,
   name text not null,
-  target_per_week int not null default 5,
+  -- Weekdays the habit is due: 0 = Monday … 6 = Sunday.
+  days int[] not null default '{0,1,2,3,4,5,6}',
   position int not null default 0,
   archived boolean not null default false,
   created_at timestamptz not null default now()

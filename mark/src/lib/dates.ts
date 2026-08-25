@@ -92,3 +92,8 @@ export function quarterEnd(key: string): string {
 export function daysInMonth(key: string): number {
   return fromKey(monthEnd(key)).getDate();
 }
+
+/** 0 = Monday … 6 = Sunday, matching Habit.days. */
+export function weekdayIndex(key: string): number {
+  return (fromKey(key).getDay() + 6) % 7;
+}

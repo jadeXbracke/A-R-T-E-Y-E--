@@ -6,6 +6,7 @@ import { Alert, Platform, Pressable, View } from 'react-native';
 import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
 import { api, DEMO_MODE } from '../../src/lib/api';
 import { cycleStore } from '../../src/lib/cycle-store';
+import { ALL_DAYS, DAY_INITIALS, habitDays } from '../../src/lib/habits';
 import { useEntitlements } from '../../src/lib/entitlements';
 import { useAuth } from '../../src/lib/auth';
 import { NavSide, ThemePref, useTheme } from '../../src/lib/theme-context';
@@ -41,6 +42,7 @@ export default function More() {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [newPillar, setNewPillar] = useState('');
   const [newHabit, setNewHabit] = useState<Record<string, string>>({});
+  const [identityDraft, setIdentityDraft] = useState<Record<string, string>>({});
   const [name, setName] = useState('');
   const [nameSaved, setNameSaved] = useState(false);
   const [questions, setQuestions] = useState<[string, string, string]>(DEFAULT_WEEK_QUESTIONS);
@@ -87,11 +89,6 @@ export default function More() {
     syncEveningReminder(Math.max(habits.length - marked.length, 0));
   };
 
-  const setFrequency = async (habit: Habit, n: number) => {
-    await api.updateHabit(habit.id, { targetPerWeek: n });
-    reload();
-  };
-
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
   const addPillar = async () => {
@@ -104,8 +101,23 @@ export default function More() {
   const addHabit = async (pillarId: string) => {
     const name = (newHabit[pillarId] ?? '').trim();
     if (!name) return;
-    await api.createHabit(pillarId, name, 5);
+    await api.createHabit(pillarId, name, ALL_DAYS);
     setNewHabit(h => ({ ...h, [pillarId]: '' }));
+    reload();
+  };
+
+  const saveIdentity = async (pillarId: string) => {
+    await api.updatePillar(pillarId, { identity: (identityDraft[pillarId] ?? '').trim() });
+    reload();
+  };
+
+  // Tapping a weekday adds or removes it; the last one can't be removed,
+  // since a habit due on no day at all has nothing to track.
+  const toggleDay = async (habit: Habit, day: number) => {
+    const current = habitDays(habit);
+    const next = current.includes(day) ? current.filter(d => d !== day) : [...current, day].sort();
+    if (!next.length) return;
+    await api.updateHabit(habit.id, { days: next });
     reload();
   };
 
@@ -219,19 +231,25 @@ export default function More() {
                   <Item>{h.name}</Item>
                   <ArchiveDot onPress={() => confirmArchive(h.name, () => api.archiveHabit(h.id))} />
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                  {[1, 2, 3, 4, 5, 6, 7].map(n => (
-                    <Pressable key={n} onPress={() => setFrequency(h, n)} hitSlop={6}>
-                      <View
-                        style={{
-                          width: 12, height: 12, borderRadius: 6,
-                          borderWidth: 1, borderColor: n <= h.targetPerWeek ? palette.ink : palette.hairline,
-                          backgroundColor: n <= h.targetPerWeek ? palette.ink : 'transparent',
-                        }}
-                      />
-                    </Pressable>
-                  ))}
-                  <Body dim style={{ fontSize: 11, marginLeft: 4 }}>{h.targetPerWeek}× / week</Body>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                  {DAY_INITIALS.map((letter, day) => {
+                    const on = habitDays(h).includes(day);
+                    return (
+                      <Pressable key={day} onPress={() => toggleDay(h, day)} hitSlop={6}>
+                        <View
+                          style={{
+                            width: 22, height: 22, borderRadius: 11,
+                            borderWidth: 1, borderColor: on ? palette.ink : palette.hairline,
+                            backgroundColor: on ? palette.ink : 'transparent',
+                            alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <Body style={{ fontSize: 9, color: on ? palette.bg : palette.dim }}>{letter}</Body>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                  <Body dim style={{ fontSize: 11, marginLeft: 2 }}>{habitDays(h).length}× / week</Body>
                 </View>
               </View>
             ))}
@@ -243,6 +261,15 @@ export default function More() {
                 style={{ flex: 1 }}
               />
               <Chip label="Add" onPress={() => addHabit(pillar.id)} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end', marginTop: space.s }}>
+              <Field
+                placeholder="I am someone who… (optional)"
+                value={identityDraft[pillar.id] ?? pillar.identity}
+                onChangeText={t => setIdentityDraft(d => ({ ...d, [pillar.id]: t }))}
+                style={{ flex: 1 }}
+              />
+              <Chip label="Save" onPress={() => saveIdentity(pillar.id)} />
             </View>
           </View>
         ))}

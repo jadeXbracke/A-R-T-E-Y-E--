@@ -2,18 +2,19 @@
 // filling; the cycle does the rest: intentions at the start of the month, a
 // short reflection on Sundays, a check-in on the last day of the month and
 // of the quarter. Deliberately few numbers — only what is needed.
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ConcentricRings } from '../../src/components/progress-ring';
 import { IntensityDot, WeekDots } from '../../src/components/rings';
 import { Body, Button, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import {
-  addDays, daysBetween, daysInMonth, formatShort, monthEnd, monthLabel,
+  addDays, daysBetween, formatShort, monthEnd, monthLabel,
   monthStart, quarterEnd, quarterStart, todayKey, weekStart, DAY_LETTERS,
 } from '../../src/lib/dates';
+import { dueOn, isDue, targetOver } from '../../src/lib/habits';
 import { useTheme } from '../../src/lib/theme-context';
 import { Checkin, CheckinKind, Habit, Mark } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
@@ -138,12 +139,14 @@ export default function Growth() {
 
   // The one number on this screen: how the month is filling, against the
   // soft weekly targets scaled to the month.
-  const weekTarget = habits.reduce((sum, h) => sum + Math.min(Math.max(h.targetPerWeek, 1), 7), 0);
-  const monthTarget = Math.round(weekTarget * (daysInMonth(today) / 7));
+  const allMonthDays = daysBetween(firstOfMonth, monthEnd(today));
+  const monthTarget = targetOver(habits, allMonthDays);
   const marksThisMonth = marks.filter(m => m.date >= firstOfMonth && m.date <= today).length;
   const monthFrac = monthTarget ? Math.min(marksThisMonth / monthTarget, 1) : 0;
   // The two inner rings behind the month: today and this week, no numbers.
-  const todayFrac = habits.length ? (byDay.get(today)?.size ?? 0) / habits.length : 0;
+  const dueToday = dueOn(habits, today).length;
+  const todayFrac = dueToday ? (byDay.get(today)?.size ?? 0) / dueToday : 0;
+  const weekTarget = targetOver(habits, weekDays);
   const marksThisWeek = marks.filter(m => m.date >= monday && m.date <= today).length;
   const weekFrac = weekTarget ? Math.min(marksThisWeek / weekTarget, 1) : 0;
 
@@ -185,13 +188,24 @@ export default function Growth() {
 
       <View style={{ marginBottom: space.l }}>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-          {monthDays.map(d => (
-            <IntensityDot
-              key={d}
-              fraction={habits.length ? (byDay.get(d)?.size ?? 0) / habits.length : 0}
-            />
-          ))}
+          {monthDays.map(d => {
+            const due = dueOn(habits, d).length;
+            return (
+              <Pressable
+                key={d}
+                onPress={() => router.push(`/day/${d}`)}
+                hitSlop={4}
+                accessibilityRole="button"
+                accessibilityLabel={`Fill in ${formatShort(d)}`}
+              >
+                <IntensityDot fraction={due ? (byDay.get(d)?.size ?? 0) / due : 0} />
+              </Pressable>
+            );
+          })}
         </View>
+        <Body dim style={{ fontSize: 11, textAlign: 'center', marginTop: space.m }}>
+          Tap a day to fill it in — a day you forgot is never lost.
+        </Body>
       </View>
 
       <Hairline spacing={space.m} />
@@ -208,7 +222,10 @@ export default function Growth() {
             style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 }}
           >
             <Item style={{ flex: 1 }}>{h.name}</Item>
-            <WeekDots days={weekDays.map(d => byDay.get(d)?.has(h.id) ?? false)} />
+            <WeekDots
+              days={weekDays.map(d => byDay.get(d)?.has(h.id) ?? false)}
+              scheduled={weekDays.map(d => isDue(h, d))}
+            />
           </View>
         ))}
         {habits.length === 0 ? <Body dim>No habits to follow yet.</Body> : null}

@@ -32,19 +32,21 @@ function uid(): string {
 
 function seed(): Store {
   const pillars: Pillar[] = [
-    { id: uid(), name: 'Health', position: 0, archived: false },
-    { id: uid(), name: 'Mind', position: 1, archived: false },
-    { id: uid(), name: 'Reading & learning', position: 2, archived: false },
-    { id: uid(), name: 'Work & skill', position: 3, archived: false },
+    { id: uid(), name: 'Health', identity: '', position: 0, archived: false },
+    { id: uid(), name: 'Mind', identity: '', position: 1, archived: false },
+    { id: uid(), name: 'Reading & learning', identity: '', position: 2, archived: false },
+    { id: uid(), name: 'Work & skill', identity: '', position: 3, archived: false },
   ];
-  const habit = (pillarId: string, name: string, targetPerWeek: number, position: number): Habit =>
-    ({ id: uid(), pillarId, name, targetPerWeek, position, archived: false });
+  const habit = (pillarId: string, name: string, days: number[], position: number): Habit =>
+    ({ id: uid(), pillarId, name, days, position, archived: false });
+  const every = [0, 1, 2, 3, 4, 5, 6];
+  const weekdays = [0, 1, 2, 3, 4];
   const habits: Habit[] = [
-    habit(pillars[0].id, 'Walk', 5, 0),
-    habit(pillars[0].id, 'Training', 3, 1),
-    habit(pillars[1].id, 'Meditate', 4, 0),
-    habit(pillars[2].id, 'Read 20 minutes', 5, 0),
-    habit(pillars[3].id, 'Deep work block', 4, 0),
+    habit(pillars[0].id, 'Walk', every, 0),
+    habit(pillars[0].id, 'Training', [0, 2, 4], 1),
+    habit(pillars[1].id, 'Meditate', every, 0),
+    habit(pillars[2].id, 'Read 20 minutes', every, 0),
+    habit(pillars[3].id, 'Deep work block', weekdays, 0),
   ];
   // A week of plausible nights + a few step days, so the circle visuals show
   // something real straight away in demo mode.
@@ -82,6 +84,9 @@ async function load(): Promise<Store> {
   cache = raw ? (JSON.parse(raw) as Store) : seed();
   cache.inbox = cache.inbox ?? []; // stores saved before the mind dump existed
   cache.checkins = cache.checkins ?? []; // stores saved before month cycles existed
+  // Stores saved before habits had weekdays / pillars an identity line.
+  for (const h of cache.habits) h.days = h.days ?? [0, 1, 2, 3, 4, 5, 6];
+  for (const p of cache.pillars) p.identity = p.identity ?? '';
   cache.sleep = cache.sleep ?? [];
   cache.healthSync = cache.healthSync ?? [];
   if (!raw) await save();
@@ -111,10 +116,19 @@ export const demoApi: Api = {
   },
   async createPillar(name) {
     const s = await load();
-    const pillar: Pillar = { id: uid(), name, position: s.pillars.length, archived: false };
+    const pillar: Pillar = { id: uid(), name, identity: '', position: s.pillars.length, archived: false };
     s.pillars.push(pillar);
     await save();
     return pillar;
+  },
+  async updatePillar(id, patch) {
+    const s = await load();
+    const p = s.pillars.find(p => p.id === id);
+    if (p) {
+      if (patch.name !== undefined) p.name = patch.name;
+      if (patch.identity !== undefined) p.identity = patch.identity;
+    }
+    await save();
   },
   async archivePillar(id) {
     const s = await load();
@@ -127,9 +141,9 @@ export const demoApi: Api = {
     const s = await load();
     return s.habits.filter(h => !h.archived).sort((a, b) => a.position - b.position);
   },
-  async createHabit(pillarId, name, targetPerWeek) {
+  async createHabit(pillarId, name, days) {
     const s = await load();
-    const habit: Habit = { id: uid(), pillarId, name, targetPerWeek, position: s.habits.length, archived: false };
+    const habit: Habit = { id: uid(), pillarId, name, days, position: s.habits.length, archived: false };
     s.habits.push(habit);
     await save();
     return habit;
@@ -139,7 +153,7 @@ export const demoApi: Api = {
     const h = s.habits.find(h => h.id === id);
     if (h) {
       if (patch.name !== undefined) h.name = patch.name;
-      if (patch.targetPerWeek !== undefined) h.targetPerWeek = patch.targetPerWeek;
+      if (patch.days !== undefined) h.days = patch.days;
     }
     await save();
   },

@@ -13,7 +13,9 @@ import { api } from '../../src/lib/api';
 import { useAuth } from '../../src/lib/auth';
 import { addToOwnCalendar } from '../../src/lib/calendar-link';
 import { addDays, formatLong, todayKey, weekStart } from '../../src/lib/dates';
+import { dueOn } from '../../src/lib/habits';
 import { syncEveningReminder } from '../../src/lib/reminders';
+import { buildSnapshot, publishSnapshot } from '../../src/lib/widget';
 import { useTheme } from '../../src/lib/theme-context';
 import { Habit, Mark, Pillar } from '../../src/lib/types';
 import { space, type } from '../../src/theme';
@@ -39,6 +41,9 @@ export default function Today() {
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
+  // Only what today actually asks for: a habit that runs three times a week
+  // is simply absent on its other days, so the circle can always close.
+  const dueToday = useMemo(() => dueOn(habits, today), [habits, today]);
   const markedToday = useMemo(
     () => new Set(marks.filter(m => m.date === today).map(m => m.habitId)),
     [marks, today],
@@ -58,12 +63,15 @@ export default function Today() {
     }
   };
 
-  const todayFraction = habits.length ? markedToday.size / habits.length : 0;
+  const doneToday = dueToday.filter(h => markedToday.has(h.id)).length;
+  const todayFraction = dueToday.length ? doneToday / dueToday.length : 0;
 
-  // Keep one gentle evening reminder in sync with what is still open.
+  // Keep the evening reminder and the home-screen widget in step with what
+  // is still open today.
   React.useEffect(() => {
-    syncEveningReminder(habits.length - markedToday.size);
-  }, [habits.length, markedToday.size]);
+    syncEveningReminder(dueToday.length - doneToday);
+    publishSnapshot(buildSnapshot(habits, marks, today));
+  }, [dueToday.length, doneToday, habits, marks, today]);
 
   const hour = new Date().getHours();
   const daypart = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
@@ -74,14 +82,14 @@ export default function Today() {
       <View style={{ alignItems: 'center', marginVertical: space.l, marginBottom: space.xl }}>
         <MiniRing fraction={todayFraction} size={186}>
           <Text style={[type.numeral, { color: palette.ink }]}>
-            {markedToday.size}<Text style={{ fontSize: 22, color: palette.dim }}> / {habits.length}</Text>
+            {doneToday}<Text style={{ fontSize: 22, color: palette.dim }}> / {dueToday.length}</Text>
           </Text>
           <Label style={{ marginTop: 2 }}>marks today</Label>
         </MiniRing>
       </View>
 
       {pillars.map(pillar => {
-        const own = habits.filter(h => h.pillarId === pillar.id);
+        const own = dueToday.filter(h => h.pillarId === pillar.id);
         if (!own.length) return null;
         const done = own.filter(h => markedToday.has(h.id)).length;
         const isCollapsed = collapsed[pillar.id];
@@ -94,6 +102,9 @@ export default function Today() {
               <Label style={{ color: palette.ink }}>{pillar.name}</Label>
               <Label>{done} / {own.length}</Label>
             </Pressable>
+            {pillar.identity && !isCollapsed ? (
+              <Body dim style={{ fontSize: 12, marginTop: 6 }}>{pillar.identity}</Body>
+            ) : null}
             {!isCollapsed && own.map(habit => (
               <View
                 key={habit.id}
@@ -130,6 +141,10 @@ export default function Today() {
       {habits.length === 0 ? (
         <Body dim>
           No habits yet. Create your first pillar and habit under More.
+        </Body>
+      ) : dueToday.length === 0 ? (
+        <Body dim>
+          Nothing scheduled today — a rest day counts too.
         </Body>
       ) : null}
 

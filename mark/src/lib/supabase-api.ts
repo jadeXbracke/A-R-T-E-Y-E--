@@ -29,9 +29,10 @@ function fail(error: { message: string } | null): void {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const pillarRow = (r: any): Pillar =>
-  ({ id: r.id, name: r.name, position: r.position, archived: r.archived });
+  ({ id: r.id, name: r.name, identity: r.identity ?? '', position: r.position, archived: r.archived });
 const habitRow = (r: any): Habit =>
-  ({ id: r.id, pillarId: r.pillar_id, name: r.name, targetPerWeek: r.target_per_week, position: r.position, archived: r.archived });
+  ({ id: r.id, pillarId: r.pillar_id, name: r.name, days: r.days ?? [0, 1, 2, 3, 4, 5, 6],
+     position: r.position, archived: r.archived });
 const markRow = (r: any): Mark => ({ id: r.id, habitId: r.habit_id, date: r.date });
 const healthRow = (r: any): HealthLog => ({ id: r.id, kind: r.kind, date: r.date, payload: r.payload ?? {} });
 const sleepRow = (r: any): SleepLog =>
@@ -83,6 +84,12 @@ export const supabaseApi: Api = {
     fail(error);
     return pillarRow(data);
   },
+  async updatePillar(id, patch) {
+    const row: Record<string, unknown> = {};
+    if (patch.name !== undefined) row.name = patch.name;
+    if (patch.identity !== undefined) row.identity = patch.identity;
+    fail((await supabase.from('pillars').update(row).eq('id', id)).error);
+  },
   async archivePillar(id) {
     fail((await supabase.from('pillars').update({ archived: true }).eq('id', id)).error);
     fail((await supabase.from('habits').update({ archived: true }).eq('pillar_id', id)).error);
@@ -93,9 +100,9 @@ export const supabaseApi: Api = {
     fail(error);
     return (data ?? []).map(habitRow);
   },
-  async createHabit(pillarId, name, targetPerWeek) {
+  async createHabit(pillarId, name, days) {
     const { data, error } = await supabase.from('habits')
-      .insert({ user_id: await userId(), pillar_id: pillarId, name, target_per_week: targetPerWeek })
+      .insert({ user_id: await userId(), pillar_id: pillarId, name, days })
       .select().single();
     fail(error);
     return habitRow(data);
@@ -103,7 +110,7 @@ export const supabaseApi: Api = {
   async updateHabit(id, patch) {
     const row: Record<string, unknown> = {};
     if (patch.name !== undefined) row.name = patch.name;
-    if (patch.targetPerWeek !== undefined) row.target_per_week = patch.targetPerWeek;
+    if (patch.days !== undefined) row.days = patch.days;
     fail((await supabase.from('habits').update(row).eq('id', id)).error);
   },
   async archiveHabit(id) {
