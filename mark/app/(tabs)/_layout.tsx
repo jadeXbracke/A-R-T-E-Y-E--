@@ -44,7 +44,7 @@ function BottomBar({ state, navigation }: BottomTabBarProps) {
             <Text
               style={{
                 fontFamily: fonts.sansMedium, fontSize: 9, letterSpacing: 1.2,
-                color: active ? palette.ink : palette.dim,
+                color: active ? palette.inkDeep : palette.dim,
               }}
             >
               {label}
@@ -97,7 +97,7 @@ function SideRail({ state, navigation, side }: BottomTabBarProps & { side: 'left
                 <Text
                   style={{
                     fontFamily: fonts.sansMedium, fontSize: 9, letterSpacing: 1.6,
-                    color: active ? palette.ink : palette.dim,
+                    color: active ? palette.inkDeep : palette.dim,
                   }}
                 >
                   {label}
