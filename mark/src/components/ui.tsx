@@ -90,11 +90,12 @@ export function Screen({
   if (source) {
     return (
       <View style={{ flex: 1, backgroundColor: palette.bg }}>
-        {/* Contained, not cropped: the whole picture stays whole, sitting
-          * behind the page rather than filling it. */}
+        {/* Filling the screen edge to edge. Contained leaves bands of ground
+          * above and below, which reads as a picture pasted onto the page
+          * rather than the page standing on the picture. */}
         <Image
           source={source}
-          resizeMode="contain"
+          resizeMode="cover"
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
         {/* the ground, laid back over the picture so type stays readable */}
@@ -144,7 +145,7 @@ export function Screen({
  * to mud under the scrim, a dark one disappears into the ground, and either
  * way the chips and fields sit in a haze. Given its own band it stays a
  * picture, and the controls keep the clean ground they need. */
-export function SceneBlock({ source, children, height = 300 }: {
+export function SceneBlock({ source, children, height = 340 }: {
   source: ImageSourcePropType;
   children: React.ReactNode;
   height?: number;
@@ -152,12 +153,15 @@ export function SceneBlock({ source, children, height = 300 }: {
   const { palette } = useTheme();
   return (
     <View>
-      <View style={{ position: 'relative', marginTop: space.m, overflow: 'hidden' }}>
-        {/* Whole, not cropped: these are portrait frames whose subject sits
-          * low, so a centre crop lands on empty wall. The image is given a
-          * real size rather than absolute insets, which measured out at the
-          * size of the whole scroll content instead of the band. */}
-        <Image source={source} resizeMode="contain" style={{ width: '100%', height }} />
+      {/* Bleeding past the page margin, so the picture meets both edges of
+        * the screen the way it does on Today. */}
+      <View
+        style={{
+          position: 'relative', overflow: 'hidden',
+          marginTop: space.m, marginHorizontal: -space.page,
+        }}
+      >
+        <Image source={source} resizeMode="cover" style={{ width: '100%', height }} />
         {/* just enough ground to settle the picture into the page */}
         <View
           style={{
