@@ -32,8 +32,8 @@ Schema: `supabase/setup_1_schema.sql` (RLS: every row is owner-only).
 
 | Table               | Essence                                                      |
 |---------------------|--------------------------------------------------------------|
-| `pillars`           | self-chosen pillars (name, position, archived)               |
-| `habits`            | habits per pillar; `target_per_week` is a *soft* target      |
+| `pillars`           | self-chosen pillars + an optional identity line              |
+| `habits`            | habits per pillar + `days`: the weekdays each one is due     |
 | `marks`             | one row per habit per day (`unique (habit_id, date)`)        |
 | `health_logs`       | `kind` ∈ movement / nutrition / sleep + free `payload` jsonb |
 | `knowledge_entries` | book/course/article/podcast + one short insight              |
@@ -73,16 +73,17 @@ mark/
 
 ## Screen overview
 
-1. **Today** — nothing but today. The day circle fills as you complete your
-   small habits, ringed by seven day dots (Monday at the top, clockwise)
-   that close when a day was complete. Below it habits per pillar
-   (collapsible, stays calm with many habits), each with a tappable ring,
-   and one quiet mind-dump line. No stats, no schedule, no nudges.
+1. **Today** — nothing but today, and only what today asks for: a habit due
+   three days a week is simply absent on the other four, so the circle can
+   always close and a rest day never reads as a miss. Habits per pillar
+   (collapsible), each with a tappable ring, an optional identity line per
+   pillar, and one quiet mind-dump line. No stats, no schedule, no nudges.
 2. **Growth** — one month at a time. A single ring with the month's fill
-   percentage, the month grid of intensity dots, week dots per habit, and
-   the cycle: intentions in the first days of the month, a short reflection
-   every Sunday, a check-in on the last day of the month and of the quarter.
-   Deliberately few numbers.
+   percentage, the month grid of intensity dots — **tap any day to fill it
+   in afterwards**, so a forgotten day is never lost — week dots per habit
+   (unscheduled days stay blank), and the cycle: intentions in the first
+   days of the month, a short reflection every Sunday, a check-in on the
+   last day of the month and of the quarter. Deliberately few numbers.
 3. **Body** — collapsible, everything opt-in:
    - **Sleep**: regularity over hours. Seven nights drawn as arcs on a
      24-hour circle (midnight top, newest ring outermost) — the tighter the
@@ -109,8 +110,8 @@ mark/
    navigation placement (bottom bar or an editorial left/right side rail),
    evening reminder (off/18/20/21h — one quiet notification when habits are
    still open, native only), editable Sunday questions, managing pillars and
-   habits including per-habit weekly frequency (1–7 dots), account, privacy,
-   build stamp. There is no in-app agenda: a habit can be handed off to your
+   habits including the weekdays each habit is due and an optional identity
+   line per pillar, account, privacy, build stamp. There is no in-app agenda: a habit can be handed off to your
    own calendar from Today ("Put it in your own calendar").
 
 ## The circle concept (MVP check-in)
@@ -137,6 +138,13 @@ into `subscriptions`. The development build unlocks everything.
 
 No social features, leaderboards, points or badges; no punishments or forced
 check-ins; no calorie counting; no bright colours or playful icons.
+
+## Home-screen widget
+
+The app publishes a snapshot of today (`src/lib/widget.ts`) after every
+change; `docs/widget.md` carries the native WidgetKit / Glance setup. That
+half needs a development build to compile — it cannot exist in Expo Go or on
+the web.
 
 ## Roadmap after V1
 
