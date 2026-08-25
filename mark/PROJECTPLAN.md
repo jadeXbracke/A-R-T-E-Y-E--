@@ -93,11 +93,12 @@ mark/
    days of the month, a short reflection every Sunday, a check-in on the
    last day of the month and of the quarter. Deliberately few numbers.
 3. **Body** — collapsible, everything opt-in:
-   - **Sleep**: regularity over hours. Seven nights as seven bars on one
-     timeline, each running bed to wake, with faint verticals at the usual
-     bed and wake times. A steady week stacks into a straight-edged block, a
-     ragged one staggers, so the reading needs no explaining. Beneath it, the
-     average drift in minutes; duration is secondary. No sleep score, no
+   - **Sleep**: regularity over hours, drawn as one circle. A single arc on
+     a 24-hour dial (midnight at the top) marks the window you usually sleep
+     in, bed to wake; the average duration sits in the centre. Underneath, a
+     row of open/closed dots for the last seven nights — closed where a
+     night fell inside that usual window, open where it drifted — the same
+     mark language as everywhere else in the app. No sleep score, no
      warnings. Manual entry; Apple Health fills it in the phone build.
    - **Steps**: filling circle against a self-set guideline (default 8 000,
      explicitly a direction, not a norm) plus seven mini-rings for the week.

@@ -10,8 +10,8 @@ import { Alert, Platform, Pressable, Text, View } from 'react-native';
 import { MiniRing } from '../../src/components/progress-ring';
 import { IntensityDot } from '../../src/components/rings';
 import {
-  formatDuration, SleepRhythm, sleepDuration,
-} from '../../src/components/sleep-rhythm';
+  formatDuration, sleepAverages, sleepDuration, SleepNightDots, SleepWindow,
+} from '../../src/components/sleep-window';
 import { Body, Button, Chip, Field, Hairline, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { cycleStore, observations, toSpans } from '../../src/lib/cycle-store';
@@ -97,6 +97,7 @@ export default function BodyScreen() {
   const avgDuration = sleep.length
     ? formatDuration(sleep.reduce((a, n) => a + sleepDuration(n), 0) / sleep.length)
     : null;
+  const sleepAvg = sleepAverages(sleep);
   const todaySleep = sleep.find(n => n.date === today);
 
   // ── steps ──
@@ -203,14 +204,16 @@ export default function BodyScreen() {
       {open === 'sleep' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           {sleep.length >= 2 ? (
-            <View style={{ gap: space.m }}>
-              <SleepRhythm nights={sleep} />
-              {avgDuration ? (
-                <View>
-                  <Text style={[type.numeral, { fontSize: 26, color: palette.ink }]}>{avgDuration}</Text>
-                  <Label>average</Label>
-                </View>
-              ) : null}
+            <View style={{ alignItems: 'center', gap: space.l }}>
+              <SleepWindow averages={sleepAvg}>
+                {avgDuration ? (
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={[type.numeral, { fontSize: 28, color: palette.ink }]}>{avgDuration}</Text>
+                    <Label style={{ marginTop: 2 }}>average</Label>
+                  </View>
+                ) : null}
+              </SleepWindow>
+              <SleepNightDots nights={sleep} />
             </View>
           ) : (
             <Body dim>Log a few nights to see your rhythm.</Body>
