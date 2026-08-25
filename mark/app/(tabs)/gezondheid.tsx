@@ -9,9 +9,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Platform, Pressable, Text, View } from 'react-native';
 import { MiniRing } from '../../src/components/progress-ring';
 import { IntensityDot } from '../../src/components/rings';
-import {
-  formatDuration, sleepDuration, SleepCircle,
-} from '../../src/components/sleep-circle';
+import { formatDuration, sleepDuration } from '../../src/lib/sleep';
 import { Body, Button, Chip, Field, Hairline, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { cycleStore, observations, toSpans } from '../../src/lib/cycle-store';
@@ -31,6 +29,8 @@ const MEAL_QUALITY: Array<{ label: string; value: 1 | 2 | 3 }> = [
 ];
 const STEP_GOAL_KEY = 'mark.steps.goal';
 const STEP_GOALS = [6000, 8000, 10000, 12000];
+const SLEEP_GOAL_KEY = 'mark.sleep.goalMinutes';
+const SLEEP_GOALS = [360, 420, 480, 540]; // 6h, 7h, 8h, 9h
 
 type Module = 'steps' | 'movement' | 'nutrition' | 'sleep' | 'cycle';
 
@@ -47,6 +47,7 @@ export default function BodyScreen() {
   const [sleep, setSleep] = useState<SleepLog[]>([]);
   const [steps, setSteps] = useState<HealthSync[]>([]);
   const [stepGoal, setStepGoalState] = useState(8000);
+  const [sleepGoal, setSleepGoalState] = useState(480);
   const [cycleEnabled, setCycleEnabled] = useState(true);
   const [cycleConsent, setCycleConsent] = useState(false);
   const [periods, setPeriods] = useState<CyclePeriod[]>([]);
@@ -68,6 +69,10 @@ export default function BodyScreen() {
     AsyncStorage.getItem(STEP_GOAL_KEY).then(v => {
       const n = v ? parseInt(v, 10) : NaN;
       if (Number.isFinite(n) && n > 0) setStepGoalState(n);
+    }).catch(() => {});
+    AsyncStorage.getItem(SLEEP_GOAL_KEY).then(v => {
+      const n = v ? parseInt(v, 10) : NaN;
+      if (Number.isFinite(n) && n > 0) setSleepGoalState(n);
     }).catch(() => {});
     cycleStore.isEnabled().then(setCycleEnabled).catch(() => {});
     cycleStore.hasConsent().then(setCycleConsent).catch(() => {});
@@ -94,15 +99,18 @@ export default function BodyScreen() {
   }, [nutrition]);
 
   // ── sleep ──
-  const avgDuration = sleep.length
-    ? formatDuration(sleep.reduce((a, n) => a + sleepDuration(n), 0) / sleep.length)
-    : null;
-  const todaySleep = sleep.find(n => n.date === today);
+  const todaySleep = sleep.find(n => n.date === today) ?? null;
+  const todaySleepMinutes = todaySleep ? sleepDuration(todaySleep) : 0;
 
   // ── steps ──
   const todaySteps = steps.find(s => s.date === today)?.steps ?? 0;
   const weekSteps = daysBetween(addDays(today, -6), today)
     .map(d => ({ date: d, steps: steps.find(s => s.date === d)?.steps ?? 0 }));
+
+  const weekSleep = daysBetween(addDays(today, -6), today).map(d => {
+    const log = sleep.find(n => n.date === d);
+    return { date: d, minutes: log ? sleepDuration(log) : 0 };
+  });
 
   // ── cycle ──
   const spans = useMemo(() => toSpans(periods), [periods]);
@@ -154,6 +162,11 @@ export default function BodyScreen() {
     AsyncStorage.setItem(STEP_GOAL_KEY, String(n)).catch(() => {});
   };
 
+  const setSleepGoal = (n: number) => {
+    setSleepGoalState(n);
+    AsyncStorage.setItem(SLEEP_GOAL_KEY, String(n)).catch(() => {});
+  };
+
   const wipeCycle = () => {
     const run = () => cycleStore.wipeAll().then(reload);
     if (Platform.OS === 'web') { run(); return; }
@@ -202,20 +215,29 @@ export default function BodyScreen() {
       <Header id="sleep" label="sleep" />
       {open === 'sleep' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>
-          {sleep.length >= 2 ? (
-            <View style={{ alignItems: 'center' }}>
-              <SleepCircle nights={sleep}>
-                {avgDuration ? (
-                  <View style={{ alignItems: 'center' }}>
-                    <Text style={[type.numeral, { fontSize: 28, color: palette.ink }]}>{avgDuration}</Text>
-                    <Label style={{ marginTop: 2 }}>average</Label>
-                  </View>
-                ) : null}
-              </SleepCircle>
-            </View>
-          ) : (
-            <Body dim>Log a few nights to see your rhythm.</Body>
-          )}
+          <View style={{ alignItems: 'center', gap: space.s }}>
+            <MiniRing fraction={sleepGoal ? Math.min(todaySleepMinutes / sleepGoal, 1) : 0} size={120}>
+              <Text style={{ fontFamily: fonts.display, fontSize: 22, color: palette.ink }}>
+                {todaySleep ? formatDuration(todaySleepMinutes) : '—'}
+              </Text>
+              <Label style={{ fontSize: 8 }}>last night</Label>
+            </MiniRing>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.m }}>
+            {weekSleep.map(d => (
+              <View key={d.date} style={{ alignItems: 'center', gap: 4 }}>
+                <MiniRing fraction={sleepGoal ? Math.min(d.minutes / sleepGoal, 1) : 0} size={26} />
+                <Text style={[type.small, { color: palette.dim, fontSize: 9 }]}>{d.date.slice(8)}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <Body dim style={{ fontSize: 11 }}>Goal</Body>
+            {SLEEP_GOALS.map(g => (
+              <Chip key={g} label={`${g / 60}h`} active={sleepGoal === g} onPress={() => setSleepGoal(g)} />
+            ))}
+          </View>
 
           <View style={{ flexDirection: 'row', gap: space.m }}>
             <Field placeholder="Bed (23:30)" value={bedTime} onChangeText={setBedTime} style={{ flex: 1 }} />

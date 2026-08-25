@@ -93,17 +93,14 @@ mark/
    days of the month, a short reflection every Sunday, a check-in on the
    last day of the month and of the quarter. Deliberately few numbers.
 3. **Body** — collapsible, everything opt-in:
-   - **Sleep**: regularity over hours, drawn as one circle. Each of the last
-     seven nights is an arc on a 24-hour dial (midnight at the top),
-     stacked as concentric rings, newest outermost and darkest, older
-     nights fading inward. Tightly aligned arcs read as a steady rhythm;
-     scattered ones read as a ragged week, with no numbers or tick marks on
-     the dial itself. The average duration sits in the centre. No sleep
-     score, no warnings. Manual entry; Apple Health fills it in the phone
-     build. Four other directions (a dotted "constellation", a single bold
-     band with a soft spread, a radial starburst, a continuous spiral) were
-     drafted and compared before settling here — see the commit history if
-     that exploration is ever worth revisiting.
+   - **Sleep**: a goal-and-fill ring, the same language as Steps. A chosen
+     goal (6/7/8/9h), a filling circle for last night against it, and seven
+     small rings for the week. Manual entry; Apple Health fills it in the
+     phone build. Earlier drafts explored regularity-over-hours instead (a
+     24-hour dial with nights as concentric arcs, five variations of it
+     compared side by side) — replaced because a goal you can see yourself
+     meet or miss read as more realistic than a pattern you had to decode.
+     See the commit history if that direction is ever worth revisiting.
    - **Steps**: filling circle against a self-set guideline (default 8 000,
      explicitly a direction, not a norm) plus seven mini-rings for the week.
      Health platforms are read-only and per-datatype opt-in; manual entry
