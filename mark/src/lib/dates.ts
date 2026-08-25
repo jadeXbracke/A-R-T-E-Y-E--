@@ -7,8 +7,26 @@ export function dateKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export function todayKey(): string {
-  return dateKey(new Date());
+// ── The day boundary ────────────────────────────────────────────────────────
+// A day does not end at midnight for everyone. Someone checking in at 01:00
+// means it for the day they are still living, so the boundary is a personal
+// setting (see day-start.ts, which loads it before the app renders). Every
+// screen asks for "today" through here, so there is exactly one answer.
+let dayStartHour = 0;
+
+export function setDayStartHour(hour: number): void {
+  dayStartHour = Math.max(0, Math.min(hour, 12));
+}
+
+export function getDayStartHour(): number {
+  return dayStartHour;
+}
+
+/** The calendar day the user is currently living, per their day start. */
+export function todayKey(now: Date = new Date()): string {
+  const d = new Date(now);
+  if (d.getHours() < dayStartHour) d.setDate(d.getDate() - 1);
+  return dateKey(d);
 }
 
 export function fromKey(key: string): Date {

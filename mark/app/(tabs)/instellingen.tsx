@@ -6,6 +6,9 @@ import { Alert, Platform, Pressable, TextInput, View } from 'react-native';
 import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, Section } from '../../src/components/ui';
 import { api, DEMO_MODE } from '../../src/lib/api';
 import { cycleStore } from '../../src/lib/cycle-store';
+import { hasAnalyticsConsent, setAnalyticsConsent } from '../../src/lib/analytics';
+import { DAY_START_HOURS, getDayStartHour, saveDayStart } from '../../src/lib/day-start';
+import { deleteEverything, exportToFile, importFromFile } from '../../src/lib/data-portability';
 import { DAY_INITIALS, habitDays, rhythmLabel } from '../../src/lib/habits';
 import { useEntitlements } from '../../src/lib/entitlements';
 import { useAuth } from '../../src/lib/auth';
@@ -56,6 +59,9 @@ export default function More() {
   const [questionsSaved, setQuestionsSaved] = useState(false);
   const [reminderHour, setReminderHourState] = useState(20);
   const [cycleOn, setCycleOn] = useState(true);
+  const [dayStart, setDayStart] = useState(getDayStartHour());
+  const [analytics, setAnalytics] = useState(hasAnalyticsConsent());
+  const [dataNote, setDataNote] = useState('');
   const { premium } = useEntitlements();
 
   const reload = useCallback(() => {
@@ -115,6 +121,36 @@ export default function More() {
 
   // Pillars are the user's own words, so the name is editable in place and
   // saved as soon as the field is left.
+  const runDataAction = async (action: () => Promise<string>) => {
+    setDataNote('Working…');
+    try {
+      setDataNote(await action());
+    } catch (e) {
+      setDataNote(e instanceof Error ? e.message : 'That did not work.');
+    }
+  };
+
+  const confirmDelete = () => {
+    const run = async () => {
+      await deleteEverything();
+      router.replace('/auth');
+    };
+    if (Platform.OS === 'web') {
+      // eslint-disable-next-line no-alert
+      if (typeof confirm === 'function' && !confirm('Delete your account and all data? This cannot be undone.')) return;
+      run().catch(() => setDataNote('That did not work.'));
+      return;
+    }
+    Alert.alert(
+      'Delete your account?',
+      'Your account and every mark, log and note in it are erased for good. Export your data first if you want to keep it.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => run().catch(() => setDataNote('That did not work.')) },
+      ],
+    );
+  };
+
   const savePillarName = async (pillar: Pillar) => {
     const next = (nameDraft[pillar.id] ?? pillar.name).trim();
     if (!next || next === pillar.name) return;
@@ -246,6 +282,26 @@ export default function More() {
             <Chip key={p.value} label={p.label} active={pref === p.value} onPress={() => setPref(p.value)} />
           ))}
         </View>
+      </Section>
+
+      <Hairline spacing={space.m} />
+
+      <Section label="when your day starts">
+        <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+          {DAY_START_HOURS.map(h => (
+            <Chip
+              key={h}
+              label={`${String(h).padStart(2, '0')}:00`}
+              active={dayStart === h}
+              onPress={() => { setDayStart(h); saveDayStart(h); }}
+            />
+          ))}
+        </View>
+        <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
+          A check-in before this hour still counts for the day before — so a
+          late night does not quietly become a missed day. Takes effect when
+          you next open the app.
+        </Body>
       </Section>
 
       <Hairline spacing={space.m} />
@@ -457,6 +513,50 @@ export default function More() {
             <Button label="Sign out" onPress={signOut} />
           </View>
         )}
+      </Section>
+
+      <Hairline spacing={space.m} />
+
+      <Section label="your data">
+        <Body dim style={{ marginBottom: space.m }}>
+          Export gives you one readable file with everything, including the
+          cycle data that lives only on this phone. It is also your backup:
+          keep it somewhere safe before switching phones, and read it back
+          here afterwards.
+        </Body>
+        <View style={{ gap: space.m }}>
+          <Button label="Export my data" onPress={() => runDataAction(exportToFile)} />
+          <Button label="Restore from a file" onPress={() => runDataAction(importFromFile)} />
+        </View>
+        {dataNote ? <Body dim style={{ marginTop: space.s }}>{dataNote}</Body> : null}
+      </Section>
+
+      <Hairline spacing={space.m} />
+
+      <Section label="analytics">
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Body>Help improve MARK</Body>
+          <Chip
+            label={analytics ? 'On' : 'Off'}
+            active={analytics}
+            onPress={() => { const next = !analytics; setAnalytics(next); setAnalyticsConsent(next); }}
+          />
+        </View>
+        <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
+          Off by default. When on, MARK records which screens are used and
+          which flows finish — counts only. Nothing from Body or the cycle
+          module is ever included, and no habit names or notes.
+        </Body>
+      </Section>
+
+      <Hairline spacing={space.m} />
+
+      <Section label="delete account">
+        <Body dim style={{ marginBottom: space.m }}>
+          Erases your account and everything in it, on our side and on this
+          phone. There is no undo — export first if you want to keep a copy.
+        </Body>
+        <Button label="Delete my account" onPress={confirmDelete} />
       </Section>
 
       <Hairline spacing={space.m} />

@@ -48,6 +48,7 @@ export default function BodyScreen() {
   const [steps, setSteps] = useState<HealthSync[]>([]);
   const [stepGoal, setStepGoalState] = useState(8000);
   const [cycleEnabled, setCycleEnabled] = useState(true);
+  const [cycleConsent, setCycleConsent] = useState(false);
   const [periods, setPeriods] = useState<CyclePeriod[]>([]);
   const [entries, setEntries] = useState<CycleEntry[]>([]);
 
@@ -69,6 +70,7 @@ export default function BodyScreen() {
       if (Number.isFinite(n) && n > 0) setStepGoalState(n);
     }).catch(() => {});
     cycleStore.isEnabled().then(setCycleEnabled).catch(() => {});
+    cycleStore.hasConsent().then(setCycleConsent).catch(() => {});
     cycleStore.listPeriods().then(setPeriods).catch(() => {});
     cycleStore.listEntries().then(setEntries).catch(() => {});
   }, [prevMonday, today]);
@@ -368,6 +370,23 @@ export default function BodyScreen() {
                 <Body dim>The cycle module is part of MARK Premium.</Body>
                 <Button label="About Premium" onPress={() => router.push('/paywall')} />
               </View>
+            ) : !cycleConsent ? (
+              // Special-category data: nothing is recorded before an
+              // explicit, informed yes — and withdrawing it erases the lot.
+              <View style={{ paddingVertical: space.l, gap: space.m }}>
+                <Body>Before this module records anything</Body>
+                <Body dim style={{ fontSize: 12 }}>
+                  Cycle data counts as health data, so MARK asks first. What
+                  you log here is stored only in this app on this phone. It is
+                  never sent to our servers, never shared with anyone, and no
+                  analytics runs on these screens. You can delete all of it
+                  with one tap, and turning this off again erases it.
+                </Body>
+                <Button
+                  label="I understand — turn it on"
+                  onPress={() => cycleStore.setConsent(true).then(() => { setCycleConsent(true); reload(); })}
+                />
+              </View>
             ) : (
             <View style={{ paddingVertical: space.l, gap: space.m }}>
               {openPeriod ? (
@@ -390,6 +409,13 @@ export default function BodyScreen() {
               <Pressable onPress={wipeCycle}>
                 <Body dim style={{ fontSize: 11, textDecorationLine: 'underline' }}>
                   Delete all cycle data
+                </Body>
+              </Pressable>
+              <Pressable
+                onPress={() => cycleStore.setConsent(false).then(() => { setCycleConsent(false); reload(); })}
+              >
+                <Body dim style={{ fontSize: 11, textDecorationLine: 'underline' }}>
+                  Withdraw consent and erase
                 </Body>
               </Pressable>
             </View>

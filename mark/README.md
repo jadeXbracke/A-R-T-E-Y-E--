@@ -17,8 +17,10 @@ storage on the device/browser.
 
 ## Live mode (Supabase)
 
-1. Create a Supabase project and run `supabase/setup_1_schema.sql` in the SQL
-   editor.
+1. Create a Supabase project **in an EU region** (this cannot be changed
+   later — see `docs/privacy-compliance.md`) and run
+   `supabase/setup_1_schema.sql` followed by `supabase/setup_2_account.sql`
+   in the SQL editor.
 2. Put in `mark/.env` (gitignored):
 
    ```

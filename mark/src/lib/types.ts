@@ -146,3 +146,24 @@ export interface Profile {
   email: string;
   name?: string;
 }
+
+/**
+ * Everything the app holds about one person, in one object — the shape of
+ * both the GDPR data export and the restore that reads it back.
+ */
+export interface ExportBundle {
+  version: 1;
+  exportedAt: string;
+  profile: { name?: string; email?: string } | null;
+  pillars: Pillar[];
+  habits: Habit[];
+  marks: Mark[];
+  healthLogs: HealthLog[];
+  sleep: SleepLog[];
+  healthSync: HealthSync[];
+  knowledge: KnowledgeEntry[];
+  inbox: InboxItem[];
+  checkins: Checkin[];
+  /** Device-only, and only present when the module was ever used. */
+  cycle?: { periods: CyclePeriod[]; entries: CycleEntry[] };
+}

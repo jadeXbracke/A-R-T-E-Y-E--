@@ -160,6 +160,26 @@ history. Targets are computed structurally — what was asked for, not what
 happened — so a target never shifts underneath the number being compared to
 it.
 
+## Privacy, portability and the day boundary
+
+- **When your day starts** is a personal setting (default 04:00). Every
+  screen asks `todayKey()` for the day the user is currently living, so a
+  check-in at 01:00 still counts for the night before instead of quietly
+  opening a new day. It is loaded before the first render, so nothing ever
+  computes a date against the wrong boundary.
+- **Export / restore** (More → your data) writes one readable JSON file with
+  everything, including the device-only cycle data — the app's answer to
+  both GDPR portability and "I switched phones".
+- **Delete account** erases the account and every row from inside the app,
+  as GDPR and Apple both require (`supabase/setup_2_account.sql`).
+- **Cycle data asks for explicit consent** before recording anything, and
+  withdrawing consent erases it.
+- **Analytics** is opt-in and structurally cannot carry health data: the
+  events are a closed union with counts-only properties, and the Body and
+  cycle screens never call it. See `docs/privacy-compliance.md` for what
+  still has to be arranged outside the code (EU region, the Supabase DPA,
+  the processing record, the public privacy statement).
+
 ## Home-screen widget
 
 The app publishes a snapshot of today (`src/lib/widget.ts`) after every

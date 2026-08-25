@@ -242,6 +242,72 @@ export const supabaseApi: Api = {
     fail((await supabase.from('calendar_events').delete().eq('id', id)).error);
   },
 
+  async exportAll() {
+    const rows = async (table: string) => {
+      const { data, error } = await supabase.from(table).select('*');
+      fail(error);
+      return data ?? [];
+    };
+    const { data: user } = await supabase.auth.getUser();
+    return {
+      profile: user.user
+        ? { name: (user.user.user_metadata as { name?: string } | null)?.name, email: user.user.email }
+        : null,
+      pillars: (await rows('pillars')).map(pillarRow),
+      habits: (await rows('habits')).map(habitRow),
+      marks: (await rows('marks')).map(markRow),
+      healthLogs: (await rows('health_logs')).map(healthRow),
+      sleep: (await rows('sleep_logs')).map(sleepRow),
+      healthSync: (await rows('health_sync')).map(healthSyncRow),
+      knowledge: (await rows('knowledge_entries')).map(knowledgeRow),
+      inbox: (await rows('inbox_items')).map(inboxRow),
+      checkins: (await rows('checkins')).map((r: any) =>
+        ({ kind: r.kind, periodStart: r.period_start, answers: r.answers })),
+    };
+  },
+  async importAll(bundle) {
+    const uid = await userId();
+    // Replace rather than merge: a restore should land the account exactly
+    // where the export left it, not blend two histories.
+    for (const table of ['marks', 'habits', 'pillars', 'health_logs', 'sleep_logs',
+                         'health_sync', 'knowledge_entries', 'inbox_items', 'checkins']) {
+      fail((await supabase.from(table).delete().eq('user_id', uid)).error);
+    }
+    const put = async (table: string, rows: Record<string, unknown>[]) => {
+      if (!rows.length) return;
+      fail((await supabase.from(table).insert(rows.map(r => ({ ...r, user_id: uid })))).error);
+    };
+    // Pillars before habits before marks: the foreign keys depend on it.
+    await put('pillars', (bundle.pillars ?? []).map(p =>
+      ({ id: p.id, name: p.name, identity: p.identity, position: p.position, archived: p.archived })));
+    await put('habits', (bundle.habits ?? []).map(h =>
+      ({ id: h.id, pillar_id: h.pillarId, name: h.name, rhythm: h.rhythm, days: h.days,
+         times: h.times, start_date: h.startDate, paused: h.paused,
+         position: h.position, archived: h.archived })));
+    await put('marks', (bundle.marks ?? []).map(m => ({ id: m.id, habit_id: m.habitId, date: m.date })));
+    await put('health_logs', (bundle.healthLogs ?? []).map(l =>
+      ({ id: l.id, kind: l.kind, date: l.date, payload: l.payload })));
+    await put('sleep_logs', (bundle.sleep ?? []).map(l =>
+      ({ id: l.id, date: l.date, bed_time: l.bedTime, wake_time: l.wakeTime,
+         quality: l.quality, source: l.source })));
+    await put('health_sync', (bundle.healthSync ?? []).map(l =>
+      ({ id: l.id, date: l.date, steps: l.steps ?? null, resting_hr: l.restingHr ?? null,
+         active_energy: l.activeEnergy ?? null, source: l.source })));
+    await put('knowledge_entries', (bundle.knowledge ?? []).map(k =>
+      ({ id: k.id, kind: k.kind, title: k.title, rating: k.rating, note: k.note })));
+    await put('inbox_items', (bundle.inbox ?? []).map(i =>
+      ({ id: i.id, kind: i.kind, text: i.text, done: i.done })));
+    await put('checkins', (bundle.checkins ?? []).map(c =>
+      ({ kind: c.kind, period_start: c.periodStart, answers: c.answers })));
+  },
+  async deleteAccount() {
+    // delete_own_account() is a security-definer function that removes the
+    // auth user; every table cascades from it. See setup_2_account.sql.
+    const { error } = await supabase.rpc('delete_own_account');
+    fail(error);
+    await supabase.auth.signOut();
+  },
+
   async getCheckin(kind, periodStart) {
     const { data, error } = await supabase.from('checkins')
       .select('*').eq('kind', kind).eq('period_start', periodStart).maybeSingle();

@@ -2,11 +2,13 @@ import { Archivo_500Medium } from '@expo-google-fonts/archivo';
 import { useFonts } from 'expo-font';
 import { Redirect, Slot, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { DEMO_MODE } from '../src/lib/api';
+import { loadAnalyticsConsent } from '../src/lib/analytics';
+import { loadDayStart } from '../src/lib/day-start';
 import { EntitlementsProvider } from '../src/lib/entitlements';
 import { AuthProvider, useAuth } from '../src/lib/auth';
 import { ThemeProvider, useTheme } from '../src/lib/theme-context';
@@ -38,12 +40,19 @@ export default function RootLayout() {
     Archivo_500Medium,
   });
   const fontsSettled = fontsLoaded || !!fontError;
+  // The day boundary decides what "today" means, so it has to be in place
+  // before a single screen computes a date.
+  const [dayStartReady, setDayStartReady] = useState(false);
+  useEffect(() => {
+    Promise.all([loadDayStart(), loadAnalyticsConsent()])
+      .finally(() => setDayStartReady(true));
+  }, []);
 
   useEffect(() => {
-    if (fontsSettled) SplashScreen.hideAsync().catch(() => {});
-  }, [fontsSettled]);
+    if (fontsSettled && dayStartReady) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsSettled, dayStartReady]);
 
-  if (!fontsSettled) return null;
+  if (!fontsSettled || !dayStartReady) return null;
 
   return (
     <SafeAreaProvider>

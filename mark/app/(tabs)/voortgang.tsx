@@ -12,7 +12,7 @@ import { Body, Button, Field, Hairline, Item, Label, Screen, Section } from '../
 import { api } from '../../src/lib/api';
 import {
   addDays, daysBetween, formatShort, monthEnd, monthLabel,
-  monthStart, quarterEnd, quarterStart, todayKey, weekStart, DAY_LETTERS,
+  monthStart, quarterEnd, quarterStart, todayKey, weekStart, weekdayIndex, DAY_LETTERS,
 } from '../../src/lib/dates';
 import { dueOn, isActive, isDue, targetOver } from '../../src/lib/habits';
 import { useTheme } from '../../src/lib/theme-context';
@@ -152,7 +152,7 @@ export default function Growth() {
 
   // The cycle: what is due today?
   const dayOfMonth = Number(today.slice(8, 10));
-  const isSunday = new Date().getDay() === 0;
+  const isSunday = weekdayIndex(today) === 6; // the day the user is living
   const due: Array<{ kind: CheckinKind; periodStart: string }> = [];
   if (dayOfMonth <= 3) due.push({ kind: 'intention', periodStart: firstOfMonth });
   if (isSunday) due.push({ kind: 'week', periodStart: monday });

@@ -316,6 +316,34 @@ export const demoApi: Api = {
     await save();
   },
 
+  async exportAll() {
+    const s = await load();
+    return {
+      profile: s.profile ? { name: s.profile.name, email: s.profile.email } : null,
+      pillars: s.pillars, habits: s.habits, marks: s.marks,
+      healthLogs: s.healthLogs, sleep: s.sleep, healthSync: s.healthSync,
+      knowledge: s.knowledge, inbox: s.inbox, checkins: s.checkins,
+    };
+  },
+  async importAll(bundle) {
+    const s = await load();
+    s.pillars = bundle.pillars ?? [];
+    s.habits = bundle.habits ?? [];
+    s.marks = bundle.marks ?? [];
+    s.healthLogs = bundle.healthLogs ?? [];
+    s.sleep = bundle.sleep ?? [];
+    s.healthSync = bundle.healthSync ?? [];
+    s.knowledge = bundle.knowledge ?? [];
+    s.inbox = bundle.inbox ?? [];
+    s.checkins = bundle.checkins ?? [];
+    if (s.profile && bundle.profile?.name) s.profile.name = bundle.profile.name;
+    await save();
+  },
+  async deleteAccount() {
+    cache = null;
+    await AsyncStorage.removeItem(KEY);
+  },
+
   async getCheckin(kind, periodStart) {
     const s = await load();
     return s.checkins.find(c => c.kind === kind && c.periodStart === periodStart) ?? null;

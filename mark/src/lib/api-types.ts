@@ -1,7 +1,7 @@
 import {
-  CalendarEvent, Checkin, CheckinKind, Habit, HealthKind, HealthLog,
-  HealthSync, InboxItem, InboxKind, KnowledgeEntry, KnowledgeKind, Mark,
-  Pillar, Profile, RhythmKind, SleepLog,
+  CalendarEvent, Checkin, CheckinKind, ExportBundle, Habit, HealthKind,
+  HealthLog, HealthSync, InboxItem, InboxKind, KnowledgeEntry, KnowledgeKind,
+  Mark, Pillar, Profile, RhythmKind, SleepLog,
 } from './types';
 
 // One interface, two backends (demo-store / supabase-api) — same pattern as
@@ -63,6 +63,14 @@ export interface Api {
   listEvents(from: string, to: string): Promise<CalendarEvent[]>;
   addEvent(title: string, start: string, end: string): Promise<CalendarEvent>;
   deleteEvent(id: string): Promise<void>;
+
+  // portability & erasure (GDPR articles 15, 17 and 20)
+  /** Everything held about this account, for the data export. */
+  exportAll(): Promise<Omit<ExportBundle, 'version' | 'exportedAt' | 'cycle'>>;
+  /** Restore an export onto this account, replacing what is there. */
+  importAll(bundle: ExportBundle): Promise<void>;
+  /** Erase the account and every row belonging to it. Irreversible. */
+  deleteAccount(): Promise<void>;
 
   // cycle check-ins (weekly reflection, month/quarter check-ins, intentions)
   getCheckin(kind: CheckinKind, periodStart: string): Promise<Checkin | null>;

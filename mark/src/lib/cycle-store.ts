@@ -15,12 +15,12 @@
 // contraception or no cycle at all are all fine — nothing here ever errors
 // on "unexpected" patterns.
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEMO_MODE } from './api';
 import { addDays, daysBetween, todayKey } from './dates';
 import { CycleEntry, CyclePeriod, CycleSymptom } from './types';
 
 const DATA_KEY = 'mark.cycle.v1';
 const ENABLED_KEY = 'mark.cycle.enabled';
+const CONSENT_KEY = 'mark.cycle.consent';
 
 interface CycleData {
   periods: CyclePeriod[];
@@ -29,31 +29,13 @@ interface CycleData {
 
 let cache: CycleData | null = null;
 
-function demoSeed(): CycleData {
-  // Demo mode only: three plausible past cycles so the ring visual and the
-  // observations have something to show. Never seeded in live mode.
-  const t = todayKey();
-  const starts = [addDays(t, -82), addDays(t, -53), addDays(t, -23)];
-  const periods: CyclePeriod[] = starts.map(s => ({ start: s, end: addDays(s, 4) }));
-  const entries: CycleEntry[] = [];
-  for (const s of starts) {
-    for (const offset of [1, 3, 8, 14, 21, 22, 24, 26]) {
-      entries.push({
-        date: addDays(s, offset),
-        symptoms: { energy: offset >= 21 && offset <= 26 ? 2 : 4 },
-      });
-    }
-  }
-  return { periods, entries };
-}
-
 async function load(): Promise<CycleData> {
   if (cache) return cache;
   const raw = await AsyncStorage.getItem(DATA_KEY).catch(() => null);
   if (raw) {
     cache = JSON.parse(raw) as CycleData;
   } else {
-    cache = DEMO_MODE ? demoSeed() : { periods: [], entries: [] };
+    cache = { periods: [], entries: [] };
     await persist();
   }
   return cache;
@@ -64,6 +46,20 @@ async function persist(): Promise<void> {
 }
 
 export const cycleStore = {
+  /**
+   * Cycle data is special-category personal data, so nothing is recorded
+   * until the person has read what is stored and where, and said yes. This
+   * is separate from the on/off switch: consent is the legal basis, the
+   * switch is a preference.
+   */
+  async hasConsent(): Promise<boolean> {
+    return (await AsyncStorage.getItem(CONSENT_KEY).catch(() => null)) === '1';
+  },
+  async setConsent(on: boolean): Promise<void> {
+    await AsyncStorage.setItem(CONSENT_KEY, on ? '1' : '0').catch(() => {});
+    if (!on) await cycleStore.wipeAll(); // withdrawing consent erases the data
+  },
+
   async isEnabled(): Promise<boolean> {
     const v = await AsyncStorage.getItem(ENABLED_KEY).catch(() => null);
     return v !== '0';
@@ -100,6 +96,12 @@ export const cycleStore = {
     }
     if (entry.symptoms[symptom] === value) delete entry.symptoms[symptom]; // tap again = unlog
     else entry.symptoms[symptom] = value;
+    await persist();
+  },
+
+  /** Put a restored export back in place (see data-portability.ts). */
+  async restore(periods: CyclePeriod[], entries: CycleEntry[]): Promise<void> {
+    cache = { periods, entries };
     await persist();
   },
 
