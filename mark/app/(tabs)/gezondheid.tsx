@@ -10,8 +10,8 @@ import { Alert, Platform, Pressable, Text, View } from 'react-native';
 import { MiniRing } from '../../src/components/progress-ring';
 import { IntensityDot } from '../../src/components/rings';
 import {
-  formatDuration, sleepAverages, sleepDuration, SleepNightDots, SleepWindow,
-} from '../../src/components/sleep-window';
+  formatDuration, sleepDuration, SleepCircle,
+} from '../../src/components/sleep-circle';
 import { Body, Button, Chip, Field, Hairline, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
 import { cycleStore, observations, toSpans } from '../../src/lib/cycle-store';
@@ -97,7 +97,6 @@ export default function BodyScreen() {
   const avgDuration = sleep.length
     ? formatDuration(sleep.reduce((a, n) => a + sleepDuration(n), 0) / sleep.length)
     : null;
-  const sleepAvg = sleepAverages(sleep);
   const todaySleep = sleep.find(n => n.date === today);
 
   // ── steps ──
@@ -204,16 +203,15 @@ export default function BodyScreen() {
       {open === 'sleep' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           {sleep.length >= 2 ? (
-            <View style={{ alignItems: 'center', gap: space.l }}>
-              <SleepWindow averages={sleepAvg}>
+            <View style={{ alignItems: 'center' }}>
+              <SleepCircle nights={sleep}>
                 {avgDuration ? (
                   <View style={{ alignItems: 'center' }}>
                     <Text style={[type.numeral, { fontSize: 28, color: palette.ink }]}>{avgDuration}</Text>
                     <Label style={{ marginTop: 2 }}>average</Label>
                   </View>
                 ) : null}
-              </SleepWindow>
-              <SleepNightDots nights={sleep} />
+              </SleepCircle>
             </View>
           ) : (
             <Body dim>Log a few nights to see your rhythm.</Body>
