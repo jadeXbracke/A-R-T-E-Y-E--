@@ -10,7 +10,7 @@ import { Alert, Platform, Pressable, Text, View } from 'react-native';
 import { MiniRing } from '../../src/components/progress-ring';
 import { IntensityDot } from '../../src/components/rings';
 import {
-  formatDuration, SleepRhythm, sleepDuration, sleepRegularity,
+  formatDuration, SleepRhythm, sleepDuration,
 } from '../../src/components/sleep-rhythm';
 import { Body, Button, Chip, Field, Hairline, Item, Label, Screen } from '../../src/components/ui';
 import { api } from '../../src/lib/api';
@@ -94,7 +94,6 @@ export default function BodyScreen() {
   }, [nutrition]);
 
   // ── sleep ──
-  const regularity = sleepRegularity(sleep);
   const avgDuration = sleep.length
     ? formatDuration(sleep.reduce((a, n) => a + sleepDuration(n), 0) / sleep.length)
     : null;
@@ -206,20 +205,12 @@ export default function BodyScreen() {
           {sleep.length >= 2 ? (
             <View style={{ gap: space.m }}>
               <SleepRhythm nights={sleep} />
-              <View style={{ flexDirection: 'row', gap: space.xl }}>
-                {regularity !== null ? (
-                  <View>
-                    <Text style={[type.numeral, { fontSize: 26, color: palette.ink }]}>{regularity}</Text>
-                    <Label>min drift</Label>
-                  </View>
-                ) : null}
-                {avgDuration ? (
-                  <View>
-                    <Text style={[type.numeral, { fontSize: 26, color: palette.ink }]}>{avgDuration}</Text>
-                    <Label>average</Label>
-                  </View>
-                ) : null}
-              </View>
+              {avgDuration ? (
+                <View>
+                  <Text style={[type.numeral, { fontSize: 26, color: palette.ink }]}>{avgDuration}</Text>
+                  <Label>average</Label>
+                </View>
+              ) : null}
             </View>
           ) : (
             <Body dim>Log a few nights to see your rhythm.</Body>
