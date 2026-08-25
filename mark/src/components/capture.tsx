@@ -34,7 +34,7 @@ export function Capture({ onAdded }: { onAdded?: () => void }) {
   return (
     <View>
       <Field
-        placeholder="Empty your head. A book, an idea, a task…"
+        placeholder="Empty your head…"
         value={text}
         onChangeText={t => { setText(t); setSaved(false); }}
         onSubmitEditing={add}
@@ -48,11 +48,7 @@ export function Capture({ onAdded }: { onAdded?: () => void }) {
           <Chip label="Save" active onPress={add} />
         </View>
       ) : null}
-      {saved ? (
-        <Body dim style={{ marginTop: space.s, color: palette.dim }}>
-          Captured. Find it under Knowledge.
-        </Body>
-      ) : null}
+
     </View>
   );
 }

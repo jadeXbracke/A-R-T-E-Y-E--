@@ -23,6 +23,10 @@ missed day is no reason to panic; you simply continue.
   cases: each of those reads as a second typeface and breaks the house
   style. No italics, and no dashes in the copy: sentences are split or
   joined with commas instead, so nothing interrupts the line.
+- **The screen does not narrate itself.** A line that explains how a control
+  works is a sign the control is wrong; fix the control and delete the line.
+  What stays is data, a disclosure the law requires, or a short empty state.
+  Everything else is cut.
 - **No glyphs anywhere**: no emoji, no arrows, no symbol characters. Every
   control draws its own mark from the same circles and hairlines as the rest
   (a triangle for reordering, a line for remove, a line and a cross for the

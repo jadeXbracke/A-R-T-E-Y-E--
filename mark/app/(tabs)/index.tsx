@@ -144,11 +144,11 @@ export default function Today() {
 
       {habits.length === 0 ? (
         <Body dim>
-          No habits yet. Create your first pillar and habit under More.
+          No habits yet. Add one under More.
         </Body>
       ) : dueToday.length === 0 ? (
         <Body dim>
-          Nothing scheduled today. A rest day counts too.
+          Nothing scheduled today.
         </Body>
       ) : null}
 

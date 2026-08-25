@@ -276,13 +276,12 @@ export default function More() {
   );
 
   return (
-    <Screen title="More" subtitle="Settings, pillars and account">
+    <Screen title="More">
       <Section label="personal">
         <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
           <Field placeholder="Your first name" value={name} onChangeText={setName} style={{ flex: 1 }} />
           <Chip label={nameSaved ? 'Saved' : 'Save'} onPress={saveName} />
         </View>
-        <Body dim style={{ marginTop: space.s }}>Shown at the top of Today.</Body>
       </Section>
 
       <Hairline spacing={space.m} />
@@ -308,11 +307,6 @@ export default function More() {
             />
           ))}
         </View>
-        <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
-          A mark set before this hour still counts for the day before, so a late
-          night does not quietly become a missed day. Takes effect when you
-          next open the app.
-        </Body>
       </Section>
 
       <Hairline spacing={space.m} />
@@ -338,10 +332,6 @@ export default function More() {
             />
           ))}
         </View>
-        <Body dim style={{ marginTop: space.s }}>
-          One quiet notification if habits are still open that day. On your phone only. The
-          web version cannot remind you.
-        </Body>
       </Section>
 
       <Hairline spacing={space.m} />
@@ -493,31 +483,19 @@ export default function More() {
             }}
           />
         </View>
-        <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
-          Switching it off hides the module everywhere; your data stays on the
-          device until you delete it there.
-        </Body>
       </Section>
 
       <Hairline spacing={space.m} />
 
       <Section label="mark premium">
-        <Body dim>
-          {premium ? 'Premium is active.' : 'Health sync, cycle registration, export and more.'}
-        </Body>
-        <View style={{ marginTop: space.m }}>
-          <Button label="About Premium" onPress={() => router.push('/paywall')} />
-        </View>
+        <Button label={premium ? 'Premium is active' : 'About Premium'} onPress={() => router.push('/paywall')} />
       </Section>
 
       <Hairline spacing={space.m} />
 
       <Section label="account">
         {DEMO_MODE ? (
-          <Body dim>
-            Demo build: everything is stored on this device only. Connect Supabase
-            (see README) to take your marks anywhere.
-          </Body>
+          <Body dim>Demo build. Everything stays on this device.</Body>
         ) : (
           <View style={{ gap: space.m }}>
             <Body dim>Signed in as {profile?.email}</Body>
@@ -529,12 +507,6 @@ export default function More() {
       <Hairline spacing={space.m} />
 
       <Section label="your data">
-        <Body dim style={{ marginBottom: space.m }}>
-          Export gives you one readable file with everything, including the
-          cycle data that lives only on this phone. It is also your backup:
-          keep it somewhere safe before switching phones, and read it back
-          here afterwards.
-        </Body>
         <View style={{ gap: space.m }}>
           <Button label="Export my data" onPress={() => runDataAction(exportToFile)} />
           <Button label="Restore from a file" onPress={() => runDataAction(importFromFile)} />
@@ -554,19 +526,14 @@ export default function More() {
           />
         </View>
         <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
-          Off by default. When on, MARK records which screens are used and
-          which flows finish, as counts only. Nothing from Body or the cycle
-          module is ever included, and no habit names or notes.
+          Counts only. Nothing from Body or the cycle module.
         </Body>
       </Section>
 
       <Hairline spacing={space.m} />
 
       <Section label="delete account">
-        <Body dim style={{ marginBottom: space.m }}>
-          Erases your account and everything in it, on our side and on this
-          phone. There is no undo. Export first if you want to keep a copy.
-        </Body>
+        <Body dim style={{ marginBottom: space.m }}>There is no undo.</Body>
         <Button label="Delete my account" onPress={confirmDelete} />
       </Section>
 
@@ -574,13 +541,8 @@ export default function More() {
 
       <Section label="privacy">
         <Body dim>
-          Where your data lives: habits, marks, sleep and steps are stored in your
-          own account (or only on this device in the demo build). Cycle data is
-          different: it exists only on this device, inside this app's private
-          storage, is never synced or shared, and no analytics or tracking runs
-          on any of these screens. You can delete all cycle data with one tap
-          under Body, in the cycle module, and deleting the app removes everything on the
-          device with it.
+          Habits, marks, sleep and steps live in your account. Cycle data never
+          leaves this phone, and no analytics runs on these screens.
         </Body>
       </Section>
 

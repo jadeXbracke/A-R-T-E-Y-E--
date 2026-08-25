@@ -206,25 +206,23 @@ export default function BodyScreen() {
           {sleep.length >= 2 ? (
             <View style={{ gap: space.m }}>
               <SleepRhythm nights={sleep} />
-              <Body dim style={{ fontSize: 11 }}>
-                Each bar is one night. The straighter the edges, the steadier
-                your rhythm. The faint lines are your usual bed and wake times.
-              </Body>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.m }}>
+              <View style={{ flexDirection: 'row', gap: space.xl }}>
                 {regularity !== null ? (
-                  <>
-                    <Text style={[type.numeral, { fontSize: 30, color: palette.ink }]}>{regularity}</Text>
-                    <Body dim style={{ flex: 1 }}>min from your usual times</Body>
-                  </>
+                  <View>
+                    <Text style={[type.numeral, { fontSize: 26, color: palette.ink }]}>{regularity}</Text>
+                    <Label>min drift</Label>
+                  </View>
+                ) : null}
+                {avgDuration ? (
+                  <View>
+                    <Text style={[type.numeral, { fontSize: 26, color: palette.ink }]}>{avgDuration}</Text>
+                    <Label>average</Label>
+                  </View>
                 ) : null}
               </View>
-              {avgDuration ? <Body dim>{avgDuration} average this week</Body> : null}
             </View>
           ) : (
-            <Body dim>
-              Log a few nights and each one appears here as a bar on a shared
-              timeline. Regularity matters more than totals.
-            </Body>
+            <Body dim>Log a few nights to see your rhythm.</Body>
           )}
 
           <View style={{ flexDirection: 'row', gap: space.m }}>
@@ -240,11 +238,6 @@ export default function BodyScreen() {
             onPress={logSleep}
             disabled={!validTime(bedTime) || !validTime(wakeTime)}
           />
-          {healthProvider.available() ? null : (
-            <Body dim style={{ fontSize: 11 }}>
-              Apple Health can fill this in automatically in the phone app build. Manual always works.
-            </Body>
-          )}
         </View>
       ) : null}
 
@@ -258,9 +251,6 @@ export default function BodyScreen() {
               </Text>
               <Label style={{ fontSize: 8 }}>today</Label>
             </MiniRing>
-            <Body dim style={{ fontSize: 11 }}>
-              Guideline {stepGoal.toLocaleString('en-US')}. A direction, not a norm.
-            </Body>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.m }}>
             {weekSteps.map(d => (
@@ -286,11 +276,6 @@ export default function BodyScreen() {
               <Chip key={g} label={`${g / 1000}k`} active={stepGoal === g} onPress={() => setStepGoal(g)} />
             ))}
           </View>
-          <Body dim style={{ fontSize: 11 }}>
-            {has('healthSync')
-              ? 'Apple Health / Google Fit sync (read only, per data type) activates in the phone app build; entering by hand always works.'
-              : 'Automatic Health sync is part of Premium; entering by hand always works.'}
-          </Body>
         </View>
       ) : null}
 
@@ -378,13 +363,10 @@ export default function BodyScreen() {
               // Special-category data: nothing is recorded before an
               // explicit, informed yes — and withdrawing it erases the lot.
               <View style={{ paddingVertical: space.l, gap: space.m }}>
-                <Body>Before this module records anything</Body>
                 <Body dim style={{ fontSize: 12 }}>
-                  Cycle data counts as health data, so MARK asks first. What
-                  you log here is stored only in this app on this phone. It is
-                  never sent to our servers, never shared with anyone, and no
-                  analytics runs on these screens. You can delete all of it
-                  with one tap, and turning this off again erases it.
+                  Cycle data is health data, so MARK asks first. It stays on
+                  this phone, is never sent or shared, and turning this off
+                  erases it.
                 </Body>
                 <Button
                   label="I understand, turn it on"
@@ -402,7 +384,7 @@ export default function BodyScreen() {
               <Body dim style={{ fontSize: 12 }}>
                 {currentSpan && currentDay
                   ? `Day ${currentDay} · last started ${formatShort(currentSpan.start)}`
-                  : 'Nothing recorded yet. One tap is all this module asks.'}
+                  : 'Nothing recorded yet.'}
               </Body>
               {notes.length ? <Body dim style={{ fontSize: 12 }}>{notes[0]}</Body> : null}
 

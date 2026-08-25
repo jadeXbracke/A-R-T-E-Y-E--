@@ -82,11 +82,7 @@ function CheckinCard({ kind, periodStart }: { kind: CheckinKind; periodStart: st
 
   return (
     <Section label={TITLES[kind]}>
-      {saved ? (
-        <Body dim style={{ marginBottom: space.m }}>Saved. You can always update it.</Body>
-      ) : (
-        <Body dim style={{ marginBottom: space.m }}>Three questions, five minutes. Nothing more.</Body>
-      )}
+      {saved ? <Body dim style={{ marginBottom: space.m }}>Saved.</Body> : null}
       {questions.map((q, i) => (
         <View key={i} style={{ marginBottom: space.m }}>
           <Body style={{ marginBottom: 4 }}>{q}</Body>
@@ -203,9 +199,6 @@ export default function Growth() {
             );
           })}
         </View>
-        <Body dim style={{ fontSize: 11, textAlign: 'center', marginTop: space.m }}>
-          Tap a day to fill it in. A day you forgot is never lost.
-        </Body>
       </View>
 
       <Hairline spacing={space.m} />
