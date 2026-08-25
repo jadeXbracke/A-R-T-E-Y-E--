@@ -100,7 +100,7 @@ export default function Knowledge() {
   );
 
   return (
-    <Screen title="Knowledge">
+    <Screen title="Mind">
       <Section label="mind dump">
         <Capture onAdded={reload} />
         {openItems.map(item => (

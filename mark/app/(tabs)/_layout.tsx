@@ -10,7 +10,7 @@ const TABS: Array<{ name: string; label: string }> = [
   { name: 'index', label: 'TODAY' },
   { name: 'voortgang', label: 'GROWTH' },
   { name: 'gezondheid', label: 'BODY' },
-  { name: 'kennis', label: 'KNOWLEDGE' },
+  { name: 'kennis', label: 'MIND' },
   { name: 'instellingen', label: 'MORE' },
 ];
 
