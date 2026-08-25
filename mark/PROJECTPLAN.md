@@ -92,7 +92,8 @@ mark/
    (unscheduled days stay blank), and the cycle: intentions in the first
    days of the month, a short reflection every Sunday, a check-in on the
    last day of the month and of the quarter. Deliberately few numbers.
-3. **Body** — collapsible, everything opt-in:
+3. **Body** — collapsible, everything opt-in, in the order Nutrition,
+   Movement, Sleep, Cycle:
    - **Sleep**: a goal-and-fill ring, the same language as Steps. A chosen
      goal (6/7/8/9h), a filling circle for last night against it, and seven
      small rings for the week. Manual entry; Apple Health fills it in the
@@ -101,12 +102,13 @@ mark/
      compared side by side) — replaced because a goal you can see yourself
      meet or miss read as more realistic than a pattern you had to decode.
      See the commit history if that direction is ever worth revisiting.
-   - **Steps**: filling circle against a self-set guideline (default 8 000,
-     explicitly a direction, not a norm) plus seven mini-rings for the week.
-     Health platforms are read-only and per-datatype opt-in; manual entry
-     always works, so a missing platform never leaves a broken state.
-   - **Movement / Nutrition**: as before (nutrition adds a protein counter;
-     still no calories).
+   - **Movement**: steps and workouts share one section. Steps as a filling
+     circle against a self-set guideline (default 8 000, explicitly a
+     direction, not a norm) plus seven mini-rings for the week — health
+     platforms are read-only and per-datatype opt-in, manual entry always
+     works. Below a hairline, workouts: type, minutes, the week's total.
+   - **Nutrition**: meal quality, hydration, a protein counter, supplements.
+     Still no calories.
    - **Cycle**: STRICTLY REGISTERING, and deliberately the quietest module
      on the screen — marking that a period started (or ended) is all it
      asks. One quiet line of context underneath (cycle day, last start) and,

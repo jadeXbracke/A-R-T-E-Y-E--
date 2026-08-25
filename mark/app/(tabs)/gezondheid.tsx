@@ -32,7 +32,7 @@ const STEP_GOALS = [6000, 8000, 10000, 12000];
 const SLEEP_GOAL_KEY = 'mark.sleep.goalMinutes';
 const SLEEP_GOALS = [360, 420, 480, 540]; // 6h, 7h, 8h, 9h
 
-type Module = 'steps' | 'movement' | 'nutrition' | 'sleep' | 'cycle';
+type Module = 'movement' | 'nutrition' | 'sleep' | 'cycle';
 
 export default function BodyScreen() {
   const { palette } = useTheme();
@@ -41,7 +41,7 @@ export default function BodyScreen() {
   const monday = weekStart(today);
   const prevMonday = addDays(monday, -7);
 
-  const [open, setOpen] = useState<Module | null>('sleep');
+  const [open, setOpen] = useState<Module | null>('nutrition');
   const [movement, setMovement] = useState<HealthLog[]>([]);
   const [nutrition, setNutrition] = useState<HealthLog[]>([]);
   const [sleep, setSleep] = useState<SleepLog[]>([]);
@@ -212,6 +212,111 @@ export default function BodyScreen() {
 
   return (
     <Screen title="Body">
+      <Header id="nutrition" label="nutrition" />
+      {open === 'nutrition' ? (
+        <View style={{ paddingVertical: space.l, gap: space.l }}>
+          <View>
+            <Body style={{ marginBottom: space.s }}>How did you mostly eat today?</Body>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {MEAL_QUALITY.map(q => (
+                <Chip
+                  key={q.value}
+                  label={q.label}
+                  active={todayNutrition.quality === q.value}
+                  onPress={() => logNutrition({ quality: q.value })}
+                />
+              ))}
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Item>Hydration · {todayNutrition.glasses ?? 0} glasses</Item>
+            <Chip label="+ glass" onPress={() => logNutrition({ glasses: (todayNutrition.glasses ?? 0) + 1 })} />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Item>Protein · {todayNutrition.protein ?? 0} g</Item>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Chip label="+ 10 g" onPress={() => logNutrition({ protein: (todayNutrition.protein ?? 0) + 10 })} />
+              <Chip label="+ 25 g" onPress={() => logNutrition({ protein: (todayNutrition.protein ?? 0) + 25 })} />
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Item>Supplements taken</Item>
+            <Chip
+              label={todayNutrition.supplements ? 'Yes' : 'Not yet'}
+              active={!!todayNutrition.supplements}
+              onPress={() => logNutrition({ supplements: !todayNutrition.supplements })}
+            />
+          </View>
+        </View>
+      ) : null}
+
+      <Header id="movement" label="movement" />
+      {open === 'movement' ? (
+        <View style={{ paddingVertical: space.l, gap: space.m }}>
+          <View style={{ alignItems: 'center', gap: space.s }}>
+            <MiniRing fraction={stepGoal ? Math.min(todaySteps / stepGoal, 1) : 0} size={120}>
+              <Text style={{ fontFamily: fonts.display, fontSize: 22, color: palette.ink }}>
+                {todaySteps.toLocaleString('en-US')}
+              </Text>
+              <Label style={{ fontSize: 8 }}>today</Label>
+            </MiniRing>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.m }}>
+            {weekSteps.map(d => (
+              <View key={d.date} style={{ alignItems: 'center', gap: 4 }}>
+                <MiniRing fraction={stepGoal ? Math.min(d.steps / stepGoal, 1) : 0} size={26} />
+                <Text style={[type.small, { color: palette.dim, fontSize: 9 }]}>{d.date.slice(8)}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
+            <Field
+              placeholder="Steps today"
+              keyboardType="number-pad"
+              value={stepsInput}
+              onChangeText={setStepsInput}
+              style={{ flex: 1 }}
+            />
+            <Chip label="Log" onPress={logSteps} />
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <Body dim style={{ fontSize: 11 }}>Guideline</Body>
+            {STEP_GOALS.map(g => (
+              <Chip key={g} label={`${g / 1000}k`} active={stepGoal === g} onPress={() => setStepGoal(g)} />
+            ))}
+          </View>
+
+          <Hairline spacing={space.s} />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {MOVEMENT_TYPES.map(t => (
+              <Chip key={t} label={t} active={moveType === t} onPress={() => setMoveType(t)} />
+            ))}
+          </View>
+          <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
+            <Field
+              placeholder="Minutes"
+              keyboardType="number-pad"
+              value={moveMinutes}
+              onChangeText={setMoveMinutes}
+              style={{ flex: 1 }}
+            />
+            <Button label="Log" onPress={logMovement} disabled={!moveMinutes} />
+          </View>
+          <Body dim>
+            This week {thisWeekMin} min{prevWeekMin ? ` · last week ${prevWeekMin} min` : ''}.
+          </Body>
+          {movement.filter(l => l.date >= monday).map(l => {
+            const p = l.payload as unknown as MovementPayload;
+            return (
+              <View key={l.id} style={{ flexDirection: 'row', gap: space.m }}>
+                <Item dim>{formatShort(l.date)}</Item>
+                <Item>{p.type} · {p.minutes} min</Item>
+              </View>
+            );
+          })}
+        </View>
+      ) : null}
+
       <Header id="sleep" label="sleep" />
       {open === 'sleep' ? (
         <View style={{ paddingVertical: space.l, gap: space.m }}>
@@ -252,115 +357,6 @@ export default function BodyScreen() {
             onPress={logSleep}
             disabled={!validTime(bedTime) || !validTime(wakeTime)}
           />
-        </View>
-      ) : null}
-
-      <Header id="steps" label="steps" />
-      {open === 'steps' ? (
-        <View style={{ paddingVertical: space.l, gap: space.m }}>
-          <View style={{ alignItems: 'center', gap: space.s }}>
-            <MiniRing fraction={stepGoal ? Math.min(todaySteps / stepGoal, 1) : 0} size={120}>
-              <Text style={{ fontFamily: fonts.display, fontSize: 22, color: palette.ink }}>
-                {todaySteps.toLocaleString('en-US')}
-              </Text>
-              <Label style={{ fontSize: 8 }}>today</Label>
-            </MiniRing>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.m }}>
-            {weekSteps.map(d => (
-              <View key={d.date} style={{ alignItems: 'center', gap: 4 }}>
-                <MiniRing fraction={stepGoal ? Math.min(d.steps / stepGoal, 1) : 0} size={26} />
-                <Text style={[type.small, { color: palette.dim, fontSize: 9 }]}>{d.date.slice(8)}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
-            <Field
-              placeholder="Steps today"
-              keyboardType="number-pad"
-              value={stepsInput}
-              onChangeText={setStepsInput}
-              style={{ flex: 1 }}
-            />
-            <Chip label="Log" onPress={logSteps} />
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <Body dim style={{ fontSize: 11 }}>Guideline</Body>
-            {STEP_GOALS.map(g => (
-              <Chip key={g} label={`${g / 1000}k`} active={stepGoal === g} onPress={() => setStepGoal(g)} />
-            ))}
-          </View>
-        </View>
-      ) : null}
-
-      <Header id="movement" label="movement" />
-      {open === 'movement' ? (
-        <View style={{ paddingVertical: space.l, gap: space.m }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {MOVEMENT_TYPES.map(t => (
-              <Chip key={t} label={t} active={moveType === t} onPress={() => setMoveType(t)} />
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', gap: space.m, alignItems: 'flex-end' }}>
-            <Field
-              placeholder="Minutes"
-              keyboardType="number-pad"
-              value={moveMinutes}
-              onChangeText={setMoveMinutes}
-              style={{ flex: 1 }}
-            />
-            <Button label="Log" onPress={logMovement} disabled={!moveMinutes} />
-          </View>
-          <Body dim>
-            This week {thisWeekMin} min{prevWeekMin ? ` · last week ${prevWeekMin} min` : ''}.
-          </Body>
-          {movement.filter(l => l.date >= monday).map(l => {
-            const p = l.payload as unknown as MovementPayload;
-            return (
-              <View key={l.id} style={{ flexDirection: 'row', gap: space.m }}>
-                <Item dim>{formatShort(l.date)}</Item>
-                <Item>{p.type} · {p.minutes} min</Item>
-              </View>
-            );
-          })}
-        </View>
-      ) : null}
-
-      <Header id="nutrition" label="nutrition" />
-      {open === 'nutrition' ? (
-        <View style={{ paddingVertical: space.l, gap: space.l }}>
-          <View>
-            <Body style={{ marginBottom: space.s }}>How did you mostly eat today?</Body>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {MEAL_QUALITY.map(q => (
-                <Chip
-                  key={q.value}
-                  label={q.label}
-                  active={todayNutrition.quality === q.value}
-                  onPress={() => logNutrition({ quality: q.value })}
-                />
-              ))}
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Item>Hydration · {todayNutrition.glasses ?? 0} glasses</Item>
-            <Chip label="+ glass" onPress={() => logNutrition({ glasses: (todayNutrition.glasses ?? 0) + 1 })} />
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Item>Protein · {todayNutrition.protein ?? 0} g</Item>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              <Chip label="+ 10 g" onPress={() => logNutrition({ protein: (todayNutrition.protein ?? 0) + 10 })} />
-              <Chip label="+ 25 g" onPress={() => logNutrition({ protein: (todayNutrition.protein ?? 0) + 25 })} />
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Item>Supplements taken</Item>
-            <Chip
-              label={todayNutrition.supplements ? 'Yes' : 'Not yet'}
-              active={!!todayNutrition.supplements}
-              onPress={() => logNutrition({ supplements: !todayNutrition.supplements })}
-            />
-          </View>
         </View>
       ) : null}
 
