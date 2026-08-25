@@ -55,7 +55,7 @@ export function SleepCircle({ nights, size = 220, children }: {
               d={nightArc(cx, cy, r, n.bedTime, n.wakeTime)}
               stroke={palette.ink}
               strokeOpacity={Math.max(opacity, 0.15)}
-              strokeWidth={3}
+              strokeWidth={1.75}
               strokeLinecap="round"
               fill="none"
             />
