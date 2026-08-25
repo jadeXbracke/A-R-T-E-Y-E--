@@ -26,13 +26,15 @@ export const palettes: Record<Scheme, Palette> = {
     scrim: 'rgba(19,18,17,0.28)',
   },
   dark: {
-    bg: '#131211',
-    surface: '#1B1A18',
+    // Neutral, not warm: black ground and white type, with grey steps in
+    // between. Any warmth here reads as beige against the white ink.
+    bg: '#000000',
+    surface: '#0B0B0B',
     inkDeep: '#FFFFFF',
-    ink: '#E8E5DF',
-    dim: '#7C776F',
-    hairline: '#2B2925',
-    tint: '#3A3833',
+    ink: '#EDEDED',
+    dim: '#8A8A8A',
+    hairline: '#262626',
+    tint: '#333333',
     scrim: 'rgba(0,0,0,0.4)',
   },
 };

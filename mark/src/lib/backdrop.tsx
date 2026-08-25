@@ -11,9 +11,11 @@ import { Platform } from 'react-native';
 const IMAGE_KEY = 'mark.backdrop.image';
 const SCRIM_KEY = 'mark.backdrop.scrim';
 
-/** How much of the page ground sits over the picture. */
-export const SCRIM_STEPS = [0.55, 0.72, 0.85, 0.94];
-const DEFAULT_SCRIM = 0.85;
+/** How much of the page ground sits over the picture. Kept low: at anything
+ * near opaque the photo washes out to a flat ground and it reads as if
+ * choosing one did nothing at all. */
+export const SCRIM_STEPS = [0.35, 0.5, 0.65, 0.8];
+const DEFAULT_SCRIM = 0.65;
 
 const MAX_EDGE = 1400;
 const QUALITY = 0.72;
@@ -65,11 +67,32 @@ function pickOnWeb(): Promise<string | null> {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    // Safari on iOS ignores a click on an input that is not in the document,
+    // so it has to be mounted — hidden, but really there.
+    input.style.position = 'fixed';
+    input.style.left = '-9999px';
+    document.body.appendChild(input);
+
+    let settled = false;
+    const finish = (value: string | null) => {
+      if (settled) return;
+      settled = true;
+      input.remove();
+      resolve(value);
+    };
+
     input.onchange = () => {
       const file = input.files?.[0];
-      if (!file) return resolve(null);
-      readAndShrinkOnWeb(file).then(resolve, () => resolve(null));
+      if (!file) return finish(null);
+      readAndShrinkOnWeb(file).then(finish, () => finish(null));
     };
+    // Cancelling the file dialog fires no change event. Without this the
+    // promise never settles and the button stays stuck on "choosing".
+    input.oncancel = () => finish(null);
+    window.addEventListener('focus', () => {
+      setTimeout(() => { if (!input.files?.length) finish(null); }, 800);
+    }, { once: true });
+
     input.click();
   });
 }
