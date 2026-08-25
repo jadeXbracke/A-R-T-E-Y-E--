@@ -1,0 +1,2 @@
+# gegenereerde maandmodellen — reproduceerbaar met `python3 business/model.py --csv`
+*.csv
