@@ -16,14 +16,13 @@ missed day is no reason to panic; you simply continue.
   progress discs fill in a neutral grey.
 - **Circles and rings as the only motif**: open ring = to do, closed disc =
   mark set. No checkmarks, no icons — even the tab bar uses text + a dot.
-- Typography: **one typeface, one weight** — Archivo Medium, everywhere.
-  Hierarchy comes from size, letterspacing and colour depth
-  (`inkDeep` headings → `ink` primary → `dim` secondary), never from mixing
-  weights or families: a second weight reads as a second typeface and breaks
-  the house style. Entity names in lists (habits, log rows, titles) wear the
-  same letter-spaced caps as the labels — sentence case beside caps also
-  reads as a second typeface. Only running prose stays sentence case. No
-  italics.
+- Typography: **one typeface, one weight, one case**. Archivo Medium,
+  uppercase everywhere, from the wordmark to the smallest footnote.
+  Hierarchy comes from size, letterspacing and colour depth (`inkDeep`
+  headings, then `ink`, then `dim`), never from mixing weights, families or
+  cases: each of those reads as a second typeface and breaks the house
+  style. No italics, and no dashes in the copy: sentences are split or
+  joined with commas instead, so nothing interrupts the line.
 - Plenty of negative space; nothing feels full. Timeless over trendy.
 
 ## Data model

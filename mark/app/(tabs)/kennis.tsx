@@ -131,7 +131,7 @@ export default function Knowledge() {
         ))}
         {doneItems.length ? (
           <Body dim style={{ marginTop: space.m }}>
-            {doneItems.length} done — tap a closed ring to reopen, the minus removes it.
+            {doneItems.length} done. Tap a closed ring to reopen, the minus removes it.
           </Body>
         ) : null}
         {doneItems.map(item => (
@@ -177,7 +177,7 @@ export default function Knowledge() {
       <Hairline spacing={space.s} />
 
       {entries.length === 0 ? (
-        <Body dim style={{ marginTop: space.l }}>Nothing logged yet — start with what you are reading or listening to now.</Body>
+        <Body dim style={{ marginTop: space.l }}>Nothing logged yet. Start with what you are reading or listening to now.</Body>
       ) : (
         entries.map(e => (
           <View

@@ -6,7 +6,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 import { useTheme } from '../lib/theme-context';
-import { fonts } from '../theme';
+import { fonts, type } from '../theme';
 import { SleepLog } from '../lib/types';
 
 function minutesOf(hhmm: string): number {
@@ -113,8 +113,8 @@ export function formatDuration(minutes: number): string {
 export function SleepLegend() {
   const { palette } = useTheme();
   return (
-    <Text style={{ fontFamily: fonts.sans, fontSize: 11, color: palette.dim, textAlign: 'center' }}>
-      Seven nights, midnight at the top — the tighter the arcs align, the steadier the rhythm.
+    <Text style={[type.small, { color: palette.dim, textAlign: 'center' }]}>
+      Seven nights, midnight at the top. The tighter the arcs align, the steadier the rhythm.
     </Text>
   );
 }

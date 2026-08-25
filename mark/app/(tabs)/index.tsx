@@ -148,7 +148,7 @@ export default function Today() {
         </Body>
       ) : dueToday.length === 0 ? (
         <Body dim>
-          Nothing scheduled today — a rest day counts too.
+          Nothing scheduled today. A rest day counts too.
         </Body>
       ) : null}
 

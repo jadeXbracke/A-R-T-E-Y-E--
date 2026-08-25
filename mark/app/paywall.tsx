@@ -12,7 +12,7 @@ import { space, type } from '../src/theme';
 
 const INCLUDED = [
   'Apple Health / Google Fit sync',
-  'Calendar hand-off',
+  'Send blocks to your calendar',
   'Cycle registration',
   'Correlation insights',
   'Data export',
@@ -29,7 +29,7 @@ export default function Paywall() {
       <Wordmark />
       <Text style={[type.heading, { color: palette.inkDeep, marginTop: space.xl }]}>Premium</Text>
       <Body dim style={{ marginTop: space.s }}>
-        The habits, check-ins and week view stay free, always. Premium adds the
+        The habits, the daily marks and the week view stay free, always. Premium adds the
         modules around them.
       </Body>
 
@@ -48,7 +48,7 @@ export default function Paywall() {
         <Body dim>
           {DEMO_MODE
             ? 'Everything is unlocked in this build so you can try it all.'
-            : 'You have Premium — thank you for supporting MARK.'}
+            : 'You have Premium. Thank you for supporting MARK.'}
         </Body>
       ) : (
         <View style={{ gap: space.m }}>

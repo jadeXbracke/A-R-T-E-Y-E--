@@ -38,7 +38,7 @@ const QUESTIONS: Record<CheckinKind, [string, string, string]> = {
     'What changes next month?',
   ],
   quarter: [
-    'Looking at the last three months — what growth do you see?',
+    'Looking at the last three months, what growth do you see?',
     'What identity have your marks been building?',
     'What is the theme for the next quarter?',
   ],
@@ -47,8 +47,8 @@ const QUESTIONS: Record<CheckinKind, [string, string, string]> = {
 const TITLES: Record<CheckinKind, string> = {
   intention: 'intentions for the month',
   week: 'sunday reflection',
-  month: 'month check-in',
-  quarter: 'quarter check-in',
+  month: 'month review',
+  quarter: 'quarter review',
 };
 
 function CheckinCard({ kind, periodStart }: { kind: CheckinKind; periodStart: string }) {
@@ -83,7 +83,7 @@ function CheckinCard({ kind, periodStart }: { kind: CheckinKind; periodStart: st
   return (
     <Section label={TITLES[kind]}>
       {saved ? (
-        <Body dim style={{ marginBottom: space.m }}>Saved — you can always update it.</Body>
+        <Body dim style={{ marginBottom: space.m }}>Saved. You can always update it.</Body>
       ) : (
         <Body dim style={{ marginBottom: space.m }}>Three questions, five minutes. Nothing more.</Body>
       )}
@@ -204,7 +204,7 @@ export default function Growth() {
           })}
         </View>
         <Body dim style={{ fontSize: 11, textAlign: 'center', marginTop: space.m }}>
-          Tap a day to fill it in — a day you forgot is never lost.
+          Tap a day to fill it in. A day you forgot is never lost.
         </Body>
       </View>
 
@@ -237,8 +237,8 @@ export default function Growth() {
         due.map(d => <CheckinCard key={d.kind} kind={d.kind} periodStart={d.periodStart} />)
       ) : (
         <Body dim>
-          Reflection every Sunday · month check-in on {formatShort(monthEnd(today))}
-          {monthEnd(today) === quarterEnd(today) ? ' · quarter check-in the same day' : ''}.
+          Reflection every Sunday · month review on {formatShort(monthEnd(today))}
+          {monthEnd(today) === quarterEnd(today) ? ' · quarter review the same day' : ''}.
         </Body>
       )}
 

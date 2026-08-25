@@ -218,8 +218,8 @@ export default function BodyScreen() {
             </View>
           ) : (
             <Body dim>
-              Log a few nights and they appear here as arcs on a 24-hour circle —
-              regularity matters more than totals.
+              Log a few nights and they appear here as arcs on a 24 hour circle.
+              Regularity matters more than totals.
             </Body>
           )}
 
@@ -238,7 +238,7 @@ export default function BodyScreen() {
           />
           {healthProvider.available() ? null : (
             <Body dim style={{ fontSize: 11 }}>
-              Apple Health can fill this in automatically in the phone app build — manual always works.
+              Apple Health can fill this in automatically in the phone app build. Manual always works.
             </Body>
           )}
         </View>
@@ -255,7 +255,7 @@ export default function BodyScreen() {
               <Label style={{ fontSize: 8 }}>today</Label>
             </MiniRing>
             <Body dim style={{ fontSize: 11 }}>
-              Guideline {stepGoal.toLocaleString('en-US')} — a direction, not a norm.
+              Guideline {stepGoal.toLocaleString('en-US')}. A direction, not a norm.
             </Body>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.m }}>
@@ -284,7 +284,7 @@ export default function BodyScreen() {
           </View>
           <Body dim style={{ fontSize: 11 }}>
             {has('healthSync')
-              ? 'Apple Health / Google Fit sync (read-only, per data type) activates in the phone app build; entering by hand always works.'
+              ? 'Apple Health / Google Fit sync (read only, per data type) activates in the phone app build; entering by hand always works.'
               : 'Automatic Health sync is part of Premium; entering by hand always works.'}
           </Body>
         </View>
@@ -383,7 +383,7 @@ export default function BodyScreen() {
                   with one tap, and turning this off again erases it.
                 </Body>
                 <Button
-                  label="I understand — turn it on"
+                  label="I understand, turn it on"
                   onPress={() => cycleStore.setConsent(true).then(() => { setCycleConsent(true); reload(); })}
                 />
               </View>
@@ -398,13 +398,13 @@ export default function BodyScreen() {
               <Body dim style={{ fontSize: 12 }}>
                 {currentSpan && currentDay
                   ? `Day ${currentDay} · last started ${formatShort(currentSpan.start)}`
-                  : 'Nothing recorded yet — one tap is all this module asks.'}
+                  : 'Nothing recorded yet. One tap is all this module asks.'}
               </Body>
               {notes.length ? <Body dim style={{ fontSize: 12 }}>{notes[0]}</Body> : null}
 
               <Hairline spacing={space.s} />
               <Body dim style={{ fontSize: 11 }}>
-                Only on this device — never synced or shared.
+                Only on this device. Never synced or shared.
               </Body>
               <Pressable onPress={wipeCycle}>
                 <Body dim style={{ fontSize: 11, textDecorationLine: 'underline' }}>

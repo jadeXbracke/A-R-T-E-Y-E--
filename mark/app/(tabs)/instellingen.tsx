@@ -298,9 +298,9 @@ export default function More() {
           ))}
         </View>
         <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
-          A check-in before this hour still counts for the day before — so a
-          late night does not quietly become a missed day. Takes effect when
-          you next open the app.
+          A mark set before this hour still counts for the day before, so a late
+          night does not quietly become a missed day. Takes effect when you
+          next open the app.
         </Body>
       </Section>
 
@@ -328,8 +328,8 @@ export default function More() {
           ))}
         </View>
         <Body dim style={{ marginTop: space.s }}>
-          One quiet notification if habits are still open that day. On your phone only —
-          the web version cannot remind you.
+          One quiet notification if habits are still open that day. On your phone only. The
+          web version cannot remind you.
         </Body>
       </Section>
 
@@ -544,7 +544,7 @@ export default function More() {
         </View>
         <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
           Off by default. When on, MARK records which screens are used and
-          which flows finish — counts only. Nothing from Body or the cycle
+          which flows finish, as counts only. Nothing from Body or the cycle
           module is ever included, and no habit names or notes.
         </Body>
       </Section>
@@ -554,7 +554,7 @@ export default function More() {
       <Section label="delete account">
         <Body dim style={{ marginBottom: space.m }}>
           Erases your account and everything in it, on our side and on this
-          phone. There is no undo — export first if you want to keep a copy.
+          phone. There is no undo. Export first if you want to keep a copy.
         </Body>
         <Button label="Delete my account" onPress={confirmDelete} />
       </Section>

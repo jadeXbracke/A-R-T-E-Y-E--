@@ -38,10 +38,10 @@ export const palettes: Record<Scheme, Palette> = {
 };
 
 // ── Typography ──────────────────────────────────────────────────────────────
-// ONE typeface, ONE weight: Archivo Medium. Hierarchy is carried by size,
-// letterspacing and colour depth (inkDeep → ink → dim) — never by mixing
-// weights or families, which reads as a different typeface and breaks the
-// house style.
+// ONE typeface, ONE weight, ONE case: Archivo Medium, uppercase throughout.
+// Hierarchy is carried by size, letterspacing and colour depth (inkDeep,
+// then ink, then dim), never by mixing weights, families or cases: each of
+// those reads as a second typeface and breaks the house style.
 const FACE = 'Archivo_500Medium';
 
 export const fonts = {
@@ -67,10 +67,10 @@ export const type = {
   heading: { fontFamily: FACE, fontSize: 25, letterSpacing: 3.4, lineHeight: 34, textTransform: 'uppercase' as const },
   title: { fontFamily: FACE, fontSize: 17, letterSpacing: 2, lineHeight: 24, textTransform: 'uppercase' as const },
   numeral: { fontFamily: FACE, fontSize: 38, letterSpacing: 1.5 },
-  body: { fontFamily: FACE, fontSize: 14.5, lineHeight: 23 },
+  body: { fontFamily: FACE, fontSize: 13.5, letterSpacing: 0.8, lineHeight: 22, textTransform: 'uppercase' as const },
   // Entity names in lists (habits, log rows). Same letter-spaced caps voice
   // as the labels — sentence case next to caps reads as a second typeface.
   item: { fontFamily: FACE, fontSize: 13, letterSpacing: 1.6, lineHeight: 20, textTransform: 'uppercase' as const },
   label: { fontFamily: FACE, fontSize: 10, letterSpacing: 2.4, textTransform: 'uppercase' as const },
-  small: { fontFamily: FACE, fontSize: 11.5, lineHeight: 18 },
+  small: { fontFamily: FACE, fontSize: 10.5, letterSpacing: 0.8, lineHeight: 17, textTransform: 'uppercase' as const },
 };
