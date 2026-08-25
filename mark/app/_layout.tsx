@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { DEMO_MODE } from '../src/lib/api';
 import { loadAnalyticsConsent } from '../src/lib/analytics';
+import { BackdropProvider } from '../src/lib/backdrop';
 import { loadDayStart } from '../src/lib/day-start';
 import { EntitlementsProvider } from '../src/lib/entitlements';
 import { AuthProvider, useAuth } from '../src/lib/auth';
@@ -59,7 +60,9 @@ export default function RootLayout() {
       <ThemeProvider>
         <AuthProvider>
           <EntitlementsProvider>
-            <Gate />
+            <BackdropProvider>
+              <Gate />
+            </BackdropProvider>
           </EntitlementsProvider>
         </AuthProvider>
       </ThemeProvider>

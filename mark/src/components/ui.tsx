@@ -3,9 +3,10 @@ import Constants from 'expo-constants';
 import React from 'react';
 import { router } from 'expo-router';
 import {
-  Pressable, ScrollView, StyleProp, Text, TextInput, TextInputProps, TextStyle, View,
+  Image, Pressable, ScrollView, StyleProp, Text, TextInput, TextInputProps, TextStyle, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBackdrop } from '../lib/backdrop';
 import { useTheme } from '../lib/theme-context';
 import { space, type } from '../theme';
 
@@ -24,7 +25,47 @@ export function Wordmark({ size = 15 }: { size?: number }) {
   );
 }
 
-export function Screen({ children, title, subtitle, greeting, moreLink = true }: {
+function ScreenHeader({ title, subtitle, greeting, moreLink }: {
+  title: string;
+  subtitle?: string;
+  greeting?: string;
+  moreLink: boolean;
+}) {
+  const { palette } = useTheme();
+  return (
+    <>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Wordmark />
+      {moreLink ? (
+        <Pressable
+          onPress={() => router.push('/instellingen')}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="More"
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+        >
+          <Text style={[type.label, { color: palette.dim }]}>More</Text>
+          <View
+            style={{
+              width: 18, height: 18, borderRadius: 9,
+              borderWidth: 1.25, borderColor: palette.ink,
+            }}
+          />
+        </Pressable>
+      ) : null}
+    </View>
+    {greeting ? (
+      <Text style={[type.label, { color: palette.dim, marginTop: space.xl }]}>{greeting}</Text>
+    ) : null}
+    <Text style={[type.heading, { color: palette.inkDeep, marginTop: greeting ? space.s : space.xl }]}>{title}</Text>
+    {subtitle ? (
+      <Text style={[type.small, { color: palette.dim, marginTop: space.xs }]}>{subtitle}</Text>
+    ) : null}
+    </>
+  );
+}
+
+export function Screen({ children, title, subtitle, greeting, moreLink = true, backdrop = false }: {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
@@ -32,9 +73,47 @@ export function Screen({ children, title, subtitle, greeting, moreLink = true }:
   /** The small entry point to More, top-right beside the wordmark. Off on
    * the More screen itself, since it would otherwise open onto itself. */
   moreLink?: boolean;
+  /** Show the user's own picture behind this screen, if they set one. */
+  backdrop?: boolean;
 }) {
   const { palette } = useTheme();
   const insets = useSafeAreaInsets();
+  const { uri, scrim } = useBackdrop();
+  const showBackdrop = backdrop && !!uri;
+
+  if (showBackdrop) {
+    return (
+      <View style={{ flex: 1, backgroundColor: palette.bg }}>
+        <Image
+          source={{ uri: uri as string }}
+          resizeMode="cover"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
+        {/* the ground, laid back over the picture so type stays readable */}
+        <View
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: palette.bg, opacity: scrim,
+          }}
+        />
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingTop: insets.top + space.l,
+            paddingHorizontal: space.page,
+            paddingBottom: space.xxl * 2,
+          }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <ScreenHeader
+            title={title} subtitle={subtitle} greeting={greeting} moreLink={moreLink}
+          />
+          <View style={{ marginTop: space.xl }}>{children}</View>
+        </ScrollView>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: palette.bg }}
@@ -45,33 +124,7 @@ export function Screen({ children, title, subtitle, greeting, moreLink = true }:
       }}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Wordmark />
-        {moreLink ? (
-          <Pressable
-            onPress={() => router.push('/instellingen')}
-            hitSlop={12}
-            accessibilityRole="button"
-            accessibilityLabel="More"
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-          >
-            <Text style={[type.label, { color: palette.dim }]}>More</Text>
-            <View
-              style={{
-                width: 18, height: 18, borderRadius: 9,
-                borderWidth: 1.25, borderColor: palette.ink,
-              }}
-            />
-          </Pressable>
-        ) : null}
-      </View>
-      {greeting ? (
-        <Text style={[type.label, { color: palette.dim, marginTop: space.xl }]}>{greeting}</Text>
-      ) : null}
-      <Text style={[type.heading, { color: palette.inkDeep, marginTop: greeting ? space.s : space.xl }]}>{title}</Text>
-      {subtitle ? (
-        <Text style={[type.small, { color: palette.dim, marginTop: space.xs }]}>{subtitle}</Text>
-      ) : null}
+      <ScreenHeader title={title} subtitle={subtitle} greeting={greeting} moreLink={moreLink} />
       <View style={{ marginTop: space.xl }}>{children}</View>
     </ScrollView>
   );

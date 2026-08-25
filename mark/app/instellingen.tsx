@@ -7,6 +7,7 @@ import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, S
 import { api, DEMO_MODE } from '../src/lib/api';
 import { cycleStore } from '../src/lib/cycle-store';
 import { hasAnalyticsConsent, setAnalyticsConsent } from '../src/lib/analytics';
+import { SCRIM_STEPS, useBackdrop } from '../src/lib/backdrop';
 import { DAY_START_HOURS, getDayStartHour, saveDayStart } from '../src/lib/day-start';
 import { deleteEverything, exportToFile, importFromFile } from '../src/lib/data-portability';
 import { DAY_INITIALS, habitDays, rhythmLabel } from '../src/lib/habits';
@@ -63,6 +64,7 @@ export default function More() {
   const [analytics, setAnalytics] = useState(hasAnalyticsConsent());
   const [dataNote, setDataNote] = useState('');
   const { premium } = useEntitlements();
+  const backdrop = useBackdrop();
 
   const reload = useCallback(() => {
     api.listPillars().then(setPillars).catch(() => {});
@@ -296,6 +298,37 @@ export default function More() {
             <Chip key={p.value} label={p.label} active={pref === p.value} onPress={() => setPref(p.value)} />
           ))}
         </View>
+      </Section>
+
+      <Hairline spacing={space.m} />
+
+      <Section label="background">
+        <View style={{ gap: space.m }}>
+          <Button
+            label={backdrop.busy ? 'Choosing…' : backdrop.uri ? 'Change picture' : 'Choose a picture'}
+            onPress={() => { backdrop.pick(); }}
+            disabled={backdrop.busy}
+          />
+          {backdrop.uri ? (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <Body dim style={{ fontSize: 11 }}>Strength</Body>
+                {SCRIM_STEPS.map((step, i) => (
+                  <Chip
+                    key={step}
+                    label={['Bold', 'Clear', 'Soft', 'Faint'][i]}
+                    active={backdrop.scrim === step}
+                    onPress={() => backdrop.setScrim(step)}
+                  />
+                ))}
+              </View>
+              <Button label="Remove picture" onPress={() => { backdrop.clear(); }} />
+            </>
+          ) : null}
+        </View>
+        <Body dim style={{ marginTop: space.s, fontSize: 11 }}>
+          Stays on this device.
+        </Body>
       </Section>
 
       <Hairline spacing={space.m} />

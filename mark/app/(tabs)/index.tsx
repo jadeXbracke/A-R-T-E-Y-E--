@@ -78,7 +78,7 @@ export default function Today() {
   const greeting = profile?.name ? `good ${daypart}, ${profile.name}` : undefined;
 
   return (
-    <Screen title="Today" subtitle={formatLong(today)} greeting={greeting}>
+    <Screen title="Today" subtitle={formatLong(today)} greeting={greeting} backdrop>
       <View style={{ alignItems: 'center', marginVertical: space.l, marginBottom: space.xl }}>
         <MiniRing fraction={todayFraction} size={186}>
           <Text style={[type.numeral, { color: palette.ink }]}>

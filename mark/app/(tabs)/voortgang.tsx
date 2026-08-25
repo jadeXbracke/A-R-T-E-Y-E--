@@ -159,7 +159,7 @@ export default function Growth() {
   const intentionLines = (intentions?.answers ?? []).filter(a => a.trim());
 
   return (
-    <Screen title="Growth" subtitle="One month at a time">
+    <Screen title="Growth" subtitle="One month at a time" backdrop>
       {intentionLines.length ? (
         <View style={{ marginBottom: space.xl }}>
           <Label style={{ marginBottom: space.s }}>{`${monthLabel(today).split(' ')[0]} intentions`}</Label>
