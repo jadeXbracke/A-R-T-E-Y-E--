@@ -7,7 +7,7 @@ import { BuildStamp, Body, Button, Chip, Field, Hairline, Item, Label, Screen, S
 import { api, DEMO_MODE } from '../src/lib/api';
 import { cycleStore } from '../src/lib/cycle-store';
 import { hasAnalyticsConsent, setAnalyticsConsent } from '../src/lib/analytics';
-import { SCRIM_STEPS, useBackdrop } from '../src/lib/backdrop';
+import { SCRIM_STEPS, useBackdrop, WebFilePicker } from '../src/lib/backdrop';
 import { DAY_START_HOURS, getDayStartHour, saveDayStart } from '../src/lib/day-start';
 import { deleteEverything, exportToFile, importFromFile } from '../src/lib/data-portability';
 import { DAY_INITIALS, habitDays, rhythmLabel } from '../src/lib/habits';
@@ -304,11 +304,16 @@ export default function More() {
 
       <Section label="background">
         <View style={{ gap: space.m }}>
-          <Button
-            label={backdrop.busy ? 'Choosing…' : backdrop.uri ? 'Change picture' : 'Choose a picture'}
-            onPress={() => { backdrop.pick(); }}
-            disabled={backdrop.busy}
-          />
+          <WebFilePicker>
+            <Button
+              label={backdrop.busy ? 'One moment' : backdrop.uri ? 'Change picture' : 'Choose a picture'}
+              onPress={() => { if (Platform.OS !== 'web') backdrop.pick(); }}
+              disabled={backdrop.busy}
+            />
+          </WebFilePicker>
+          {backdrop.error ? (
+            <Body style={{ fontSize: 11 }}>{backdrop.error}</Body>
+          ) : null}
           {backdrop.uri ? (
             <>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
