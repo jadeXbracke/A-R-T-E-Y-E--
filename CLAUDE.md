@@ -43,11 +43,16 @@
   right in that workflow (public by design — they ship inside the exported
   JS anyway). Push the source change and let it run rather than exporting
   locally.
-- To confirm which mode a build is in without a live check: open the
-  Curator tab signed out. Demo mode shows "Demo build — try
-  jadebrack@gmail.com…"; live mode shows a small build stamp instead
-  (git sha + export date, from `art-eye/app.config.js` → `BuildStamp` in
-  `art-eye/src/components/ui.tsx`).
+- To confirm which mode a build is in, open the **sign-in screen**
+  (Curator tab → "Sign in or create an account"). Demo mode shows
+  "Demo build — try jadebrack@gmail.com…" and hides FORGOT PASSWORD?;
+  live mode shows FORGOT PASSWORD? and no demo note (`DEMO_MODE` in
+  `art-eye/app/auth.tsx`).
+- The build stamp on the Curator tab (`BUILD <sha> · <date>`, from
+  `art-eye/app.config.js` → `BuildStamp` in `art-eye/src/components/ui.tsx`)
+  tells you **which commit** is deployed, not which backend it talks to —
+  `app.config.js` stamps it on every export, demo or live. Use it to spot a
+  stale build or a stale cache; use the sign-in screen for the mode.
 
 ## Repo layout
 
