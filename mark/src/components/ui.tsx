@@ -330,16 +330,18 @@ export function SceneLayer({ scene, width, height, opacity, still }: {
  * picture, and the controls keep the clean ground they need.
  *
  * Given more than one it drifts and crosses between them. */
-export function SceneBlock({ scenes, children, height = 340 }: {
+export function SceneBlock({ scenes, children, height = 340, motion = false }: {
   scenes: Scene[];
   children: React.ReactNode;
   height?: number;
+  /** A band holds still unless it is asked to move. */
+  motion?: boolean;
 }) {
   const { palette } = useTheme();
   const [index, setIndex] = React.useState(0);
   const [width, setWidth] = React.useState(0);
   const fade = React.useRef(new Animated.Value(0)).current;
-  const still = useStillness();
+  const still = useStillness() || !motion;
 
   const many = scenes.length > 1 && !still;
 

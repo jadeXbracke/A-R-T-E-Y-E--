@@ -214,6 +214,7 @@ export default function BodyScreen() {
     <Screen title="Body">
       <Header id="nutrition" label="nutrition" />
       {open === 'nutrition' ? (
+        <SceneBlock scenes={[{ source: require('../../assets/scenes/nutrition.jpg'), focus: 0.5 }]}>
         <View style={{ paddingVertical: space.l, gap: space.l }}>
           <View>
             <Body style={{ marginBottom: space.s }}>How did you mostly eat today?</Body>
@@ -248,17 +249,12 @@ export default function BodyScreen() {
             />
           </View>
         </View>
+        </SceneBlock>
       ) : null}
 
       <Header id="movement" label="movement" />
       {open === 'movement' ? (
-        <SceneBlock scenes={[
-          // A slow stride: the photograph is already blurred with motion, so a
-          // long beat reads as running seen in slow motion.
-          { source: require('../../assets/scenes/movement.jpg'), focus: 0.5, bob: 9, sway: 5, period: 900 },
-          // A held pose only breathes.
-          { source: require('../../assets/scenes/movement-2.jpg'), focus: 0.72, bob: 6, period: 4200 },
-        ]}>
+        <SceneBlock scenes={[{ source: require('../../assets/scenes/movement.jpg'), focus: 0.5 }]}>
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           <View style={{ alignItems: 'center', gap: space.s }}>
             <MiniRing fraction={stepGoal ? Math.min(todaySteps / stepGoal, 1) : 0} size={120}>
@@ -327,6 +323,7 @@ export default function BodyScreen() {
 
       <Header id="sleep" label="sleep" />
       {open === 'sleep' ? (
+        <SceneBlock scenes={[{ source: require('../../assets/scenes/sleep.jpg'), focus: 0.5 }]}>
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           <View style={{ alignItems: 'center', gap: space.s }}>
             <MiniRing fraction={sleepGoal ? Math.min(todaySleepMinutes / sleepGoal, 1) : 0} size={120}>
@@ -366,13 +363,15 @@ export default function BodyScreen() {
             disabled={!validTime(bedTime) || !validTime(wakeTime)}
           />
         </View>
+        </SceneBlock>
       ) : null}
 
       {cycleEnabled ? (
         <>
           <Header id="cycle" label="cycle" />
           {open === 'cycle' ? (
-            !has('cycle') ? (
+            <SceneBlock scenes={[{ source: require('../../assets/scenes/cycle.jpg'), focus: 0.72 }]}>
+            {            !has('cycle') ? (
               <View style={{ paddingVertical: space.l, gap: space.m }}>
                 <Body dim>The cycle module is part of MARK Premium.</Body>
                 <Button label="About Premium" onPress={() => router.push('/paywall')} />
@@ -424,6 +423,8 @@ export default function BodyScreen() {
               </Pressable>
             </View>
             )
+            }
+            </SceneBlock>
           ) : null}
         </>
       ) : null}
