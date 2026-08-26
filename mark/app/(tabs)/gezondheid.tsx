@@ -252,7 +252,10 @@ export default function BodyScreen() {
 
       <Header id="movement" label="movement" />
       {open === 'movement' ? (
-        <SceneBlock source={require('../../assets/scenes/movement.jpg')}>
+        <SceneBlock scenes={[
+          { source: require('../../assets/scenes/movement.jpg'), focus: 0.5 },
+          { source: require('../../assets/scenes/movement-2.jpg'), focus: 0.72 },
+        ]}>
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           <View style={{ alignItems: 'center', gap: space.s }}>
             <MiniRing fraction={stepGoal ? Math.min(todaySteps / stepGoal, 1) : 0} size={120}>
