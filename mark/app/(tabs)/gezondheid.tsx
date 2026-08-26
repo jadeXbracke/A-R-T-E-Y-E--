@@ -253,8 +253,11 @@ export default function BodyScreen() {
       <Header id="movement" label="movement" />
       {open === 'movement' ? (
         <SceneBlock scenes={[
-          { source: require('../../assets/scenes/movement.jpg'), focus: 0.5 },
-          { source: require('../../assets/scenes/movement-2.jpg'), focus: 0.72 },
+          // A slow stride: the photograph is already blurred with motion, so a
+          // long beat reads as running seen in slow motion.
+          { source: require('../../assets/scenes/movement.jpg'), focus: 0.5, bob: 9, sway: 5, period: 900 },
+          // A held pose only breathes.
+          { source: require('../../assets/scenes/movement-2.jpg'), focus: 0.72, bob: 6, period: 4200 },
         ]}>
         <View style={{ paddingVertical: space.l, gap: space.m }}>
           <View style={{ alignItems: 'center', gap: space.s }}>

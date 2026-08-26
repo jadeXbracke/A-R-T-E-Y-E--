@@ -66,6 +66,21 @@ function ScreenHeader({ title, subtitle, greeting, moreLink }: {
   );
 }
 
+/** Whether the viewer has asked for less movement. Background motion is
+ * exactly what that setting is about. */
+function useStillness(): boolean {
+  const [still, setStill] = React.useState(false);
+  React.useEffect(() => {
+    let alive = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(on => { if (alive) setStill(on); })
+      .catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setStill);
+    return () => { alive = false; sub.remove(); };
+  }, []);
+  return still;
+}
+
 export function Screen({
   children, title, subtitle, greeting, moreLink = true, backdrop = false, scene,
 }: {
@@ -78,31 +93,41 @@ export function Screen({
   moreLink?: boolean;
   /** Show the user's own picture behind this screen, if they set one. */
   backdrop?: boolean;
-  /** A picture that belongs to the screen itself rather than to the user. */
-  scene?: ImageSourcePropType;
+  /** A picture that belongs to the screen itself rather than to the user.
+   * The user's own choice, when there is one, takes its place. */
+  scene?: Scene;
 }) {
   const { palette } = useTheme();
   const insets = useSafeAreaInsets();
   const { uri, scrim } = useBackdrop();
-  const own = backdrop && uri ? { uri } : null;
-  const source = own ?? scene ?? null;
+  const [box, setBox] = React.useState({ width: 0, height: 0 });
+  const still = useStillness();
 
-  if (source) {
+  const own: Scene | null = backdrop && uri ? { source: { uri }, focus: 0.5, focusX: 0.5 } : null;
+  const active = own ?? scene ?? null;
+  const veil = own ? scrim : active?.scrim ?? 0.6;
+
+  if (active) {
     return (
       <View style={{ flex: 1, backgroundColor: palette.bg }}>
         {/* Filling the screen edge to edge. Contained leaves bands of ground
           * above and below, which reads as a picture pasted onto the page
           * rather than the page standing on the picture. */}
-        <Image
-          source={source}
-          resizeMode="cover"
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
+        <View
+          onLayout={e => setBox({
+            width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height,
+          })}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}
+        >
+          {box.width > 0 ? (
+            <SceneLayer scene={active} width={box.width} height={box.height} still={still} />
+          ) : null}
+        </View>
         {/* the ground, laid back over the picture so type stays readable */}
         <View
           style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: palette.bg, opacity: own ? scrim : 0.6,
+            backgroundColor: palette.bg, opacity: veil,
           }}
         />
         <ScrollView
@@ -157,6 +182,23 @@ export interface Scene {
    * bottom. These are portrait photographs whose subject stands low, so a
    * plain centre crop lands on empty wall. */
   focus?: number;
+  /** How far the frame rises and falls, in points, and how long one full
+   * rise and fall takes.
+   *
+   * The whole picture moves, not a cut-out figure. Both of these were shot
+   * against a plain wall, so travel of a few points is invisible in the
+   * ground and visible only in the body: the runner takes a stride, the
+   * held pose breathes. It is an illusion of movement, not real footage —
+   * the limbs are as still as they were in the photograph. */
+  bob?: number;
+  period?: number;
+  /** Which part of a wide frame to keep, the same idea sideways. */
+  focusX?: number;
+  /** How much ground sits over this picture. */
+  scrim?: number;
+  /** A drift along the frame over the same beat, for a body that also
+   * travels rather than only rising. */
+  sway?: number;
 }
 
 /** How tall a picture is per unit of width.
@@ -185,21 +227,60 @@ function useAspect(source: ImageSourcePropType): number {
 }
 
 /** One picture in the band, cropped around its subject and drifting. */
-function SceneLayer({ scene, width, height, drift, opacity }: {
+export function SceneLayer({ scene, width, height, opacity, still }: {
   scene: Scene;
   width: number;
   height: number;
-  drift: Animated.Value;
   opacity?: Animated.Value;
+  still: boolean;
 }) {
-  // Fill the band the short way, then slide the overflow to the chosen focus.
+  // Cover the box, then slide whichever overflow there is to the chosen
+  // focus, so a subject that sits off centre is the part that survives.
   const ratio = useAspect(scene.source);
-  const drawn = Math.max(height, width * ratio);
-  const slack = Math.max(0, drawn - height);
-  const lift = -slack * Math.min(Math.max(scene.focus ?? 0.6, 0), 1);
+  const drawnW = Math.max(width, height / ratio);
+  const drawnH = Math.max(height, width * ratio);
+  const slackY = Math.max(0, drawnH - height);
+  const slackX = Math.max(0, drawnW - width);
+  const lift = -slackY * Math.min(Math.max(scene.focus ?? 0.6, 0), 1);
+  const pan = -slackX * Math.min(Math.max(scene.focusX ?? 0.5, 0), 1);
 
-  const scale = drift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.09] });
-  const shift = drift.interpolate({ inputRange: [0, 1], outputRange: [0, -14] });
+  const drift = React.useRef(new Animated.Value(0)).current;
+  const beat = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    if (still) return;
+    const native = Platform.OS !== 'web';
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(drift, { toValue: 1, duration: DRIFT, easing: Easing.inOut(Easing.ease), useNativeDriver: native }),
+      Animated.timing(drift, { toValue: 0, duration: DRIFT, easing: Easing.inOut(Easing.ease), useNativeDriver: native }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [drift, still]);
+  const bob = scene.bob ?? 0;
+  const period = scene.period ?? 2000;
+  const sway = scene.sway ?? 0;
+  const moving = bob > 0 || sway > 0;
+
+  React.useEffect(() => {
+    if (!moving || still) return;
+    const native = Platform.OS !== 'web';
+    const half = { duration: period / 2, easing: Easing.inOut(Easing.sin), useNativeDriver: native };
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(beat, { toValue: 1, ...half }),
+      Animated.timing(beat, { toValue: 0, ...half }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [beat, moving, period, still]);
+
+  // Only as much larger than the box as the sideways travel needs. At exactly
+  // box width any travel drags a bare strip in at the edge; more than that
+  // and the picture is cropped for nothing.
+  const scale = drift.interpolate({ inputRange: [0, 1], outputRange: [1.05, 1.12] });
+  const shift = drift.interpolate({ inputRange: [0, 1], outputRange: [0, -6] });
+  const rise = beat.interpolate({ inputRange: [0, 1], outputRange: [bob / 2, -bob / 2] });
+  const step = beat.interpolate({ inputRange: [0, 1], outputRange: [-sway / 2, sway / 2] });
 
   return (
     <Animated.Image
@@ -207,9 +288,12 @@ function SceneLayer({ scene, width, height, drift, opacity }: {
       resizeMode="cover"
       style={{
         position: 'absolute', top: 0, left: 0,
-        width, height: drawn,
+        width: drawnW, height: drawnH,
         opacity,
-        transform: [{ translateY: lift }, { scale }, { translateX: shift }],
+        transform: [
+          { translateY: lift }, { translateX: pan }, { scale }, { translateX: shift },
+          { translateY: rise }, { translateX: step },
+        ],
       }}
     />
   );
@@ -230,36 +314,11 @@ export function SceneBlock({ scenes, children, height = 340 }: {
 }) {
   const { palette } = useTheme();
   const [index, setIndex] = React.useState(0);
-  const [still, setStill] = React.useState(false);
   const [width, setWidth] = React.useState(0);
   const fade = React.useRef(new Animated.Value(0)).current;
-  const drift = React.useRef(new Animated.Value(0)).current;
-
-  // Motion in the background is exactly what reduce-motion is asking about.
-  React.useEffect(() => {
-    let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then(on => { if (alive) setStill(on); })
-      .catch(() => {});
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setStill);
-    return () => { alive = false; sub.remove(); };
-  }, []);
+  const still = useStillness();
 
   const many = scenes.length > 1 && !still;
-
-  React.useEffect(() => {
-    if (still) return;
-    // The web has no native driver; transforms and opacity still animate.
-    const native = Platform.OS !== 'web';
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(drift, { toValue: 1, duration: DRIFT, easing: Easing.inOut(Easing.ease), useNativeDriver: native }),
-        Animated.timing(drift, { toValue: 0, duration: DRIFT, easing: Easing.inOut(Easing.ease), useNativeDriver: native }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [drift, still]);
 
   React.useEffect(() => {
     if (!many) return;
@@ -295,11 +354,11 @@ export function SceneBlock({ scenes, children, height = 340 }: {
       >
         {width > 0 ? (
           <>
-            <SceneLayer scene={scenes[index]} width={width} height={height} drift={drift} />
+            <SceneLayer scene={scenes[index]} width={width} height={height} still={still} />
             {many ? (
               <SceneLayer
                 scene={scenes[(index + 1) % scenes.length]}
-                width={width} height={height} drift={drift} opacity={fade}
+                width={width} height={height} opacity={fade} still={still}
               />
             ) : null}
           </>
