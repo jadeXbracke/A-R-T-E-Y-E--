@@ -196,12 +196,14 @@ export interface Scene {
   focusX?: number;
   /** How much ground sits over this picture. */
   scrim?: number;
-  /** 'cover' fills the box and crops whatever will not fit. 'whole' keeps
-   * every edge of the frame and lets the ground carry the rest, for a
-   * square photograph on a tall screen where covering would cut the
-   * subject in half. */
-  fit?: 'cover' | 'whole';
-  /** Where a 'whole' picture sits in the box: 0 is flush to the top. */
+  /** How much of the box the picture claims, from 0 to 1.
+   *
+   * At 0 every edge of the frame survives and the ground carries what is
+   * left over. At 1 the picture fills the box and whatever will not fit is
+   * cropped. A square photograph on a tall screen has to give up one or the
+   * other, so the ground in between is where it usually wants to sit. */
+  fill?: number;
+  /** Where a picture smaller than the box sits: 0 is flush to the top. */
   anchor?: number;
   /** A drift along the frame over the same beat, for a body that also
    * travels rather than only rising. */
@@ -244,14 +246,20 @@ export function SceneLayer({ scene, width, height, opacity, still }: {
   // Cover the box, then slide whichever overflow there is to the chosen
   // focus, so a subject that sits off centre is the part that survives.
   const ratio = useAspect(scene.source);
-  const whole = scene.fit === 'whole';
-  const drawnW = whole ? width : Math.max(width, height / ratio);
-  const drawnH = whole ? width * ratio : Math.max(height, width * ratio);
-  const slackY = Math.max(0, drawnH - height);
+  const fill = Math.min(Math.max(scene.fill ?? 1, 0), 1);
+
+  // The two ends of the choice, and the ground between them.
+  const coverW = Math.max(width, height / ratio);
+  const coverH = Math.max(height, width * ratio);
+  const drawnW = width + (coverW - width) * fill;
+  const drawnH = width * ratio + (coverH - width * ratio) * fill;
+
   const slackX = Math.max(0, drawnW - width);
-  const lift = whole
-    // Room left over goes below the picture, in the share asked for.
-    ? Math.max(0, height - drawnH) * Math.min(Math.max(scene.anchor ?? 0, 0), 1)
+  const slackY = Math.max(0, drawnH - height);
+  const spare = Math.max(0, height - drawnH);
+  const lift = spare > 0
+    // Room left over goes above the picture, in the share asked for.
+    ? spare * Math.min(Math.max(scene.anchor ?? 0, 0), 1)
     : -slackY * Math.min(Math.max(scene.focus ?? 0.6, 0), 1);
   const pan = -slackX * Math.min(Math.max(scene.focusX ?? 0.5, 0), 1);
 
@@ -288,12 +296,12 @@ export function SceneLayer({ scene, width, height, opacity, still }: {
   // Only as much larger than the box as the sideways travel needs. At exactly
   // box width any travel drags a bare strip in at the edge; more than that
   // and the picture is cropped for nothing.
+  // Headroom only where there is something to spare. A picture kept whole
+  // that is zoomed is no longer whole.
   const scale = drift.interpolate({
-    inputRange: [0, 1], outputRange: whole ? [1, 1.02] : [1.05, 1.12],
+    inputRange: [0, 1], outputRange: [1 + 0.05 * fill, 1 + 0.12 * fill],
   });
-  const shift = drift.interpolate({
-    inputRange: [0, 1], outputRange: whole ? [0, 0] : [0, -6],
-  });
+  const shift = drift.interpolate({ inputRange: [0, 1], outputRange: [0, -6 * fill] });
   const rise = beat.interpolate({ inputRange: [0, 1], outputRange: [bob / 2, -bob / 2] });
   const step = beat.interpolate({ inputRange: [0, 1], outputRange: [-sway / 2, sway / 2] });
 

@@ -81,10 +81,11 @@ export default function Today() {
     <Screen title="Today" subtitle={formatLong(today)} greeting={greeting} backdrop
       scene={{
         source: require('../../assets/scenes/today.jpg'),
-        // Every edge of the frame kept: covering a square photograph on a
-        // tall screen cuts half the body away.
-        fit: 'whole',
-        anchor: 0.18,
+        // Between whole and covering: a square frame on a tall screen has to
+        // give up one or the other, so it sits in the ground between.
+        fill: 0.55,
+        focusX: 0.34,
+        anchor: 0.22,
         scrim: 0.38,
       }}
     >
