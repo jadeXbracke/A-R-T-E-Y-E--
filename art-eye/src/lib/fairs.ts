@@ -1,4 +1,5 @@
-import { Fair } from './types';
+import { Exhibition, Fair } from './types';
+import { daysUntil, isOnNow, todayStr } from './dates';
 import { mapsSearchUrl } from './maps';
 
 // Australian art-fair register — real fairs with web-verified 2026 dates
@@ -69,4 +70,43 @@ export function listFairs(): Fair[] {
 
 export function getFair(id: string): Fair | undefined {
   return SEED_FAIRS.find((f) => f.id === id);
+}
+
+/** True while a fair is open to the public. */
+export function fairIsOn(f: Fair): boolean {
+  return isOnNow(f.start_date, f.end_date);
+}
+
+/**
+ * The fairs worth putting in front of everyone right now in a given city:
+ * running today, or opening within `withinDays`. Drives the fair-week banner
+ * on the agenda — deliberately read from this static register rather than the
+ * database, so the banner still appears if the exhibitions table is behind.
+ */
+export function fairsInFocus(city: string, withinDays = 14): Fair[] {
+  const t = todayStr();
+  return SEED_FAIRS.filter(
+    (f) =>
+      f.city.toLowerCase() === city.toLowerCase() &&
+      f.end_date >= t &&
+      daysUntil(f.start_date) <= withinDays
+  ).sort((a, b) => (a.start_date < b.start_date ? -1 : 1));
+}
+
+/**
+ * What else there is to see while you are in town for a fair: shows in the
+ * same city whose run overlaps the fair's dates. The fair's own listing is
+ * dropped — it is already the page you are standing on.
+ */
+export function showsDuringFair(f: Fair, all: Exhibition[]): Exhibition[] {
+  const name = f.name.toLowerCase();
+  return all
+    .filter(
+      (e) =>
+        e.city?.toLowerCase() === f.city.toLowerCase() &&
+        !e.title.toLowerCase().includes(name) &&
+        (e.start_date ?? '0000') <= f.end_date &&
+        (e.end_date ?? '9999') >= f.start_date
+    )
+    .sort((a, b) => ((a.end_date ?? '9999') < (b.end_date ?? '9999') ? -1 : 1));
 }

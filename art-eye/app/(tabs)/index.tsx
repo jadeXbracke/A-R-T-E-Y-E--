@@ -3,6 +3,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExhibitionGridItem, ExhibitionRow } from '../../src/components/exhibition';
+import { FairBanner } from '../../src/components/fair-banner';
 import { HeroCarousel } from '../../src/components/hero-carousel';
 import { SearchBar } from '../../src/components/search-bar';
 import { EmptyState, Hairline, Kicker, Lift, Loading, MonoLink, Wordmark } from '../../src/components/ui';
@@ -48,10 +49,15 @@ export default function AgendaScreen() {
     }, [profile])
   );
 
-  const featured = useMemo(
-    () => (exhibitions ?? []).filter((e) => e.is_featured),
-    [exhibitions]
-  );
+  // Finished shows are already filtered out server-side, but a featured show
+  // can still be months from opening — a hero slide for something you cannot
+  // go and see reads as a stale app. Prefer the ones that are actually on;
+  // only fall back to the rest if that would leave the carousel empty.
+  const featured = useMemo(() => {
+    const all = (exhibitions ?? []).filter((e) => e.is_featured);
+    const onNow = all.filter((e) => isOnNow(e.start_date, e.end_date));
+    return onNow.length ? onNow : all;
+  }, [exhibitions]);
 
   const agenda = useMemo(() => {
     const t = todayStr();
@@ -94,6 +100,8 @@ export default function AgendaScreen() {
         <Loading />
       ) : (
         <>
+          <FairBanner city="Sydney" />
+
           <HeroCarousel exhibitions={featured} />
 
           <View style={styles.sectionHead}>

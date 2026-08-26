@@ -1,10 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Hairline, Kicker, MonoLink } from '../../../src/components/ui';
+import { ExhibitionRow } from '../../../src/components/exhibition';
+import { Hairline, Kicker, Loading, MonoLink } from '../../../src/components/ui';
+import { api } from '../../../src/lib/api';
 import { fmtRange } from '../../../src/lib/dates';
-import { getFair } from '../../../src/lib/fairs';
+import { getFair, showsDuringFair } from '../../../src/lib/fairs';
+import { Exhibition } from '../../../src/lib/types';
 import { directionsUrl, mapsSearchUrl } from '../../../src/lib/maps';
 import { colors, fonts, space, type } from '../../../src/theme';
 
@@ -16,6 +19,25 @@ export default function FairDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const fair = getFair(id);
+  const [exhibitions, setExhibitions] = useState<Exhibition[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .listApprovedExhibitions()
+      .then((list) => alive && setExhibitions(list))
+      .catch(() => alive && setExhibitions([]));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // A fair is a reason to be in the city, not just a building to visit — so the
+  // page carries the rest of that week's programme with it.
+  const alsoOn = useMemo(
+    () => (fair && exhibitions ? showsDuringFair(fair, exhibitions) : []),
+    [fair, exhibitions]
+  );
 
   if (!fair) {
     return (
@@ -73,6 +95,24 @@ export default function FairDetail() {
           <MonoLink label="ROUTE ●" active onPress={() => openLink(directionsUrl(fair))} />
         </View>
       </View>
+
+      <Hairline />
+
+      {exhibitions === null ? (
+        <Loading />
+      ) : alsoOn.length > 0 ? (
+        <View>
+          <Kicker style={styles.alsoHead}>
+            WHILE YOU&apos;RE IN TOWN — {alsoOn.length} SHOWS ON IN {fair.city.toUpperCase()}
+          </Kicker>
+          {alsoOn.map((e, i) => (
+            <View key={e.id}>
+              {i > 0 && <Hairline style={{ marginHorizontal: space.page }} />}
+              <ExhibitionRow exhibition={e} />
+            </View>
+          ))}
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -109,6 +149,11 @@ const styles = StyleSheet.create({
     ...type.serifBody,
     color: colors.ink,
     marginBottom: space.l,
+  },
+  alsoHead: {
+    paddingHorizontal: space.page,
+    paddingTop: space.l,
+    paddingBottom: space.m,
   },
   links: {
     flexDirection: 'row',
