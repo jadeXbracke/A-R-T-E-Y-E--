@@ -4,7 +4,7 @@
 
 - **`main` is the source of truth.** It was brought level with the deployed
   site in PR #19 (Aug 2026), after drifting 50 commits behind for weeks.
-- What is live at https://jadexbracke.github.io/D-I-S-APP-/ is the `docs/`
+- What is live at https://jadexbracke.github.io/A-R-T-E-Y-E--/ is the `docs/`
   export served by GitHub Pages. The Pages setting should point at
   **`main` + `/docs`**; if the live site ever differs from `main`'s `docs/`,
   check Settings → Pages first — it previously pointed at the side branch

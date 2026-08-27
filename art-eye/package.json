@@ -45,7 +45,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "placeholders": "node scripts/gen-placeholders.js",
-    "build:pages": "EXPO_BASE_URL=/D-I-S-APP- expo export -p web --output-dir ../docs && node scripts/finish-pages.js"
+    "build:pages": "EXPO_BASE_URL=/A-R-T-E-Y-E-- expo export -p web --output-dir ../docs && node scripts/finish-pages.js"
   },
   "private": true
 }
