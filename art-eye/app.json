@@ -37,6 +37,14 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-video", "expo-notifications"]
+    "plugins": ["expo-router", "expo-video", "expo-notifications"],
+    "updates": {
+      "url": "https://u.expo.dev/d1c74856-99ad-4913-ac25-75e79e3f37d8"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d1c74856-99ad-4913-ac25-75e79e3f37d8"
+      }
+    }
   }
 }
