@@ -17,8 +17,11 @@ vorm en stem.
 
 ## 1. Het merk in het kort
 
-**Positionering** (letterlijk uit `art-eye/README.md`):
-> *Your eye on the art world.*
+**De naam draagt het merk — geen tagline nodig.** ARTEYE staat op zichzelf.
+(De regel "Your eye on the art world" komt uit bestaande app-copy — README,
+auth-scherm — en blijft daar prima staan als productzin, maar is niet de
+merkkern. Leid nergens mee met die tagline als merkbelofte; leid met de
+naam.)
 
 ARTEYE is een editorial agenda voor tentoonstellingen in Sydney — geen
 algoritme-feed, geen advertentieplatform. Musea en galeries op één plek,
