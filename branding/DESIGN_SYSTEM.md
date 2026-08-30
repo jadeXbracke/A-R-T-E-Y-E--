@@ -15,22 +15,72 @@ vorm en stem.
 
 ---
 
-## 1. Het merk in het kort
+## 1. Positionering
 
-**De naam draagt het merk — geen tagline nodig.** ARTEYE staat op zichzelf.
-(De regel "Your eye on the art world" komt uit bestaande app-copy — README,
-auth-scherm — en blijft daar prima staan als productzin, maar is niet de
-merkkern. Leid nergens mee met die tagline als merkbelofte; leid met de
-naam.)
+**Regel nul: if you confuse, you lose.** Elke uiting leidt met de naam
+plus één regel — nooit twee concurrerende claims naast elkaar. De naam
+draagt het merk; ARTEYE heeft geen tagline nodig. (De regel "Your eye on
+the art world" komt uit bestaande app-copy — README, auth-scherm — en mag
+daar blijven staan als productzin, maar is niet de merkkern.)
 
-ARTEYE is een editorial agenda voor tentoonstellingen in Sydney — geen
-algoritme-feed, geen advertentieplatform. Musea en galeries op één plek,
-door een redactie gecureerd ("elke inzending wordt beoordeeld voordat hij
-de agenda haalt"), met een persoonlijk **Curator**-profiel waar bezoekers
-bijhouden wat ze gezien hebben.
+### Het ene idee: curatie, twee kanten op
 
-Drie woorden die het merk dragen: **redactioneel, precies, Sydney-specifiek.**
+ARTEYE is gids én sociaal platform, maar één idee, niet twee verhalen:
+
+> **Editors choose what's on. You keep what you've seen.**
+
+De agenda wordt vóór je gecureerd — één stad, door mensen beoordeeld. Het
+record wordt dóór je gecureerd — elke show die je ziet, bijgehouden op je
+Curator-profiel. Hetzelfde oog, twee richtingen. De gids haalt je binnen;
+het record is waarom je blijft.
+
+### Uitwerking (naar Seth Godin)
+
+- **Smallest viable audience.** De Sydneysider die al naar shows gaat, of
+  het echt van plan is. Niet "iedereen die van kunst houdt". We hebben
+  alleen de paar duizend mensen nodig die maandelijks een galerie
+  binnenlopen — en die hebben we volledig nodig.
+- **De verandering die we maken.** Van "ik zou vaker moeten gaan" naar
+  "gaan is wie ik ben — en ik heb het record om het te laten zien".
+  ARTEYE verkoopt geen informatie; het geeft de museumganger een
+  identiteit: curator van het eigen oog.
+- **People like us do things like this.** Wij checken wekelijks de
+  agenda. Wij gaan. Wij markeren gezien — een waardering, één zin. Wij
+  houden ons record bij en volgen elkaars oog.
+- **Status door verbondenheid, niet dominantie.** Het Curator-profiel is
+  het statusobject ("ik hoor bij de mensen die gaan") — geen leaderboards,
+  geen scores tegen elkaar.
+- **The remarkable thing (purple cow).** Geen algoritme bepaalt wat je
+  ziet — mensen doen dat: onze redactie voor de stad, jij voor jezelf.
+  Dat is de zin die mensen aan elkaar doorvertellen, en het enige
+  groeiplan dat we nodig hebben.
+- **Permission asset.** De wekelijkse agenda — de reden om terug te komen
+  zonder push-trucs.
+- **Wat we weigeren** (nee is ook strategie): geen algoritme-feed, geen
+  advertenties, geen superlatieven, geen engagement-trucs, geen tweede
+  stad totdat Sydney goed staat.
+
+### Eén regel per oppervlak
+
+| Oppervlak | Regel |
+| --- | --- |
+| Landing-hero | Editors choose what's on. You keep what you've seen. |
+| App store | Sydney's exhibition guide — with a record that's yours. |
+| Social bio | What's on in Sydney, and what you've seen. No algorithm. |
+
+Drie woorden die het merk dragen: **Sydney, no algorithm, your record.**
 Niet: speels, druk, algemeen "kunst wereldwijd".
+
+### Afgewezen routes (gelogd voor later)
+
+- *Gids-eerst* ("Sydney's exhibition guide", social als feature): het
+  helderst voor een vreemde, maar positioneert ons als vervangbare
+  utility en verstopt de helft van het product.
+- *Record-eerst* ("every show you see, kept" — de Letterboxd-positie):
+  het meest identiteitsvormend, maar vraagt een gewoonte die een
+  nieuwkomer nog niet heeft en verstopt de gids.
+- Gekozen: *dual-curatie*, omdat die beide helften in één zin vangt
+  zonder te verwarren.
 
 ## 2. Logo
 
@@ -134,7 +184,7 @@ Hairline of Field is, vraag je af of het wel nodig is.**
 
 ## 7. Tone of voice
 
-De stem is **redactioneel-terse, warm zonder overdrijving, gallery-register
+De stem is **kort en precies, warm zonder overdrijving, gallery-register
 zonder jargon.** Twee registers wisselen elkaar af, net als in de
 typografie: korte, feitelijke hoofdletter-labels naast rustige, persoonlijke
 onderkast-zinnen.
@@ -153,7 +203,7 @@ Kernprincipes, afgeleid uit de bestaande copy in de app:
    maar om *"your record"*: *"Every exhibition you see becomes part of your
    record — your eye on the art world, kept."* Bezit en herinnering, geen
    CRM-taal.
-4. **Redactioneel gezag, zonder poeha.** *"Sydney exhibitions only — each
+4. **Rustig gezag, zonder poeha.** *"Sydney exhibitions only — each
    submission is reviewed before it joins the agenda."* Het merk curateert;
    zeg dat gewoon, zonder het te verkopen.
 5. **Nooit vullend vrolijk.** Geen "Oops!", geen "Let's get started!". Leeg
