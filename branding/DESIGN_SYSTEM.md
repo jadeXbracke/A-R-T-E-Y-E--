@@ -30,13 +30,13 @@ ARTEYE is gids én sociaal platform, maar één idee, niet twee verhalen:
 > **Editors choose what's on. You keep what you've seen.**
 
 De agenda wordt vóór je gecureerd — één stad, door mensen beoordeeld. Het
-record wordt dóór je gecureerd — elke show die je ziet, bijgehouden op je
+record wordt dóór je gecureerd — elke expositie die je ziet, bijgehouden op je
 Curator-profiel. Hetzelfde oog, twee richtingen. De gids haalt je binnen;
 het record is waarom je blijft.
 
 ### Uitwerking (naar Seth Godin)
 
-- **Smallest viable audience.** De Sydneysider die al naar shows gaat, of
+- **Smallest viable audience.** De Sydneysider die al naar exposities gaat, of
   het echt van plan is. Niet "iedereen die van kunst houdt". We hebben
   alleen de paar duizend mensen nodig die maandelijks een galerie
   binnenlopen — en die hebben we volledig nodig.
@@ -106,7 +106,7 @@ Niet: speels, druk, algemeen "kunst wereldwijd".
 - *Gids-eerst* ("Sydney's exhibition guide", social als feature): het
   helderst voor een vreemde, maar positioneert ons als vervangbare
   utility en verstopt de helft van het product.
-- *Record-eerst* ("every show you see, kept" — de Letterboxd-positie):
+- *Record-eerst* ("every exhibition you see, kept" — de Letterboxd-positie):
   het meest identiteitsvormend, maar vraagt een gewoonte die een
   nieuwkomer nog niet heeft en verstopt de gids.
 - Gekozen: *dual-curatie*, omdat die beide helften in één zin vangt
@@ -295,7 +295,7 @@ beleefdheid omdat het één-op-één communicatie is, niet UI-copy:
 - Kom snel ter zake, in twee tot drie zinnen: wat is de status, wat is de
   volgende stap. Geen lange inleidingen.
 - Erken het werk van de ander zonder overdrijving: "Thanks for sending
-  this through" in plaats van "We're so excited about your show!".
+  this through" in plaats van "We're so excited about your exhibition!".
   Herstel voortdurend de basistoon: informerend, niet verkopend.
   Beslissingen (afwijzing/acceptatie van een inzending) direct benoemen,
   gevolgd door de reden in één zin — geen omfloerste taal.
