@@ -60,6 +60,36 @@ het record is waarom je blijft.
   advertenties, geen superlatieven, geen engagement-trucs, geen tweede
   stad totdat Sydney goed staat.
 
+### De villain: de feed
+
+Eén vijand, en het is geen bedrijf: **de feed** — het algoritme dat je
+kunst laat zien zodat je er niet heen hoeft, waar "opgeslagen" wordt
+verward met "gezien". Een systeem als vijand verenigt de tribe zonder
+partners te raken (nooit de kunstwereld of venues villainiseren — dat
+zijn onze mensen) en zonder een concurrent bij naam te noemen ("the
+feed" overleeft elke app; een merknaam noemen dateert ons).
+
+Spelregels:
+
+1. **Eén villain.** If you confuse you lose geldt ook voor vijanden.
+2. **Het product vecht, niet de copy.** Elke anti-feed-mechaniek is het
+   bewijs: de agenda ververst wekelijks (niets scrollt oneindig), "seen"
+   kan alleen door er echt te zijn — de seen-dot is de anti-like.
+3. **Villain-copy is droog en één regel**, in postertaal:
+   - *"Your feed has seen more art than you have."*
+   - *"Saved is not seen."*
+   - *"The algorithm doesn't go to galleries."*
+4. **De villain woont in marketing, nooit in de app.** Empty states
+   blijven warm en neutraal; eenmaal binnen wordt er nooit gemopperd
+   over schermen of scrollen.
+5. **Raak het systeem, nooit de persoon.** Onze mensen scrollen zelf
+   ook — plagen mag ("your feed has seen more art than you have"),
+   beschuldigen nooit ("stop scrolling").
+
+De villain geeft "people like us" zijn spiegelbeeld — *wij gaan; de feed
+kijkt* — en maakt van de weigeringen-lijst frontlinies. Maar negatie is
+kruiden, niet het gerecht: de naam draagt het merk.
+
 ### Eén regel per oppervlak
 
 | Oppervlak | Regel |
